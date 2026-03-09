@@ -1,129 +1,118 @@
-// src/components/admin/AdminProductForm.jsx
-// Formulaire produit admin : création et modification avec tailles dynamiques et upload images
-
-import { useState } from 'react'
-import { Plus, Trash2, Upload, X, ImageIcon, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Upload, X, Loader2 } from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 
-const CATEGORIES = ['Bébé', 'Enfants', 'Femme', 'Homme', 'Lingerie', 'Accessoires']
-const TAGS = ['Look bébé printemps', 'Look Femme Casual', 'Idées de cadeaux']
+const NAVY   = '#1e1b4b'
+const PURPLE = '#7c3aed'
 
-const EMPTY_PRODUCT = {
+// Catégories pour lesquelles la double impression est pré-cochée
+const DOUBLE_PRINT_CATS = ['Bags', 'Paper', 'Autocollants']
+const CATEGORIES = ['Board', 'Bags', 'Autocollants', 'Paper']
+
+const EMPTY = {
   name: '',
-  brand: '',
-  category: 'Homme',
-  price: '',
-  description: '',
-  sizes: [{ size: '', stock: '' }],
+  category: 'Board',
+  sizes: [{ size: '', price: '' }],
+  colors: [],
+  doubleSided: false,
+  doubleSidedPrice: '',
   images: [],
-  tags: [],
 }
+
+const inputCls = (err) =>
+  `w-full px-4 py-2.5 rounded-xl border-2 text-sm outline-none transition-all
+   ${err
+     ? 'border-red-300 bg-red-50 focus:border-red-400'
+     : 'border-gray-200 bg-white focus:border-[#7c3aed] focus:ring-2 focus:ring-purple-100'
+   }`
 
 function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const isEditing = !!initialData
-  const [form, setForm] = useState(
-    initialData
-      ? {
-          ...initialData,
-          price: initialData.price.toString(),
-          sizes: initialData.sizes?.length > 0
-            ? initialData.sizes.map((s) => ({ size: s.size.toString(), stock: s.stock.toString() }))
-            : [{ size: '', stock: '' }],
-          images: initialData.images || [],
-          tags: initialData.tags || [],
-        }
-      : EMPTY_PRODUCT
-  )
-  const [errors, setErrors] = useState({})
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
+  const [form, setForm] = useState(() => {
+    if (!initialData) return EMPTY
+    return {
+      name: initialData.name || '',
+      category: initialData.category || 'Board',
+      sizes: initialData.sizes?.length > 0
+        ? initialData.sizes.map(s => ({ size: String(s.size), price: String(s.price ?? '') }))
+        : [{ size: '', price: '' }],
+      colors: initialData.colors || [],
+      doubleSided: initialData.doubleSided ?? DOUBLE_PRINT_CATS.includes(initialData.category),
+      doubleSidedPrice: String(initialData.doubleSidedPrice ?? ''),
+      images: initialData.images || [],
+    }
+  })
+  const [colorInput, setColorInput] = useState('')
+  const [errors, setErrors]         = useState({})
+  const [uploading, setUploading]   = useState(false)
+  const [saving, setSaving]         = useState(false)
+  const [dragOver, setDragOver]     = useState(false)
 
-  // ── Champs texte ─────────────────────────────────────────────────────────
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((p) => ({ ...p, [name]: value }))
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: '' }))
+  // Auto pre-check doubleSided when category changes
+  useEffect(() => {
+    setForm(p => ({ ...p, doubleSided: DOUBLE_PRINT_CATS.includes(p.category) }))
+  }, [form.category])
+
+  const set = (key, val) => {
+    setForm(p => ({ ...p, [key]: val }))
+    if (errors[key]) setErrors(p => ({ ...p, [key]: '' }))
   }
 
-  // ── Gestion des tailles ───────────────────────────────────────────────────
-  const addSize = () =>
-    setForm((p) => ({ ...p, sizes: [...p.sizes, { size: '', stock: '' }] }))
+  // Sizes
+  const addSize   = () => setForm(p => ({ ...p, sizes: [...p.sizes, { size: '', price: '' }] }))
+  const removeSize = i => setForm(p => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }))
+  const updateSize = (i, field, val) =>
+    setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === i ? { ...s, [field]: val } : s) }))
 
-  const removeSize = (i) =>
-    setForm((p) => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }))
-
-  const updateSize = (i, field, value) =>
-    setForm((p) => ({
-      ...p,
-      sizes: p.sizes.map((s, idx) => (idx === i ? { ...s, [field]: value } : s)),
-    }))
-
-  // ── Gestion des tags ──────────────────────────────────────────────────────
-  const toggleTag = (tag) => {
-    setForm((p) => ({
-      ...p,
-      tags: p.tags.includes(tag) 
-        ? p.tags.filter(t => t !== tag)
-        : [...p.tags, tag]
-    }))
+  // Colors
+  const addColor = () => {
+    const c = colorInput.trim()
+    if (c && !form.colors.includes(c)) {
+      setForm(p => ({ ...p, colors: [...p.colors, c] }))
+    }
+    setColorInput('')
   }
+  const removeColor = c => setForm(p => ({ ...p, colors: p.colors.filter(x => x !== c) }))
 
-  // ── Upload d'images ───────────────────────────────────────────────────────
+  // Upload
   const uploadFiles = async (files) => {
-    if (!files || files.length === 0) return
+    if (!files?.length) return
     setUploading(true)
     try {
-      const formData = new FormData()
-      Array.from(files).forEach((f) => formData.append('images', f))
-      const res = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const fd = new FormData()
+      Array.from(files).forEach(f => fd.append('images', f))
+      const res = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const urls = res.data.urls || res.data
-      setForm((p) => ({ ...p, images: [...p.images, ...(Array.isArray(urls) ? urls : [urls])] }))
-      toast.success(`${Array.isArray(urls) ? urls.length : 1} image(s) uploadée(s)`)
-    } catch {
-      toast.error("Erreur lors de l'upload des images")
-    } finally {
-      setUploading(false)
-    }
+      setForm(p => ({ ...p, images: [...p.images, ...(Array.isArray(urls) ? urls : [urls])] }))
+      toast.success(`Image(s) uploadée(s)`)
+    } catch { toast.error("Erreur upload") }
+    finally { setUploading(false) }
   }
+  const removeImage = url => setForm(p => ({ ...p, images: p.images.filter(i => i !== url) }))
 
-  const removeImage = (url) =>
-    setForm((p) => ({ ...p, images: p.images.filter((i) => i !== url) }))
-
-  // ── Validation ────────────────────────────────────────────────────────────
+  // Validate
   const validate = () => {
     const e = {}
     if (!form.name.trim()) e.name = 'Nom requis'
-    if (!form.brand.trim()) e.brand = 'Marque requise'
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)
-      e.price = 'Prix invalide'
-    if (form.images.length === 0 && !isEditing) e.images = 'Au moins une image requise'
-    const sizesValid = form.sizes.every(
-      (s) => s.size.toString().trim() !== '' && !isNaN(Number(s.stock)) && Number(s.stock) >= 0
-    )
-    if (!sizesValid) e.sizes = 'Toutes les pointures doivent avoir un stock valide'
+    const sizesOk = form.sizes.every(s => s.size.trim() !== '' && !isNaN(Number(s.price)) && Number(s.price) > 0)
+    if (!sizesOk) e.sizes = 'Chaque taille doit avoir une taille et un prix valide'
+    if (form.doubleSided && (!form.doubleSidedPrice || isNaN(Number(form.doubleSidedPrice))))
+      e.doubleSidedPrice = 'Prix requis pour la double impression'
+    if (!isEditing && form.images.length === 0) e.images = 'Au moins une image requise'
     return e
   }
 
-  // ── Soumission ────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      return
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setSaving(true)
     try {
       const payload = {
         ...form,
-        price: Number(form.price),
-        sizes: form.sizes
-          .filter((s) => s.size.toString().trim() !== '')
-          .map((s) => ({ size: s.size, stock: Number(s.stock) })),
+        sizes: form.sizes.filter(s => s.size.trim()).map(s => ({ size: s.size, price: Number(s.price) })),
+        doubleSidedPrice: form.doubleSided ? Number(form.doubleSidedPrice) : 0,
       }
       if (isEditing) {
         await api.put(`/products/${initialData._id}`, payload)
@@ -134,308 +123,196 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
       }
       onSuccess?.()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la sauvegarde')
-    } finally {
-      setSaving(false)
-    }
+      toast.error(err.response?.data?.message || 'Erreur sauvegarde')
+    } finally { setSaving(false) }
   }
 
+  const labelCls = "block text-xs font-bold uppercase tracking-widest mb-1.5"
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 bg-white rounded-2xl p-8 shadow-lg" noValidate>
-      
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <h2 className="text-2xl font-display text-sf-text mb-2">
-          {isEditing ? 'Modifier le produit' : 'Nouveau produit'}
-        </h2>
-        <p className="text-sm text-sf-text-soft font-body">
-          Les champs marqués d'un * sont obligatoires
-        </p>
+    <form onSubmit={handleSubmit} className="space-y-7" noValidate>
+
+      {/* ── Nom ── */}
+      <div>
+        <label className={labelCls} style={{ color: NAVY }}>Nom du produit *</label>
+        <input value={form.name} onChange={e => set('name', e.target.value)}
+          placeholder="Ex: Boite kraft personnalisée..."
+          className={inputCls(errors.name)} />
+        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
       </div>
 
-      {/* Infos de base */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-display text-sf-text flex items-center gap-2">
-          <span className="w-8 h-8 bg-sf-rose-soft rounded-full flex items-center justify-center text-sf-rose-dark text-sm">1</span>
-          Informations générales
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sf-text text-sm font-semibold mb-2">
-              Nom du produit *
-            </label>
-            <input
-              name="name" value={form.name} onChange={handleChange}
-              placeholder="Ex: Robe d'été fleurie..."
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
-                         font-body text-sf-text placeholder:text-sf-text-soft/50
-                         ${errors.name 
-                           ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100' 
-                           : 'border-gray-200 bg-white hover:border-sf-sage focus:border-sf-sage focus:ring-sf-sage-soft'
-                         } focus:outline-none focus:ring-4`}
-            />
-            {errors.name && <p className="text-red-600 text-xs mt-2 font-medium">{errors.name}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-sf-text text-sm font-semibold mb-2">
-              Marque *
-            </label>
-            <input
-              name="brand" value={form.brand} onChange={handleChange}
-              placeholder="Ex: Zara, H&M..."
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
-                         font-body text-sf-text placeholder:text-sf-text-soft/50
-                         ${errors.brand 
-                           ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100' 
-                           : 'border-gray-200 bg-white hover:border-sf-sage focus:border-sf-sage focus:ring-sf-sage-soft'
-                         } focus:outline-none focus:ring-4`}
-            />
-            {errors.brand && <p className="text-red-600 text-xs mt-2 font-medium">{errors.brand}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-sf-text text-sm font-semibold mb-2">
-              Catégorie *
-            </label>
-            <select
-              name="category" value={form.category} onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white
-                       hover:border-sf-sage focus:border-sf-sage focus:ring-4 focus:ring-sf-sage-soft
-                       font-body text-sf-text transition-all duration-200 focus:outline-none
-                       cursor-pointer"
-            >
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sf-text text-sm font-semibold mb-2">
-              Prix (DA) *
-            </label>
-            <input
-              name="price" value={form.price} onChange={handleChange}
-              type="number" min="0" placeholder="Ex: 4500"
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
-                         font-body text-sf-text placeholder:text-sf-text-soft/50
-                         ${errors.price 
-                           ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100' 
-                           : 'border-gray-200 bg-white hover:border-sf-sage focus:border-sf-sage focus:ring-sf-sage-soft'
-                         } focus:outline-none focus:ring-4`}
-            />
-            {errors.price && <p className="text-red-600 text-xs mt-2 font-medium">{errors.price}</p>}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sf-text text-sm font-semibold mb-2">
-            Description
-          </label>
-          <textarea
-            name="description" value={form.description} onChange={handleChange}
-            rows={4} placeholder="Décrivez le produit en quelques mots..."
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white
-                     hover:border-sf-sage focus:border-sf-sage focus:ring-4 focus:ring-sf-sage-soft
-                     font-body text-sf-text placeholder:text-sf-text-soft/50
-                     transition-all duration-200 focus:outline-none resize-none"
-          />
-        </div>
+      {/* ── Catégorie ── */}
+      <div>
+        <label className={labelCls} style={{ color: NAVY }}>Catégorie *</label>
+        <select value={form.category} onChange={e => set('category', e.target.value)}
+          className={inputCls(false)}>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
-      {/* Tags section */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
-        <h3 className="text-lg font-display text-sf-text flex items-center gap-2">
-          <span className="w-8 h-8 bg-sf-sage-soft rounded-full flex items-center justify-center text-sf-sage-dark text-sm">2</span>
-          Collections spéciales (optionnel)
-        </h3>
-        
-        <p className="text-sm text-sf-text-soft font-body">
-          Sélectionnez une ou plusieurs collections auxquelles ce produit appartient
-        </p>
-        
-        <div className="flex flex-wrap gap-3">
-          {TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => toggleTag(tag)}
-              className={`px-6 py-3 rounded-full font-body font-semibold text-sm
-                         transition-all duration-200 border-2
-                         ${form.tags.includes(tag)
-                           ? 'bg-sf-sage text-white border-sf-sage shadow-md scale-105'
-                           : 'bg-white text-sf-text-soft border-gray-200 hover:border-sf-sage hover:text-sf-sage'
-                         }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tailles & stocks */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-display text-sf-text flex items-center gap-2">
-            <span className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm">3</span>
-            Tailles & Stocks *
-          </h3>
-          <button 
-            type="button" 
-            onClick={addSize}
-            className="flex items-center gap-2 px-4 py-2 bg-sf-sage text-white rounded-lg
-                     font-body font-semibold text-sm hover:bg-sf-sage-dark transition-colors"
-          >
-            <Plus size={16} /> Ajouter une taille
+      {/* ── Tailles + Prix ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <label className={labelCls} style={{ color: NAVY }}>Tailles disponibles & Prix *</label>
+          <button type="button" onClick={addSize}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white transition-all hover:opacity-80"
+            style={{ background: PURPLE }}>
+            <Plus size={13} /> Ajouter
           </button>
         </div>
-        
-        <div className="space-y-3">
+        <div className="space-y-2">
           {form.sizes.map((s, i) => (
-            <div key={i} className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
+            <div key={i} className="flex items-center gap-3 bg-gray-50 px-4 py-3 rounded-xl border border-gray-200">
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-sf-text-soft mb-1">Taille</label>
-                <input
-                  value={s.size} 
-                  onChange={(e) => updateSize(i, 'size', e.target.value)}
-                  placeholder="Ex: 36, M, 6 mois..."
-                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 bg-white
-                           hover:border-sf-sage focus:border-sf-sage focus:ring-2 focus:ring-sf-sage-soft
-                           font-body text-sf-text transition-all duration-200 focus:outline-none"
-                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Taille</p>
+                <input value={s.size} onChange={e => updateSize(i, 'size', e.target.value)}
+                  placeholder="Ex: A4, 30×20, L..."
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
+                             outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-sf-text-soft mb-1">Stock</label>
-                <input
-                  type="number" min="0" value={s.stock}
-                  onChange={(e) => updateSize(i, 'stock', e.target.value)}
-                  placeholder="Quantité"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 bg-white
-                           hover:border-sf-sage focus:border-sf-sage focus:ring-2 focus:ring-sf-sage-soft
-                           font-body text-sf-text transition-all duration-200 focus:outline-none"
-                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Prix (DA)</p>
+                <input type="number" min="0" value={s.price} onChange={e => updateSize(i, 'price', e.target.value)}
+                  placeholder="Ex: 1500"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
+                             outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
               </div>
-              <button
-                type="button" 
-                onClick={() => removeSize(i)}
-                className="mt-6 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 
-                         rounded-lg transition-all duration-200"
-                aria-label="Supprimer cette taille"
-              >
-                <Trash2 size={18} />
+              <button type="button" onClick={() => removeSize(i)}
+                className="mt-5 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                <Trash2 size={16} />
               </button>
             </div>
           ))}
         </div>
-        {errors.sizes && <p className="text-red-600 text-sm mt-2 font-medium">{errors.sizes}</p>}
+        {errors.sizes && <p className="text-red-500 text-xs mt-1">{errors.sizes}</p>}
       </div>
 
-      {/* Upload images */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
-        <h3 className="text-lg font-display text-sf-text flex items-center gap-2 mb-4">
-          <span className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm">4</span>
-          Images du produit {!isEditing && '*'}
-        </h3>
-
-        {/* Zone de drop */}
-        <label
-          className={`relative flex flex-col items-center justify-center gap-4 border-2 border-dashed
-                     rounded-2xl p-12 cursor-pointer transition-all duration-300 group
-                     ${dragOver
-                       ? 'border-sf-sage bg-sf-sage-soft scale-[1.02]'
-                       : 'border-gray-300 hover:border-sf-sage bg-gray-50 hover:bg-sf-sage-soft/30'
-                     }
-                     ${errors.images ? 'border-red-300 bg-red-50' : ''}
-                     ${uploading ? 'pointer-events-none opacity-60' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault()
-            setDragOver(false)
-            uploadFiles(e.dataTransfer.files)
-          }}
-        >
-          <input
-            type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => uploadFiles(e.target.files)}
-          />
-          
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all
-                         ${dragOver ? 'bg-sf-sage scale-110' : 'bg-gray-200 group-hover:bg-sf-sage-soft'}`}>
-            {uploading ? (
-              <Loader2 size={32} className="text-sf-sage animate-spin" />
-            ) : (
-              <Upload size={32} className={`transition-all ${dragOver ? 'text-white' : 'text-gray-400 group-hover:text-sf-sage'}`} />
-            )}
-          </div>
-          
-          <div className="text-center">
-            <p className="text-sf-text font-body font-semibold text-lg mb-1">
-              {uploading ? 'Upload en cours...' : 'Glisser-déposer vos images ici'}
-            </p>
-            <p className="text-sf-text-soft text-sm">
-              ou cliquez pour sélectionner · JPG, PNG, WebP
-            </p>
-          </div>
-        </label>
-        {errors.images && <p className="text-red-600 text-sm mt-2 font-medium">{errors.images}</p>}
-
-        {/* Aperçu des images */}
-        {form.images.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold text-sf-text mb-3">
-              {form.images.length} image{form.images.length > 1 ? 's' : ''} uploadée{form.images.length > 1 ? 's' : ''}
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {form.images.map((url, i) => (
-                <div key={i} className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden group">
-                  <img src={url} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button" 
-                    onClick={() => removeImage(url)}
-                    className="absolute inset-0 bg-black/60 flex items-center justify-center
-                             opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    aria-label="Supprimer l'image"
-                  >
-                    <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                      <X size={20} className="text-white" />
-                    </div>
-                  </button>
-                </div>
-              ))}
-            </div>
+      {/* ── Couleurs disponibles (optionnel) ── */}
+      <div>
+        <label className={labelCls} style={{ color: NAVY }}>Couleurs disponibles <span className="text-gray-400 font-normal" style={{ textTransform: 'none' }}>(optionnel)</span></label>
+        <div className="flex gap-2 mb-2">
+          <input value={colorInput} onChange={e => setColorInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor() } }}
+            placeholder="Ex: Rouge, Noir, Kraft..."
+            className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm
+                       outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
+          <button type="button" onClick={addColor}
+            className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-80"
+            style={{ background: PURPLE }}>
+            <Plus size={16} />
+          </button>
+        </div>
+        {form.colors.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {form.colors.map(c => (
+              <span key={c}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm text-white font-medium"
+                style={{ background: PURPLE }}>
+                {c}
+                <button type="button" onClick={() => removeColor(c)} className="opacity-70 hover:opacity-100">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-4 pt-8 border-t border-gray-200">
-        <button 
-          type="submit" 
-          disabled={saving || uploading} 
-          className="flex-1 sm:flex-none bg-sf-sage text-white px-8 py-4 rounded-xl
-                   font-body font-bold text-base hover:bg-sf-sage-dark
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-all duration-200 hover:shadow-lg hover:scale-[1.02]
-                   flex items-center justify-center gap-2"
-        >
-          {saving ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              Enregistrement...
-            </>
-          ) : (
-            isEditing ? 'Mettre à jour le produit' : 'Créer le produit'
-          )}
+      {/* ── Double impression ── */}
+      <div className="rounded-2xl border-2 p-4 transition-all"
+        style={{ borderColor: form.doubleSided ? PURPLE : '#e5e7eb', background: form.doubleSided ? 'rgba(124,58,237,0.04)' : '#f9fafb' }}>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div className="relative">
+            <input type="checkbox" checked={form.doubleSided}
+              onChange={e => set('doubleSided', e.target.checked)}
+              className="sr-only" />
+            <div className="w-11 h-6 rounded-full transition-colors"
+              style={{ background: form.doubleSided ? PURPLE : '#d1d5db' }}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all
+                              ${form.doubleSided ? 'left-5' : 'left-0.5'}`} />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-bold" style={{ color: NAVY }}>Impression des deux côtés</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {DOUBLE_PRINT_CATS.includes(form.category)
+                ? 'Pré-activé pour cette catégorie'
+                : 'Option disponible pour ce produit'}
+            </p>
+          </div>
+        </label>
+
+        {form.doubleSided && (
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(124,58,237,0.15)' }}>
+            <label className="block text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: PURPLE }}>
+              Prix supplément double impression (DA) *
+            </label>
+            <input type="number" min="0" value={form.doubleSidedPrice}
+              onChange={e => { set('doubleSidedPrice', e.target.value); setErrors(p => ({ ...p, doubleSidedPrice: '' })) }}
+              placeholder="Ex: 500"
+              className={inputCls(errors.doubleSidedPrice)} />
+            {errors.doubleSidedPrice && <p className="text-red-500 text-xs mt-1">{errors.doubleSidedPrice}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* ── Images ── */}
+      <div>
+        <label className={labelCls} style={{ color: NAVY }}>Images {!isEditing && '*'}</label>
+        <label
+          className={`relative flex flex-col items-center justify-center gap-3 border-2 border-dashed
+                     rounded-2xl p-8 cursor-pointer transition-all
+                     ${dragOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300 bg-gray-50 hover:border-purple-300 hover:bg-purple-50/30'}
+                     ${errors.images ? 'border-red-300 bg-red-50' : ''}
+                     ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files) }}>
+          <input type="file" accept="image/*" multiple className="hidden"
+            onChange={e => uploadFiles(e.target.files)} />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: dragOver ? PURPLE : '#e5e7eb' }}>
+            {uploading
+              ? <Loader2 size={24} className="animate-spin" style={{ color: PURPLE }} />
+              : <Upload size={24} style={{ color: dragOver ? 'white' : '#9ca3af' }} />}
+          </div>
+          <p className="text-sm font-semibold text-gray-600">
+            {uploading ? 'Upload en cours...' : 'Glisser ou cliquer pour uploader'}
+          </p>
+        </label>
+        {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
+
+        {form.images.length > 0 && (
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-3">
+            {form.images.map((url, i) => (
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden group bg-gray-100">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeImage(url)}
+                  className="absolute inset-0 bg-black/60 flex items-center justify-center
+                             opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                    <X size={16} className="text-white" />
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Actions ── */}
+      <div className="flex items-center gap-3 pt-2">
+        <button type="submit" disabled={saving || uploading}
+          className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3
+                     rounded-xl text-white font-bold text-sm transition-all hover:opacity-90
+                     disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          style={{ background: PURPLE }}>
+          {saving ? <><Loader2 size={16} className="animate-spin" /> Enregistrement...</> : (isEditing ? 'Mettre à jour' : 'Créer le produit')}
         </button>
         {onCancel && (
-          <button 
-            type="button" 
-            onClick={onCancel} 
-            className="px-6 py-4 rounded-xl border-2 border-gray-200 text-sf-text-soft
-                     font-body font-semibold hover:border-gray-300 hover:bg-gray-50
-                     transition-all duration-200"
-          >
+          <button type="button" onClick={onCancel}
+            className="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-500
+                       font-semibold text-sm hover:border-gray-300 hover:bg-gray-50 transition-all">
             Annuler
           </button>
         )}

@@ -1,40 +1,34 @@
-// src/pages/admin/AdminDashboardPage.jsx
-// Dashboard admin — statistiques et résumé
-
 import { useState, useEffect } from 'react'
 import { TrendingUp, Package, RefreshCcw, ShoppingBag, AlertTriangle, Loader2 } from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 
-function StatCard({ icon: Icon, label, value, color = 'text-brand-white', accent }) {
+const NAVY   = '#1e1b4b'
+const PURPLE = '#7c3aed'
+
+function StatCard({ icon: Icon, label, value, accent, color }) {
   return (
-    <div className={`admin-card relative overflow-hidden group ${accent ? 'border-brand-red/30' : ''}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-brand-gray-500 text-xs font-heading font-semibold tracking-widest uppercase mb-2">
-            {label}
-          </p>
-          <p className={`font-display text-4xl leading-none ${color}`}>
-            {value ?? '—'}
-          </p>
-        </div>
-        <div className={`w-10 h-10 flex items-center justify-center border ${
-          accent ? 'border-brand-red/30 text-brand-red bg-brand-red/5' : 'border-brand-gray-700 text-brand-gray-600'
-        }`}>
-          <Icon size={18} />
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: accent ? 'rgba(124,58,237,0.1)' : '#f3f4f6' }}>
+          <Icon size={18} style={{ color: accent ? PURPLE : '#9ca3af' }} />
         </div>
       </div>
-      {/* Accent bar */}
+      <p className="text-2xl font-black mb-1" style={{ color: color || NAVY }}>
+        {value ?? '—'}
+      </p>
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{label}</p>
       {accent && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-red/50" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl" style={{ background: PURPLE }} />
       )}
     </div>
   )
 }
 
 function AdminDashboardPage() {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats]       = useState(null)
+  const [loading, setLoading]   = useState(true)
   const [resetting, setResetting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -43,16 +37,11 @@ function AdminDashboardPage() {
     try {
       const res = await api.get('/admin/stats')
       setStats(res.data)
-    } catch {
-      toast.error('Erreur lors du chargement des statistiques')
-    } finally {
-      setLoading(false)
-    }
+    } catch { toast.error('Erreur statistiques') }
+    finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
+  useEffect(() => { fetchStats() }, [])
 
   const handleReset = async () => {
     setResetting(true)
@@ -61,124 +50,98 @@ function AdminDashboardPage() {
       toast.success('Statistiques réinitialisées')
       setShowConfirm(false)
       await fetchStats()
-    } catch {
-      toast.error('Erreur lors de la réinitialisation')
-    } finally {
-      setResetting(false)
-    }
+    } catch { toast.error('Erreur réinitialisation') }
+    finally { setResetting(false) }
   }
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
       {/* En-tête */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <p className="section-label">Vue d'ensemble</p>
-          <h1 className="font-display text-4xl text-brand-white tracking-wide">DASHBOARD</h1>
+          <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: PURPLE }}>Vue d'ensemble</p>
+          <h1 className="text-3xl font-black italic" style={{ color: NAVY }}>Dashboard</h1>
         </div>
-        <button
-          onClick={() => setShowConfirm(true)}
-          className="btn-ghost flex items-center gap-2 text-xs"
-        >
-          <RefreshCcw size={12} />
-          Réinitialiser les stats
+        <button onClick={() => setShowConfirm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-gray-200
+                     text-sm font-bold text-gray-500 hover:border-gray-300 hover:bg-gray-50 transition-all">
+          <RefreshCcw size={14} /> Réinitialiser les stats
         </button>
       </div>
 
-      {/* Stats */}
+      {/* Stats cards */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="admin-card h-24 animate-pulse">
-              <div className="h-3 bg-brand-gray-700 rounded w-2/3 mb-3" />
-              <div className="h-8 bg-brand-gray-700 rounded w-1/2" />
+            <div key={i} className="bg-white rounded-2xl p-5 h-28 animate-pulse border border-gray-100">
+              <div className="w-10 h-10 bg-gray-100 rounded-xl mb-3" />
+              <div className="h-5 bg-gray-100 rounded w-1/2 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-2/3" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={TrendingUp}
-            label="Gains (livrés)"
-            value={stats?.totalRevenue != null
-              ? `${stats.totalRevenue.toLocaleString('fr-DZ')} DA`
-              : '—'}
-            color="text-emerald-400"
-            accent
-          />
-          <StatCard
-            icon={ShoppingBag}
-            label="Total commandes"
-            value={stats?.totalOrders}
-          />
-          <StatCard
-            icon={Package}
-            label="Livrées"
-            value={stats?.deliveredOrders}
-            color="text-emerald-400"
-          />
-          <StatCard
-            icon={RefreshCcw}
-            label="Retours"
-            value={stats?.returnOrders}
-            color="text-red-400"
-          />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard icon={TrendingUp} label="Gains (livrés)"
+            value={stats?.totalRevenue != null ? `${stats.totalRevenue.toLocaleString('fr-DZ')} DA` : '—'}
+            color="#059669" accent />
+          <StatCard icon={ShoppingBag} label="Total commandes" value={stats?.totalOrders} />
+          <StatCard icon={Package}     label="Livrées"          value={stats?.deliveredOrders} color="#059669" />
+          <StatCard icon={RefreshCcw}  label="Retours"          value={stats?.returnOrders}    color="#ef4444" />
         </div>
       )}
 
-      {/* Répartition statuts */}
+      {/* Répartition */}
       {stats && !loading && (
-        <div className="admin-card">
-          <p className="text-brand-gray-400 text-xs font-heading font-semibold tracking-widest uppercase mb-4">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: PURPLE }}>
             Répartition des commandes
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             {[
-              { label: 'Confirmé', count: stats.confirmedOrders, color: 'bg-blue-400' },
-              { label: 'En livraison', count: stats.inDeliveryOrders, color: 'bg-yellow-400' },
-              { label: 'Livré', count: stats.deliveredOrders, color: 'bg-emerald-400' },
-              { label: 'Retour', count: stats.returnOrders, color: 'bg-red-400' },
-            ].map(({ label, count, color }) => (
-              <div key={label} className="text-center">
-                <div className={`w-2 h-2 ${color} mx-auto mb-2`} />
-                <p className="font-display text-2xl text-brand-white">{count ?? 0}</p>
-                <p className="text-brand-gray-500 text-xs font-heading tracking-wider uppercase">{label}</p>
+              { label: 'Confirmé',    count: stats.confirmedOrders,  color: '#3b82f6', bg: '#eff6ff' },
+              { label: 'En livraison',count: stats.inDeliveryOrders, color: '#f59e0b', bg: '#fffbeb' },
+              { label: 'Livré',       count: stats.deliveredOrders,  color: '#059669', bg: '#ecfdf5' },
+              { label: 'Retour',      count: stats.returnOrders,     color: '#ef4444', bg: '#fef2f2' },
+            ].map(({ label, count, color, bg }) => (
+              <div key={label} className="text-center p-4 rounded-2xl" style={{ background: bg }}>
+                <p className="text-3xl font-black mb-1" style={{ color }}>{count ?? 0}</p>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color }}>{label}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Modal confirmation reset */}
+      {/* Modal reset */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-brand-gray-900 border border-brand-gray-700 p-6 max-w-md w-full animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle size={20} className="text-brand-red" />
-              <h3 className="font-heading font-bold text-brand-white tracking-wider">Confirmation</h3>
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                <AlertTriangle size={18} className="text-orange-500" />
+              </div>
+              <h3 className="font-black text-base" style={{ color: NAVY }}>Confirmation</h3>
             </div>
-            <p className="text-brand-gray-300 font-body mb-2">
-              Cette action va supprimer toutes les commandes avec le statut{' '}
-              <span className="text-emerald-400 font-semibold">livré</span> et{' '}
-              <span className="text-red-400 font-semibold">retour</span>.
+            <p className="text-sm text-gray-600 mb-2">
+              Cette action supprimera toutes les commandes{' '}
+              <span className="text-green-600 font-bold">livrées</span> et{' '}
+              <span className="text-red-500 font-bold">retournées</span>.
             </p>
-            <p className="text-brand-gray-500 text-sm font-body mb-6">
-              Cette opération est irréversible.
-            </p>
+            <p className="text-xs text-gray-400 mb-6">Cette opération est irréversible.</p>
             <div className="flex gap-3">
-              <button
-                onClick={handleReset}
-                disabled={resetting}
-                className="btn-primary flex items-center gap-2 flex-1 justify-center"
-              >
+              <button onClick={handleReset} disabled={resetting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl
+                           text-white font-bold text-sm transition-all hover:opacity-90"
+                style={{ background: PURPLE }}>
                 {resetting && <Loader2 size={14} className="animate-spin" />}
                 Confirmer
               </button>
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="btn-ghost flex-1"
-              >
+              <button onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-500
+                           font-semibold text-sm hover:bg-gray-50 transition-all">
                 Annuler
               </button>
             </div>
