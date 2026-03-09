@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import api from '../../utils/api'
-import ProductGrid from '../../Components/public/ProductGrid'
+import { ChevronDown } from 'lucide-react'
 
-// Catégories emballage — liées aux vraies catégories produit
 const CATEGORIES = [
   {
     label: 'Board',
@@ -33,20 +31,64 @@ const STEPS = [
   { n: '3', title: 'Submit',    desc: 'Our artisans breathe life into your creation.' },
 ]
 
+const FAQS = [
+  {
+    q: 'Livrez-vous dans toute l\'Algérie ?',
+    a: 'Oui, nous livrons dans les 58 wilayas d\'Algérie. Le délai de livraison est généralement de 2 à 5 jours ouvrables selon votre localisation.',
+  },
+  {
+    q: 'Quel est le mode de paiement accepté ?',
+    a: 'Nous acceptons uniquement le paiement à la livraison (cash). Vous payez uniquement lorsque vous recevez votre commande.',
+  },
+  {
+    q: 'Puis-je commander des emballages personnalisés avec mon logo ?',
+    a: 'Oui ! Nous proposons des options de personnalisation pour les autocollants et certains sacs. Contactez-nous via WhatsApp pour discuter de votre projet.',
+  },
+  {
+    q: 'Quelle est la commande minimum ?',
+    a: 'Il n\'y a pas de commande minimum pour les produits en stock. Pour les commandes personnalisées, un minimum peut s\'appliquer selon le type de produit.',
+  },
+  {
+    q: 'Comment suivre ma commande ?',
+    a: 'Après confirmation de votre commande, notre équipe vous contacte par téléphone pour vous informer de l\'état de votre livraison.',
+  },
+  {
+    q: 'Vos emballages sont-ils résistants ?',
+    a: 'Absolument. Nos cartons sont testés pour supporter des charges importantes. Nos sacs sont renforcés pour assurer la durabilité. La qualité est notre priorité.',
+  },
+]
+
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border border-mauve/20 rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-5 text-left
+                   hover:bg-mauve/5 transition-colors duration-200">
+        <span className="text-mauve font-bold text-sm pr-4">{q}</span>
+        <ChevronDown
+          size={18}
+          className={`text-mauve flex-shrink-0 transition-transform duration-300
+                      ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div className="px-6 pb-5">
+          <p className="text-text-soft text-sm leading-relaxed border-t border-mauve/10 pt-4">
+            {a}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function HomePage() {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading]   = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    api.get('/products')
-      .then((res) => setProducts((res.data || []).slice(0, 8)))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
   return (
-    <div className="min-h-screen bg-bg-light">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #f9f0f6 0%, #f3ecf8 40%, #ede8f5 100%)' }}>
 
       {/* ── Hero ── */}
       <header className="px-4 py-6 pt-20">
@@ -101,7 +143,7 @@ function HomePage() {
       </section>
 
       {/* ── The Path of Creation ── */}
-      <section className="bg-mauve/5 py-16 px-4 my-12">
+      <section className="py-16 px-4 my-4">
         <div className="max-w-4xl mx-auto scroll-texture border-y-8 border-mauve/20
                         rounded-3xl p-8 md:p-12 shadow-inner relative">
           <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-mauve text-gold
@@ -124,12 +166,21 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ── Produits ── */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-mauve text-3xl font-bold mb-8 text-center italic">
-          Our Latest Creations
-        </h2>
-        <ProductGrid products={products} loading={loading} />
+      {/* ── FAQ ── */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <span className="text-primary font-bold text-xs uppercase tracking-widest mb-3 block">
+            Support
+          </span>
+          <h2 className="text-mauve text-3xl font-black italic">
+            Questions les plus posées
+          </h2>
+        </div>
+        <div className="space-y-3">
+          {FAQS.map((faq) => (
+            <FAQItem key={faq.q} q={faq.q} a={faq.a} />
+          ))}
+        </div>
       </section>
 
     </div>
