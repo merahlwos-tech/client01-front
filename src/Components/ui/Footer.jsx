@@ -43,7 +43,7 @@ function AdminSecretAccess() {
 
 function Footer() {
   return (
-    <footer style={{ background: NAVY, borderTop: `1px solid ${PURPLE_XSOFT}` }}>
+    <footer style={{ background: '#2d2a6e', borderTop: `1px solid ${PURPLE_XSOFT}` }}>
 
       <div className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
 
