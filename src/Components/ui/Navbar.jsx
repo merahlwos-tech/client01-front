@@ -5,9 +5,9 @@ import { useCart } from '../../context/CartContext'
 
 const CATEGORIES = [
   { label: 'Tous les produits', cat: '' },
-  { label: 'Board',             cat: 'Board' },
+  { label: 'Boites',            cat: 'Board' },
   { label: 'Sacs',              cat: 'Bags' },
-  { label: 'Autocollants',      cat: 'Autocollants' },
+  { label: 'Cartes',            cat: 'Autocollants' },
   { label: 'Papier',            cat: 'Paper' },
 ]
 
@@ -31,16 +31,14 @@ function Navbar() {
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between
-                       p-4 border-b border-mauve/10 transition-all duration-300
+                       px-4 py-2 border-b border-mauve/10 transition-all duration-300
                        ${scrolled
                          ? 'bg-bg-light/95 backdrop-blur-md shadow-dark'
                          : 'bg-bg-light/90 backdrop-blur-md'}`}>
 
-        {/* Logo */}
+        {/* Logo image */}
         <Link to="/" className="flex items-center shrink-0">
-          <div className="w-10 h-10 bg-mauve rounded-full flex items-center justify-center shadow-fairy">
-            <span className="font-display text-gold text-lg font-black italic">B</span>
-          </div>
+          <img src="/logo.jpg" alt="BrandPack" className="h-10 w-10 rounded-full object-contain" />
         </Link>
 
         {/* Titre centré */}

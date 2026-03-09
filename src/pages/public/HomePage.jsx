@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
 const CAT_IMAGES = [
-  { label: 'Board', cat: 'Board', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGfAvfWSR8bu0wmmm95vnqzfXIaa1hdYV5Gup6wGAbZ8kRvMjs9y_jI4_8kudr1b11v--Mgdmws62ZF3zjmtTbY_AscSGbEARN8eQWPCa2_P2CYuKwolNoqZ5Rl8tw2mxP5G7UQP1Bhy7EITPCdpiqsrvhuJyZDwj241VoAPyQiddWs3L3iFLbssVAWz2aJeA_sJHyRUVSKMs_vHYjZNcevD_V3ohy3QYeCipmDmyOEgPduNuOuH0Ot2aXbi6Zu9KFDe5Z4a46Al_w' },
-  { label: 'Bags', cat: 'Bags', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuADxj4BI_NVl-s99H4R-ZpO-qJUHwUULOvTrSrby23QlxF3vNbc-9qRNMLR-DQeSFV53lJpxtqHvECRPdSFPfUlz_ouHsTMRFuoZof4sxfQ04zxNoWuGIuA9CXWGw8YMrlbdRIyIrw6pVAT-Krh_E7QAvJdVfwChQS9JUj1sF3xBEHqLOtkpHkt_Na3Ka6IbtfgDcsOVF8NSVlTlRBjogr7QkWsw7vov92ssPUi6NhA2LWKGureTFTandFnlwSAz3MDpsDt3w9ClNzm' },
-  { label: 'Autocollants', cat: 'Autocollants', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEx0R3J-YYGzVTABQGbpVxdXJCDGcgymr-lsd_1wssyXPxRf6xK6UaTJc7OTiz8WYgXR4rLuq2WLzbLmDg3uxuglGPkthMw8w2t7C5XGkSGbRxfQ6zeLjAaUOw1hO5A9ZrLLwsFwxudP6dOnGjTfdj1HDZcqUmwG_2ojtY-wZmx_HuYFY6wjCE21axH3GQjn3fosq0kfDJBKa6y_lzLSE-S9-Yg45nu7nDzBXd37MZshGGZlPsQ5sKPVoB20BNzxX2zyWMwNPZQ_zs' },
-  { label: 'Papier', cat: 'Paper', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAIHm9A-gXfCktkku8k_XSdW-N4B3PrJmjTeKqnDKcA1sYJQh3XtKv6O-OYBwamWcc_xMmz3EecN43Tr6HNOQjzC2FCt6QCfp7sADSLB-erxtUmgNEoqiowT2ti7kTtQN0lumTdZy2uErOKV_22XR04f7lWs6onuGMAuST4Bogk8XxeimXVzfvdMlY3YSnJC-yIVeNPjDcI5SfD1MmWfAddQD8Nj0hQ5A0fTB4JzY35Z8t8gi4zruH7GiTB6yYhYKdw5qtelSd9iKDs' },
+  { label: 'Boites',  cat: 'Board',        image: '/boite.png' },
+  { label: 'Sacs',    cat: 'Bags',         image: '/sacs.png' },
+  { label: 'Cartes',  cat: 'Autocollants', image: '/carte.png' },
+  { label: 'Papier',  cat: 'Paper',        image: '/papier.png' },
 ]
 
 const STEPS = [
@@ -18,19 +18,19 @@ const STEPS = [
   {
     n: '2',
     title: 'Personnalisez votre design',
-    desc: 'Téléchargez votre propre fichier de conception et choisissez le nombre de couleurs ainsi que les autres options d\'impression.',
+    desc: "Téléchargez votre propre fichier de conception et choisissez le nombre de couleurs ainsi que les autres options d'impression.",
   },
   {
     n: '3',
     title: 'Soumettez votre demande',
-    desc: 'Ajoutez le produit à votre panier, renseignez vos informations de livraison et confirmez votre commande. On s\'occupe du reste !',
+    desc: "Ajoutez le produit à votre panier, renseignez vos informations de livraison et confirmez votre commande. On s'occupe du reste !",
   },
 ]
 
 const FAQS = [
   { q: "Livrez-vous dans toute l'Algérie ?",               a: "Oui, nous livrons dans les 58 wilayas. Le délai est généralement de 2 à 5 jours ouvrables." },
   { q: 'Quel est le mode de paiement accepté ?',           a: 'Paiement à la livraison uniquement (cash). Vous payez quand vous recevez votre commande.' },
-  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Autocollants et sacs peuvent être personnalisés. Contactez-nous via WhatsApp pour votre projet.' },
+  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nos produits peuvent être personnalisés avec votre logo. Contactez-nous via WhatsApp pour votre projet.' },
   { q: "Quelle est la commande minimum ?",                 a: "Aucun minimum pour les produits en stock. Pour le sur-mesure, un minimum peut s'appliquer." },
   { q: 'Comment suivre ma commande ?',                     a: "Notre équipe vous contacte par téléphone après confirmation pour vous informer de la livraison." },
   { q: 'Vos emballages sont-ils résistants ?',             a: 'Absolument. Nos cartons sont testés pour des charges importantes. La qualité est notre priorité.' },
@@ -68,19 +68,22 @@ function HomePage() {
         <div className="relative overflow-hidden rounded-xl bg-charcoal
                         flex items-center justify-center min-h-[320px] md:min-h-[420px]">
           <div className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(to bottom, rgba(75,32,56,0.5), rgba(34,22,16,0.85)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7mbrzcJIgPI4so6KZXOZrLt625iDsmVMNKbME08QxBZnctKkEtwLSA_NPMWbwFFlExJicldH3lQtemlzfC6Py94SqibdIAC7Vf2nu5nAcIpmIsVUTEoen7_svmTPCAhKw8COVf4swHtfMmCpYgQgjEK6WlkO8k2Wwhgz4kEJ6qNYMCxkWN33k5ECSbnzNe05dgxARO4FWu6NTHuc9Pa3mn_wqtXaLaZ6HqSD4kKJK4zDEoGpIacVMQk3tNO2y3n2YqexR2LJ8dFbg')` }}
+            style={{
+              backgroundImage: `linear-gradient(to bottom, rgba(75,32,56,0.45), rgba(34,22,16,0.82)),
+                url('/main.png')`,
+            }}
           />
           <div className="absolute top-10 right-10 text-gold/40 animate-pulse text-5xl select-none">✦</div>
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-16 max-w-2xl mx-auto">
             <span className="text-gold uppercase tracking-[0.3em] text-xs font-semibold mb-3">
-              Patrimoine & Magie
+              Patrimoine &amp; Magie
             </span>
             <h1 className="text-white text-4xl md:text-6xl font-black leading-tight mb-5 italic">
               L'emballage qui fait la différence
             </h1>
             <p className="text-white/75 text-sm md:text-base mb-8 leading-relaxed max-w-lg">
-              Découvrez notre atelier d'emballage alliant le patrimoine algérien à un charme unique.
-              Cartons, sacs, autocollants et papiers pour les artisans et professionnels.
+              Découvrez notre gamme d'emballages de qualité — cartons, sacs, cartes et papiers —
+              livrés partout en Algérie.
             </p>
             <button onClick={() => navigate('/products')}
               className="bg-primary hover:bg-orange-600 text-white px-8 py-3 rounded-full
@@ -117,15 +120,16 @@ function HomePage() {
         <div className="max-w-4xl mx-auto scroll-texture border-y-8 border-mauve/20
                         rounded-3xl p-8 md:p-12 shadow-inner relative">
 
-          {/* Badge titre */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-mauve text-gold
-                          px-6 py-2 rounded-full font-bold text-sm uppercase tracking-widest
-                          shadow-fairy whitespace-nowrap">
-            Passez votre commande en quelques clics
+          {/* Badge titre — deux lignes */}
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-mauve text-gold
+                          px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-widest
+                          shadow-fairy text-center leading-snug w-max max-w-[280px]">
+            <span className="block">Passez votre commande</span>
+            <span className="block">en quelques clics</span>
           </div>
 
           {/* Sous-titre */}
-          <p className="text-center text-mauve font-black italic text-xl mb-10 pt-2">
+          <p className="text-center text-mauve font-black italic text-xl mb-10 pt-4">
             Comment commander en 3 étapes simples
           </p>
 
