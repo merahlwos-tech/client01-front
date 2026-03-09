@@ -82,7 +82,7 @@ function HomePage() {
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-16 max-w-2xl mx-auto">
             <span className="uppercase tracking-[0.3em] text-xs font-semibold mb-3"
               style={{ color: ROSE }}>
-              Patrimoine &amp; Magie
+             
             </span>
             <h1 className="text-white text-4xl md:text-6xl font-black leading-tight mb-5 italic">
               L'emballage qui fait la différence
