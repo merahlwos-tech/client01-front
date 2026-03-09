@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
+import { SlidersHorizontal, X, ChevronRight } from 'lucide-react'
 
 const CATEGORIES = [
+  { label: 'Tous',         cat: '' },
+  { label: 'Board',        cat: 'Board' },
+  { label: 'Bags',         cat: 'Bags' },
+  { label: 'Autocollants', cat: 'Autocollants' },
+  { label: 'Paper',        cat: 'Paper' },
+]
+
+const CAT_IMAGES = [
   {
     label: 'Board',
     cat: 'Board',
@@ -32,52 +40,29 @@ const STEPS = [
 ]
 
 const FAQS = [
-  {
-    q: 'Livrez-vous dans toute l\'Algérie ?',
-    a: 'Oui, nous livrons dans les 58 wilayas d\'Algérie. Le délai de livraison est généralement de 2 à 5 jours ouvrables selon votre localisation.',
-  },
-  {
-    q: 'Quel est le mode de paiement accepté ?',
-    a: 'Nous acceptons uniquement le paiement à la livraison (cash). Vous payez uniquement lorsque vous recevez votre commande.',
-  },
-  {
-    q: 'Puis-je commander des emballages personnalisés avec mon logo ?',
-    a: 'Oui ! Nous proposons des options de personnalisation pour les autocollants et certains sacs. Contactez-nous via WhatsApp pour discuter de votre projet.',
-  },
-  {
-    q: 'Quelle est la commande minimum ?',
-    a: 'Il n\'y a pas de commande minimum pour les produits en stock. Pour les commandes personnalisées, un minimum peut s\'appliquer selon le type de produit.',
-  },
-  {
-    q: 'Comment suivre ma commande ?',
-    a: 'Après confirmation de votre commande, notre équipe vous contacte par téléphone pour vous informer de l\'état de votre livraison.',
-  },
-  {
-    q: 'Vos emballages sont-ils résistants ?',
-    a: 'Absolument. Nos cartons sont testés pour supporter des charges importantes. Nos sacs sont renforcés pour assurer la durabilité. La qualité est notre priorité.',
-  },
+  { q: "Livrez-vous dans toute l'Algérie ?",            a: "Oui, nous livrons dans les 58 wilayas d'Algérie. Le délai de livraison est généralement de 2 à 5 jours ouvrables selon votre localisation." },
+  { q: 'Quel est le mode de paiement accepté ?',        a: 'Nous acceptons uniquement le paiement à la livraison (cash). Vous payez uniquement lorsque vous recevez votre commande.' },
+  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nous proposons des options de personnalisation pour les autocollants et certains sacs. Contactez-nous via WhatsApp pour discuter de votre projet.' },
+  { q: "Quelle est la commande minimum ?",              a: "Il n'y a pas de commande minimum pour les produits en stock. Pour les commandes personnalisées, un minimum peut s'appliquer." },
+  { q: 'Comment suivre ma commande ?',                  a: 'Après confirmation, notre équipe vous contacte par téléphone pour vous informer de l\'état de votre livraison.' },
+  { q: 'Vos emballages sont-ils résistants ?',          a: 'Absolument. Nos cartons sont testés pour supporter des charges importantes. La qualité est notre priorité.' },
 ]
 
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="border border-mauve/20 rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm">
-      <button
-        onClick={() => setOpen(!open)}
+      <button onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-6 py-5 text-left
                    hover:bg-mauve/5 transition-colors duration-200">
         <span className="text-mauve font-bold text-sm pr-4">{q}</span>
-        <ChevronDown
-          size={18}
+        <ChevronRight size={18}
           className={`text-mauve flex-shrink-0 transition-transform duration-300
-                      ${open ? 'rotate-180' : ''}`}
-        />
+                      ${open ? 'rotate-90' : ''}`} />
       </button>
       {open && (
-        <div className="px-6 pb-5">
-          <p className="text-text-soft text-sm leading-relaxed border-t border-mauve/10 pt-4">
-            {a}
-          </p>
+        <div className="px-6 pb-5 border-t border-mauve/10">
+          <p className="text-text-soft text-sm leading-relaxed pt-4">{a}</p>
         </div>
       )}
     </div>
@@ -85,10 +70,59 @@ function FAQItem({ q, a }) {
 }
 
 function HomePage() {
-  const navigate = useNavigate()
+  const navigate          = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const goTo = (cat) => {
+    cat ? navigate(`/products?category=${cat}`) : navigate('/products')
+    setDrawerOpen(false)
+  }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #f9f0f6 0%, #f3ecf8 40%, #ede8f5 100%)' }}>
+    <div className="min-h-screen"
+      style={{ background: 'linear-gradient(160deg, #f9f0f6 0%, #f3ecf8 40%, #ede8f5 100%)' }}>
+
+      {/* ── Bouton catégories flottant ── */}
+      <button onClick={() => setDrawerOpen(true)}
+        className="fixed top-20 right-4 z-40 flex items-center gap-2
+                   bg-mauve text-gold font-bold text-xs px-4 py-2.5
+                   rounded-full shadow-fairy hover:bg-mauve-light transition-all">
+        <SlidersHorizontal size={14} />
+        Catégories
+      </button>
+
+      {/* ── Overlay ── */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 bg-charcoal/50 backdrop-blur-sm"
+          onClick={() => setDrawerOpen(false)} />
+      )}
+
+      {/* ── Drawer ── */}
+      <div className={`fixed top-0 right-0 h-full w-72 z-50 bg-charcoal shadow-dark
+                       flex flex-col transition-transform duration-300 ease-in-out
+                       ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-mauve/30">
+          <span className="text-gold font-black italic text-lg">Collections</span>
+          <button onClick={() => setDrawerOpen(false)}
+            className="text-gold/60 hover:text-gold transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 px-4 py-6 space-y-2">
+          {CATEGORIES.map(({ label, cat }) => (
+            <button key={label} onClick={() => goTo(cat)}
+              className="w-full flex items-center justify-between px-5 py-4
+                         rounded-xl font-bold text-sm text-gold/60
+                         hover:bg-mauve/20 hover:text-gold transition-all duration-200">
+              {label}
+              <ChevronRight size={16} className="text-gold/30" />
+            </button>
+          ))}
+        </div>
+        <div className="px-6 py-4 border-t border-mauve/30">
+          <p className="text-gold/30 text-xs text-center italic">BrandPack — Algérie</p>
+        </div>
+      </div>
 
       {/* ── Hero ── */}
       <header className="px-4 py-6 pt-20">
@@ -127,7 +161,7 @@ function HomePage() {
           Enchanted Collections
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {CATEGORIES.map(({ label, cat, image }) => (
+          {CAT_IMAGES.map(({ label, cat, image }) => (
             <Link key={label} to={`/products?category=${cat}`} className="group cursor-pointer">
               <div className="relative aspect-[3/4] overflow-hidden rounded-xl fairy-glow
                               transition-transform duration-500 group-hover:-translate-y-2">
