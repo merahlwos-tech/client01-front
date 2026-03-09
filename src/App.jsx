@@ -19,54 +19,11 @@ import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminProductsPage from './pages/admin/AdminProductsPage'
 import AdminOrdersPage from './pages/admin/AdminOrdersPage'
-import { Link } from 'react-router-dom'
-import { useCart } from './context/CartContext'
 
 function PageTracker() {
   const location = useLocation()
   useEffect(() => { trackPageView() }, [location.pathname])
   return null
-}
-
-// Bottom nav — 3 boutons : Home / Shop / Workshop
-function BottomNav() {
-  const location      = useLocation()
-  const { itemCount } = useCart()
-
-  const links = [
-    { to: '/',         icon: 'home',          label: 'Home' },
-    { to: '/products', icon: 'storefront',    label: 'Shop' },
-    { to: '/cart',     icon: 'auto_fix_high', label: 'Workshop', badge: itemCount },
-  ]
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2
-                    border-t border-mauve/20 bg-bg-light/95 backdrop-blur-md
-                    px-4 pb-4 pt-2 shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
-      {links.map(({ to, icon, label, badge }) => {
-        const active = location.pathname === to
-        return (
-          <Link key={to} to={to}
-            className={`flex flex-1 flex-col items-center justify-center gap-1
-                        transition-colors duration-200
-                        ${active ? 'text-primary' : 'text-mauve/60 hover:text-mauve'}`}>
-            <div className="relative flex h-8 items-center justify-center">
-              <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
-                {icon}
-              </span>
-              {badge > 0 && (
-                <span className="absolute -top-1 -right-2 w-4 h-4 bg-primary text-white
-                                 text-[9px] font-bold flex items-center justify-center rounded-full">
-                  {badge}
-                </span>
-              )}
-            </div>
-            <p className="text-[10px] font-medium leading-normal">{label}</p>
-          </Link>
-        )
-      })}
-    </div>
-  )
 }
 
 function PublicLayout({ children }) {
@@ -75,7 +32,6 @@ function PublicLayout({ children }) {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
-      <BottomNav />
     </div>
   )
 }

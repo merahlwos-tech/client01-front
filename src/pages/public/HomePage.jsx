@@ -3,21 +3,26 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../../utils/api'
 import ProductGrid from '../../Components/public/ProductGrid'
 
+// Catégories emballage — liées aux vraies catégories produit
 const CATEGORIES = [
   {
     label: 'Board',
+    cat: 'Board',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGfAvfWSR8bu0wmmm95vnqzfXIaa1hdYV5Gup6wGAbZ8kRvMjs9y_jI4_8kudr1b11v--Mgdmws62ZF3zjmtTbY_AscSGbEARN8eQWPCa2_P2CYuKwolNoqZ5Rl8tw2mxP5G7UQP1Bhy7EITPCdpiqsrvhuJyZDwj241VoAPyQiddWs3L3iFLbssVAWz2aJeA_sJHyRUVSKMs_vHYjZNcevD_V3ohy3QYeCipmDmyOEgPduNuOuH0Ot2aXbi6Zu9KFDe5Z4a46Al_w',
   },
   {
     label: 'Bags',
+    cat: 'Bags',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuADxj4BI_NVl-s99H4R-ZpO-qJUHwUULOvTrSrby23QlxF3vNbc-9qRNMLR-DQeSFV53lJpxtqHvECRPdSFPfUlz_ouHsTMRFuoZof4sxfQ04zxNoWuGIuA9CXWGw8YMrlbdRIyIrw6pVAT-Krh_E7QAvJdVfwChQS9JUj1sF3xBEHqLOtkpHkt_Na3Ka6IbtfgDcsOVF8NSVlTlRBjogr7QkWsw7vov92ssPUi6NhA2LWKGureTFTandFnlwSAz3MDpsDt3w9ClNzm',
   },
   {
     label: 'Autocollants',
+    cat: 'Autocollants',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEx0R3J-YYGzVTABQGbpVxdXJCDGcgymr-lsd_1wssyXPxRf6xK6UaTJc7OTiz8WYgXR4rLuq2WLzbLmDg3uxuglGPkthMw8w2t7C5XGkSGbRxfQ6zeLjAaUOw1hO5A9ZrLLwsFwxudP6dOnGjTfdj1HDZcqUmwG_2ojtY-wZmx_HuYFY6wjCE21axH3GQjn3fosq0kfDJBKa6y_lzLSE-S9-Yg45nu7nDzBXd37MZshGGZlPsQ5sKPVoB20BNzxX2zyWMwNPZQ_zs',
   },
   {
     label: 'Paper',
+    cat: 'Paper',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAIHm9A-gXfCktkku8k_XSdW-N4B3PrJmjTeKqnDKcA1sYJQh3XtKv6O-OYBwamWcc_xMmz3EecN43Tr6HNOQjzC2FCt6QCfp7sADSLB-erxtUmgNEoqiowT2ti7kTtQN0lumTdZy2uErOKV_22XR04f7lWs6onuGMAuST4Bogk8XxeimXVzfvdMlY3YSnJC-yIVeNPjDcI5SfD1MmWfAddQD8Nj0hQ5A0fTB4JzY35Z8t8gi4zruH7GiTB6yYhYKdw5qtelSd9iKDs',
   },
 ]
@@ -47,17 +52,13 @@ function HomePage() {
       <header className="px-4 py-6 pt-20">
         <div className="relative overflow-hidden rounded-xl bg-charcoal
                         flex items-center justify-center min-h-[320px] md:min-h-[420px]">
-          {/* Background */}
           <div className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage: `linear-gradient(to bottom, rgba(75,32,56,0.5), rgba(34,22,16,0.85)),
                 url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7mbrzcJIgPI4so6KZXOZrLt625iDsmVMNKbME08QxBZnctKkEtwLSA_NPMWbwFFlExJicldH3lQtemlzfC6Py94SqibdIAC7Vf2nu5nAcIpmIsVUTEoen7_svmTPCAhKw8COVf4swHtfMmCpYgQgjEK6WlkO8k2Wwhgz4kEJ6qNYMCxkWN33k5ECSbnzNe05dgxARO4FWu6NTHuc9Pa3mn_wqtXaLaZ6HqSD4kKJK4zDEoGpIacVMQk3tNO2y3n2YqexR2LJ8dFbg')`,
             }}
           />
-          {/* Sparkle */}
           <div className="absolute top-10 right-10 text-gold/40 animate-pulse text-5xl select-none">✦</div>
-
-          {/* Content — centré parfaitement */}
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-16 max-w-2xl mx-auto">
             <span className="text-gold uppercase tracking-[0.3em] text-xs font-semibold mb-3">
               Heritage Meets Magic
@@ -84,8 +85,8 @@ function HomePage() {
           Enchanted Collections
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {CATEGORIES.map(({ label, image }) => (
-            <Link key={label} to={`/products?category=${label}`} className="group cursor-pointer">
+          {CATEGORIES.map(({ label, cat, image }) => (
+            <Link key={label} to={`/products?category=${cat}`} className="group cursor-pointer">
               <div className="relative aspect-[3/4] overflow-hidden rounded-xl fairy-glow
                               transition-transform duration-500 group-hover:-translate-y-2">
                 <img src={image} alt={label} className="w-full h-full object-cover" />
@@ -131,8 +132,6 @@ function HomePage() {
         <ProductGrid products={products} loading={loading} />
       </section>
 
-      {/* Spacer bottom nav */}
-      <div className="h-24" />
     </div>
   )
 }
