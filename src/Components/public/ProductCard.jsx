@@ -11,24 +11,41 @@ function ProductCard({ product }) {
 
   return (
     <Link to={`/products/${product._id}`} className="block group">
-      <div className="rounded-2xl overflow-hidden bg-white transition-all duration-300 hover:-translate-y-1"
-        style={{ boxShadow: '0 2px 12px rgba(124,58,237,0.1)' }}>
+      <div className="rounded-2xl overflow-hidden bg-white transition-all duration-300
+                      hover:-translate-y-1 w-full"
+        style={{ boxShadow: '0 2px 16px rgba(124,58,237,0.08)' }}>
 
-        {/* Image pleine largeur */}
-        <div className="relative w-full overflow-hidden bg-gray-50" style={{ aspectRatio: '4/3' }}>
+        {/* Image pleine largeur — 16/9 sur mobile, 4/3 sur desktop */}
+        <div className="relative w-full overflow-hidden bg-gray-50"
+          style={{ aspectRatio: '16/9' }}>
           <img src={imageUrl} alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy" />
+
+          {/* Badges */}
           <div className="absolute top-3 left-3">
             <span className="text-xs font-bold px-3 py-1 rounded-full text-white shadow"
-              style={{ background: PURPLE }}>{catLabel}</span>
+              style={{ background: PURPLE }}>
+              {catLabel}
+            </span>
           </div>
           {product.doubleSided && (
             <div className="absolute top-3 right-3">
               <span className="text-[10px] font-bold px-2 py-1 rounded-full text-white"
-                style={{ background: NAVY }}>Recto-verso</span>
+                style={{ background: NAVY }}>
+                Recto-verso
+              </span>
             </div>
           )}
+
+          {/* Prix en overlay bas sur mobile */}
+          <div className="absolute bottom-0 left-0 right-0 sm:hidden px-4 py-3"
+            style={{ background: 'linear-gradient(to top, rgba(30,27,75,0.75), transparent)' }}>
+            <p className="text-white font-black text-lg">
+              {minPrice.toLocaleString('fr-DZ')}
+              <span className="text-xs font-normal opacity-80 ml-1">DA</span>
+            </p>
+          </div>
         </div>
 
         {/* Infos */}
@@ -37,21 +54,29 @@ function ProductCard({ product }) {
             {product.name}
           </h3>
           <div className="flex items-center justify-between">
-            <p className="font-black text-base" style={{ color: PURPLE }}>
+            <p className="font-black text-base hidden sm:block" style={{ color: PURPLE }}>
               {minPrice.toLocaleString('fr-DZ')}
               <span className="text-xs font-normal text-gray-400 ml-1">DA</span>
             </p>
             {product.sizes?.length > 1 && (
-              <span className="text-xs text-gray-400">{product.sizes.length} tailles</span>
+              <span className="text-xs text-gray-400">
+                {product.sizes.length} tailles
+              </span>
             )}
           </div>
+
+          {/* Couleurs */}
           {product.colors?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {product.colors.slice(0, 4).map(c => (
                 <span key={c} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                  style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>{c}</span>
+                  style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>
+                  {c}
+                </span>
               ))}
-              {product.colors.length > 4 && <span className="text-[10px] text-gray-400">+{product.colors.length - 4}</span>}
+              {product.colors.length > 4 && (
+                <span className="text-[10px] text-gray-400">+{product.colors.length - 4}</span>
+              )}
             </div>
           )}
         </div>
