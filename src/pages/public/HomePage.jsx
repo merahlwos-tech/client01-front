@@ -80,7 +80,7 @@ function HomePage() {
         <div className="relative overflow-hidden rounded-xl flex items-center justify-center min-h-[320px] md:min-h-[420px]"
           style={{ background: NAVY }}>
           <div className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.5), rgba(30,27,75,0.88)), url('/main.png')` }}
+            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.5), rgba(30,27,75,0.88)), url('/main.jpg')` }}
           />
           <div className="absolute top-10 right-10 opacity-30 animate-pulse text-5xl select-none" style={{ color: PURPLE }}>✦</div>
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-16 max-w-2xl mx-auto">
