@@ -20,19 +20,15 @@ function cartReducer(state, action) {
       const key       = `${product._id}-${size}-${doubleSided ? '2' : '1'}`
       const existing  = state.find(item => item.key === key)
       if (existing) {
+        // Update quantity of existing item
         return state.map(item =>
-          item.key === key ? { ...item, quantity: item.quantity + quantity } : item
+          item.key === key ? { ...item, quantity } : item
         )
       }
       return [...state, {
-        key,
-        productId:   product._id,
-        name:        product.name,
-        price:       unitPrice,
-        image:       product.images?.[0] || '',
-        size,
-        doubleSided: !!doubleSided,
-        quantity,
+        key, productId: product._id, name: product.name,
+        price: unitPrice, image: product.images?.[0] || '',
+        size, doubleSided: !!doubleSided, quantity,
       }]
     }
 
@@ -42,7 +38,7 @@ function cartReducer(state, action) {
     case ACTIONS.UPDATE_QTY:
       return state.map(item =>
         item.key === action.payload.key
-          ? { ...item, quantity: Math.max(1, action.payload.quantity) }
+          ? { ...item, quantity: Math.max(100, action.payload.quantity) }
           : item
       )
 
@@ -65,14 +61,16 @@ export function CartProvider({ children }) {
     localStorage.setItem('cart', JSON.stringify(items))
   }, [items])
 
-  const total     = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const addToCart     = (product, size, quantity = 1, doubleSided = false) =>
+  // 1 produit = 1 dans le badge, peu importe la quantité d'unités
+  const itemCount = items.length
+
+  const addToCart      = (product, size, quantity = 100, doubleSided = false) =>
     dispatch({ type: ACTIONS.ADD, payload: { product, size, quantity, doubleSided } })
-  const removeFromCart = key  => dispatch({ type: ACTIONS.REMOVE,     payload: key })
+  const removeFromCart = key => dispatch({ type: ACTIONS.REMOVE,     payload: key })
   const updateQuantity = (key, quantity) => dispatch({ type: ACTIONS.UPDATE_QTY, payload: { key, quantity } })
-  const clearCart      = ()   => dispatch({ type: ACTIONS.CLEAR })
+  const clearCart      = ()  => dispatch({ type: ACTIONS.CLEAR })
 
   return (
     <CartContext.Provider value={{ items, total, itemCount, addToCart, removeFromCart, updateQuantity, clearCart }}>

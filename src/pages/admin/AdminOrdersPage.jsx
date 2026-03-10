@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Loader2, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
+import { Loader2, ChevronDown, ChevronUp, Search, X, Trash2, AlertTriangle, Eye, Download } from 'lucide-react'
 import api from '../../utils/api'
-import AdminOrderRow from '../../Components/admin/AdminOrderRow'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
@@ -11,13 +10,217 @@ const STATUS_FILTERS = ['Tous', 'en attente', 'confirmé', 'en livraison', 'livr
 const STATUS_LABELS  = { 'en attente': 'En attente', confirmé: 'Confirmé', 'en livraison': 'En livraison', livré: 'Livré', retour: 'Retour', annulé: 'Annulé' }
 const STATUS_COLORS  = { 'en attente': '#9ca3af', confirmé: '#3b82f6', 'en livraison': '#f59e0b', livré: '#10b981', retour: '#f97316', annulé: '#ef4444' }
 
+const STATUS_OPTIONS = [
+  { value: 'en attente',  label: 'En attente',   color: '#9ca3af' },
+  { value: 'confirmé',    label: 'Confirmé',      color: '#3b82f6' },
+  { value: 'en livraison',label: 'En livraison',  color: '#f59e0b' },
+  { value: 'livré',       label: 'Livré',         color: '#10b981' },
+  { value: 'retour',      label: 'Retour',        color: '#f97316' },
+  { value: 'annulé',      label: 'Annulé',        color: '#ef4444' },
+]
+
+function OrderDetailModal({ order, onClose, onUpdated }) {
+  const [status, setStatus] = useState(order.status)
+  const [saving, setSaving] = useState(false)
+  const [dirty, setDirty]   = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await api.put(`/orders/${order._id}`, { status })
+      toast.success('Statut mis à jour')
+      setDirty(false)
+      onUpdated({ ...order, status })
+    } catch { toast.error('Erreur mise à jour') }
+    finally { setSaving(false) }
+  }
+
+  const downloadLogo = async (url, idx) => {
+    try {
+      const res  = await fetch(url)
+      const blob = await res.blob()
+      const a    = document.createElement('a')
+      a.href     = URL.createObjectURL(blob)
+      a.download = `logo-${order._id}-${idx + 1}.jpg`
+      a.click()
+    } catch { toast.error('Erreur téléchargement') }
+  }
+
+  const createdAt = new Date(order.createdAt).toLocaleDateString('fr-DZ', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+
+  const currentStatus = STATUS_OPTIONS.find(o => o.value === status)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 sticky top-0 bg-white z-10"
+          style={{ borderBottom: `1px solid rgba(124,58,237,0.1)` }}>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PURPLE }}>
+              Commande #{order._id.slice(-6).toUpperCase()}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">{createdAt}</p>
+          </div>
+          <button onClick={onClose}
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            <X size={18} style={{ color: NAVY }} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+
+          {/* Client */}
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+              Client
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-gray-400 text-xs mb-0.5">Nom</p>
+                <p className="font-bold" style={{ color: NAVY }}>
+                  {order.customerInfo.firstName} {order.customerInfo.lastName}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs mb-0.5">Téléphone</p>
+                <a href={`tel:${order.customerInfo.phone}`} className="font-bold" style={{ color: PURPLE }}>
+                  {order.customerInfo.phone}
+                </a>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs mb-0.5">Wilaya</p>
+                <p className="font-semibold" style={{ color: NAVY }}>{order.customerInfo.wilaya}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs mb-0.5">Commune</p>
+                <p className="font-semibold" style={{ color: NAVY }}>{order.customerInfo.commune}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {order.customerInfo.description && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
+                Instructions client
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-gray-700">
+                {order.customerInfo.description}
+              </div>
+            </div>
+          )}
+
+          {/* Logo client */}
+          {order.customerInfo.logoUrls?.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+                Logo du client
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                {order.customerInfo.logoUrls.map((url, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={url} alt={`logo ${idx + 1}`}
+                      className="w-28 h-28 object-contain rounded-xl border-2 bg-gray-50"
+                      style={{ borderColor: 'rgba(124,58,237,0.2)' }} />
+                    <button onClick={() => downloadLogo(url, idx)}
+                      className="absolute -bottom-2 -right-2 flex items-center gap-1 px-2 py-1
+                                 rounded-lg text-white text-[10px] font-bold shadow"
+                      style={{ background: PURPLE }}>
+                      <Download size={10} /> DL
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Articles */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+              Articles commandés
+            </p>
+            <div className="space-y-2">
+              {order.items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 text-sm">
+                  <div className="flex-1">
+                    <p className="font-bold" style={{ color: NAVY }}>{item.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Taille: {item.size}
+                      {item.doubleSided && <span className="ml-2 text-purple-500">• Recto-verso</span>}
+                    </p>
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="text-xs text-gray-400">{item.quantity.toLocaleString()} unités</p>
+                    <p className="font-black" style={{ color: PURPLE }}>
+                      {(item.price * item.quantity).toLocaleString('fr-DZ')} DA
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="flex justify-between items-center p-4 rounded-2xl"
+            style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
+            <span className="font-bold text-sm" style={{ color: NAVY }}>Total</span>
+            <span className="font-black text-2xl" style={{ color: PURPLE }}>
+              {(order.total ?? 0).toLocaleString('fr-DZ')}
+              <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
+            </span>
+          </div>
+
+          {/* Statut */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+              Statut de la commande
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {STATUS_OPTIONS.map(opt => (
+                <button key={opt.value} onClick={() => { setStatus(opt.value); setDirty(opt.value !== order.status) }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+                  style={{
+                    background:  status === opt.value ? opt.color : 'white',
+                    borderColor: status === opt.value ? opt.color : '#e5e7eb',
+                    color:       status === opt.value ? 'white'  : opt.color,
+                  }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {dirty && (
+              <button onClick={handleSave} disabled={saving}
+                className="mt-3 flex items-center gap-2 px-5 py-2 rounded-xl text-white font-bold text-sm"
+                style={{ background: PURPLE }}>
+                {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+                Enregistrer le statut
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminOrdersPage() {
-  const [orders, setOrders]           = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [search, setSearch]           = useState('')
+  const [orders, setOrders]         = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
   const [statusFilter, setStatusFilter] = useState('Tous')
-  const [sortField, setSortField]     = useState('createdAt')
-  const [sortDir, setSortDir]         = useState('desc')
+  const [sortField, setSortField]   = useState('createdAt')
+  const [sortDir, setSortDir]       = useState('desc')
+  const [selected, setSelected]     = useState(new Set())
+  const [detailOrder, setDetailOrder]   = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting]     = useState(false)
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -28,7 +231,10 @@ function AdminOrdersPage() {
 
   useEffect(() => { fetchOrders() }, [])
 
-  const handleUpdated = updated => setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
+  const handleUpdated = updated => {
+    setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
+    if (detailOrder?._id === updated._id) setDetailOrder(updated)
+  }
 
   const toggleSort = field => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -50,8 +256,32 @@ function AdminOrdersPage() {
       return sortDir === 'asc' ? va - vb : vb - va
     })
 
-  const counts = orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {})
+  // Selection
+  const allSelected = filtered.length > 0 && filtered.every(o => selected.has(o._id))
+  const toggleAll   = () => {
+    if (allSelected) setSelected(new Set())
+    else setSelected(new Set(filtered.map(o => o._id)))
+  }
+  const toggleOne = id => {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
+  }
 
+  // Delete selected
+  const handleDeleteSelected = async () => {
+    setDeleting(true)
+    try {
+      await Promise.all([...selected].map(id => api.delete(`/orders/${id}`)))
+      setOrders(prev => prev.filter(o => !selected.has(o._id)))
+      setSelected(new Set())
+      toast.success(`${selected.size} commande(s) supprimée(s)`)
+    } catch { toast.error('Erreur suppression') }
+    finally { setDeleting(false); setDeleteConfirm(false) }
+  }
+
+  const counts = orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {})
   const SortIcon = ({ field }) => sortField !== field
     ? <ChevronDown size={12} className="opacity-30" />
     : sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
@@ -65,19 +295,26 @@ function AdminOrdersPage() {
           <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: PURPLE }}>Suivi</p>
           <h1 className="text-3xl font-black italic" style={{ color: NAVY }}>Commandes</h1>
         </div>
-        <p className="text-sm text-gray-400">{filtered.length} / {orders.length} commande{orders.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-center gap-3">
+          {selected.size > 0 && (
+            <button onClick={() => setDeleteConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-bold text-sm bg-red-500 hover:opacity-90">
+              <Trash2 size={14} /> Supprimer ({selected.size})
+            </button>
+          )}
+          <p className="text-sm text-gray-400">{filtered.length} / {orders.length} commandes</p>
+        </div>
       </div>
 
       {/* Filtres statut */}
       <div className="flex flex-wrap gap-2">
         {STATUS_FILTERS.map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className="px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-xl
-                       border-2 transition-all"
+            className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest rounded-xl border-2 transition-all"
             style={{
-              background:   statusFilter === s ? PURPLE : 'white',
-              borderColor:  statusFilter === s ? PURPLE : '#e5e7eb',
-              color:        statusFilter === s ? 'white' : (s === 'Tous' ? NAVY : STATUS_COLORS[s] || NAVY),
+              background:  statusFilter === s ? PURPLE : 'white',
+              borderColor: statusFilter === s ? PURPLE : '#e5e7eb',
+              color:       statusFilter === s ? 'white' : (STATUS_COLORS[s] || NAVY),
             }}>
             {s === 'Tous' ? `Tous (${orders.length})` : `${STATUS_LABELS[s]} (${counts[s] || 0})`}
           </button>
@@ -93,7 +330,7 @@ function AdminOrdersPage() {
                      outline-none focus:border-purple-400 transition-all" />
         {search && (
           <button onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
             <X size={12} />
           </button>
         )}
@@ -115,33 +352,124 @@ function AdminOrdersPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-                  {[
-                    { label: 'Client',      field: null,        cls: '' },
-                    { label: 'Localisation',field: null,        cls: 'hidden md:table-cell' },
-                    { label: 'Articles',    field: null,        cls: 'hidden lg:table-cell' },
-                    { label: 'Total',       field: 'total',     cls: 'text-right' },
-                    { label: 'Date',        field: 'createdAt', cls: 'hidden sm:table-cell' },
-                    { label: 'Statut',      field: null,        cls: '' },
-                  ].map(({ label, field, cls }) => (
-                    <th key={label}
-                      className={`px-4 py-3 text-left text-xs font-bold uppercase tracking-widest
-                                  ${cls} ${field ? 'cursor-pointer select-none' : ''}`}
-                      style={{ color: PURPLE }}
-                      onClick={() => field && toggleSort(field)}>
-                      <span className="flex items-center gap-1">
-                        {label}
-                        {field && <SortIcon field={field} />}
-                      </span>
-                    </th>
-                  ))}
+                  {/* Checkbox tout sélectionner */}
+                  <th className="px-4 py-3 w-10">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                      className="w-4 h-4 rounded cursor-pointer accent-purple-600" />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest" style={{ color: PURPLE }}>Client</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest hidden md:table-cell" style={{ color: PURPLE }}>Wilaya</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest hidden lg:table-cell" style={{ color: PURPLE }}>Articles</th>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-widest cursor-pointer select-none"
+                    style={{ color: PURPLE, textAlign: 'right' }} onClick={() => toggleSort('total')}>
+                    <span className="flex items-center justify-end gap-1">Total <SortIcon field="total" /></span>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest hidden sm:table-cell cursor-pointer select-none"
+                    style={{ color: PURPLE }} onClick={() => toggleSort('createdAt')}>
+                    <span className="flex items-center gap-1">Date <SortIcon field="createdAt" /></span>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest" style={{ color: PURPLE }}>Statut</th>
+                  <th className="px-4 py-3 w-10"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(order => (
-                  <AdminOrderRow key={order._id} order={order} onUpdated={handleUpdated} />
-                ))}
+                {filtered.map(order => {
+                  const currentStatus = STATUS_OPTIONS.find(o => o.value === order.status)
+                  return (
+                    <tr key={order._id}
+                      className="transition-colors hover:bg-gray-50"
+                      style={{ borderBottom: '1px solid #f9fafb', background: selected.has(order._id) ? 'rgba(124,58,237,0.03)' : 'transparent' }}>
+                      <td className="px-4 py-3">
+                        <input type="checkbox" checked={selected.has(order._id)} onChange={() => toggleOne(order._id)}
+                          className="w-4 h-4 rounded cursor-pointer accent-purple-600" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-sm" style={{ color: NAVY }}>
+                          {order.customerInfo.firstName} {order.customerInfo.lastName}
+                        </p>
+                        <p className="text-gray-400 text-xs">{order.customerInfo.phone}</p>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell text-sm text-gray-600">
+                        {order.customerInfo.wilaya}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <div className="space-y-0.5 max-w-[180px]">
+                          {order.items.map((item, i) => (
+                            <p key={i} className="text-xs text-gray-500 truncate">
+                              {item.quantity.toLocaleString()}× {item.name}
+                            </p>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <span className="font-black text-lg" style={{ color: PURPLE }}>
+                          {(order.total ?? 0).toLocaleString('fr-DZ')}
+                          <span className="text-xs font-normal text-gray-400 ml-1">DA</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell text-gray-400 text-xs whitespace-nowrap">
+                        {new Date(order.createdAt).toLocaleDateString('fr-DZ', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                          style={{
+                            background: `${currentStatus?.color}15`,
+                            color: currentStatus?.color,
+                          }}>
+                          {STATUS_LABELS[order.status] || order.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => setDetailOrder(order)}
+                          className="p-2 rounded-xl transition-all hover:scale-110"
+                          style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>
+                          <Eye size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal détail commande */}
+      {detailOrder && (
+        <OrderDetailModal
+          order={detailOrder}
+          onClose={() => setDetailOrder(null)}
+          onUpdated={handleUpdated}
+        />
+      )}
+
+      {/* Modal confirmation suppression */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle size={18} className="text-red-500" />
+              </div>
+              <h3 className="font-black text-base" style={{ color: NAVY }}>
+                Supprimer {selected.size} commande{selected.size > 1 ? 's' : ''} ?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-400 mb-6">Cette action est irréversible.</p>
+            <div className="flex gap-3">
+              <button onClick={handleDeleteSelected} disabled={deleting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl
+                           text-white font-bold text-sm bg-red-500">
+                {deleting && <Loader2 size={14} className="animate-spin" />}
+                Supprimer
+              </button>
+              <button onClick={() => setDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-500 font-semibold text-sm">
+                Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}

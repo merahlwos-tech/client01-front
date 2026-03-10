@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag, ArrowLeft, Trash2 } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
+import { useLang } from '../../context/LanguageContext'
 import CartItem from '../../Components/public/CartItem'
 import CheckoutForm from '../../Components/public/CheckoutForm'
 import api from '../../utils/api'
@@ -12,7 +13,8 @@ const PURPLE = '#7c3aed'
 
 function CartPage() {
   const { items, total, clearCart } = useCart()
-  const navigate    = useNavigate()
+  const { t, isRTL } = useLang()
+  const navigate      = useNavigate()
   const [submitting, setSubmitting] = useState(false)
 
   const handleOrder = async (customerInfo) => {
@@ -20,7 +22,7 @@ function CartPage() {
     setSubmitting(true)
     try {
       await api.post('/orders', {
-        customerInfo,
+        customerInfo, // contient firstName, lastName, phone, wilaya, commune, description, logoUrls
         items: items.map(item => ({
           product:     item.productId,
           name:        item.name,
@@ -34,22 +36,28 @@ function CartPage() {
       clearCart()
       navigate('/confirmation', { replace: true })
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la commande.')
+      const status = err.response?.status
+      if (status === 503 || status === 502) {
+        navigate('/server-error')
+      } else {
+        toast.error(err.response?.data?.message || 'Erreur lors de la commande.')
+      }
     } finally { setSubmitting(false) }
   }
 
   if (items.length === 0) return (
     <div className="min-h-screen flex items-center justify-center pt-20"
-      style={{ background: 'linear-gradient(160deg,#f5f3ff,#ede9fe,#e0e7ff)' }}>
+      style={{ background: 'linear-gradient(160deg,#f5f3ff,#ede9fe,#e0e7ff)' }}
+      dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="text-center px-4">
         <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl"
           style={{ background: 'rgba(124,58,237,0.1)' }}>🛒</div>
-        <h2 className="text-3xl font-black italic mb-2" style={{ color: NAVY }}>Panier vide</h2>
-        <p className="text-gray-500 mb-8">Découvrez notre sélection d'emballages</p>
+        <h2 className="text-3xl font-black italic mb-2" style={{ color: NAVY }}>{t('emptyCart')}</h2>
+        <p className="text-gray-500 mb-8">{t('emptyCartDesc')}</p>
         <Link to="/products"
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-white font-bold shadow-lg"
           style={{ background: PURPLE }}>
-          <ShoppingBag size={16} /> Découvrir la boutique
+          <ShoppingBag size={16} /> {t('discover')}
         </Link>
       </div>
     </div>
@@ -57,7 +65,8 @@ function CartPage() {
 
   return (
     <div className="min-h-screen"
-      style={{ background: 'linear-gradient(160deg,#f5f3ff 0%,#ede9fe 50%,#e0e7ff 100%)' }}>
+      style={{ background: 'linear-gradient(160deg,#f5f3ff 0%,#ede9fe 50%,#e0e7ff 100%)' }}
+      dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* Header */}
       <div className="pt-20 pb-6 px-4"
@@ -67,9 +76,9 @@ function CartPage() {
             className="flex items-center gap-2 text-sm font-medium mb-3 group"
             style={{ color: PURPLE }}>
             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-            Continuer mes achats
+            {t('continueShopping')}
           </button>
-          <h1 className="text-3xl font-black italic" style={{ color: NAVY }}>Mon panier 🛍️</h1>
+          <h1 className="text-3xl font-black italic" style={{ color: NAVY }}>{t('myCart')}</h1>
         </div>
       </div>
 
@@ -80,11 +89,11 @@ function CartPage() {
           <div className="lg:col-span-3 space-y-3">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-bold" style={{ color: NAVY }}>
-                {items.length} référence{items.length !== 1 ? 's' : ''}
+                {items.length} {items.length > 1 ? t('references_pl') : t('references')}
               </p>
               <button onClick={clearCart}
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors">
-                <Trash2 size={12} /> Vider
+                <Trash2 size={12} /> {t('clear')}
               </button>
             </div>
             {items.map(item => <CartItem key={item.key} item={item} />)}
@@ -92,7 +101,7 @@ function CartPage() {
             {/* Total mobile */}
             <div className="lg:hidden bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mt-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Total</span>
+                <span className="text-sm text-gray-500">{t('total')}</span>
                 <span className="font-black text-2xl" style={{ color: PURPLE }}>
                   {total.toLocaleString('fr-DZ')}
                   <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
@@ -108,7 +117,7 @@ function CartPage() {
               {/* Récap desktop */}
               <div className="hidden lg:block bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PURPLE }}>
-                  Récapitulatif
+                  {t('summary')}
                 </p>
                 <div className="space-y-2 mb-4">
                   {items.map(item => (
@@ -126,19 +135,19 @@ function CartPage() {
                 </div>
                 <div className="h-px bg-gray-100 mb-3" />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Total</span>
+                  <span className="text-sm text-gray-500">{t('total')}</span>
                   <span className="font-black text-2xl" style={{ color: PURPLE }}>
                     {total.toLocaleString('fr-DZ')}
                     <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
                   </span>
                 </div>
-                <p className="text-gray-400 text-xs mt-1 text-right">Paiement à la livraison</p>
+                <p className="text-gray-400 text-xs mt-1 text-right">{t('cashOnDelivery')}</p>
               </div>
 
               {/* Formulaire */}
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: PURPLE }}>
-                  📦 Informations de livraison
+                  {t('deliveryInfo2')}
                 </p>
                 <CheckoutForm onSubmit={handleOrder} loading={submitting} />
               </div>

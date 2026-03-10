@@ -1,24 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Menu, X, ChevronRight } from 'lucide-react'
+import { ShoppingBag, Menu, X } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
+import { useLang } from '../../context/LanguageContext'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
-const CATEGORIES = [
-  { label: 'Tous les produits', cat: '' },
-  { label: 'Boites',            cat: 'Board' },
-  { label: 'Sacs',              cat: 'Bags' },
-  { label: 'Cartes',            cat: 'Autocollants' },
-  { label: 'Papier',            cat: 'Paper' },
-]
-
 function Navbar() {
-  const { itemCount } = useCart()
-  const navigate      = useNavigate()
-  const [scrolled, setScrolled]     = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const { itemCount }   = useCart()
+  const { t, lang, setLang, isRTL } = useLang()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -26,107 +19,109 @@ function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const goTo = (cat) => {
-    cat ? navigate(`/products?category=${cat}`) : navigate('/products')
-    setDrawerOpen(false)
-  }
+  const NAV_LINKS = [
+    { to: '/products?category=Board',        label: t('boxes') },
+    { to: '/products?category=Bags',         label: t('bags') },
+    { to: '/products?category=Autocollants', label: t('cards') },
+    { to: '/products?category=Paper',        label: t('paper') },
+    { to: '/about',                          label: t('about') },
+  ]
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between
-                       px-4 py-2 transition-all duration-300`}
+      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
-          borderBottom: `1px solid rgba(124,58,237,0.15)`,
-          background: scrolled ? 'rgba(245,243,255,0.97)' : 'rgba(245,243,255,0.93)',
+          background: scrolled ? 'rgba(30,27,75,0.97)' : 'rgba(30,27,75,0.92)',
           backdropFilter: 'blur(12px)',
-          boxShadow: scrolled ? '0 2px 20px rgba(30,27,75,0.08)' : 'none',
-        }}>
+          borderBottom: scrolled ? '1px solid rgba(124,58,237,0.3)' : '1px solid transparent',
+          boxShadow: scrolled ? '0 4px 24px rgba(30,27,75,0.2)' : 'none',
+        }}
+        dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
 
-        <Link to="/" className="flex items-center shrink-0">
-          <img src="/logo.jpg" alt="BrandPack" className="h-10 w-10 rounded-full object-contain" />
-        </Link>
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+            <img src="/logo.jpg" alt="BrandPack" className="w-9 h-9 rounded-full object-contain" />
+            <span className="font-black italic text-white text-lg leading-none hidden sm:block">
+              BrandPack
+            </span>
+          </Link>
 
-        <Link to="/"
-          className="flex-1 text-center text-xl font-black italic transition-colors"
-          style={{ color: NAVY }}>
-          BrandPack
-        </Link>
+          {/* Nav desktop */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {NAV_LINKS.map(l => (
+              <Link key={l.to} to={l.to}
+                className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                style={{ color: 'rgba(255,255,255,0.7)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(124,58,237,0.2)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent' }}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center rounded-full h-10 w-10 transition-colors"
-            style={{ color: NAVY }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            title="Catégories">
-            <Menu size={20} strokeWidth={1.5} />
-          </button>
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
 
-          <button onClick={() => navigate('/cart')}
-            className="relative flex items-center justify-center rounded-full h-10 w-10 transition-colors"
-            style={{ color: NAVY }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            title="Mon panier">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-            {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 text-white text-[10px]
-                               font-bold flex items-center justify-center rounded-full shadow-lg"
-                style={{ background: PURPLE }}>
-                {itemCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </nav>
-
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 backdrop-blur-sm"
-          style={{ background: 'rgba(30,27,75,0.4)' }}
-          onClick={() => setDrawerOpen(false)} />
-      )}
-
-      <div className={`fixed top-0 right-0 h-full w-64 z-50 flex flex-col
-                       transition-transform duration-300 ease-in-out shadow-2xl
-                       ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ background: NAVY }}>
-
-        <div className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: `1px solid rgba(124,58,237,0.25)` }}>
-          <span className="text-white font-black italic text-base">Catégories</span>
-          <button onClick={() => setDrawerOpen(false)}
-            className="transition-colors rounded-full p-1"
-            style={{ color: 'rgba(255,255,255,0.5)' }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 px-4 py-6 space-y-1">
-          {CATEGORIES.map(({ label, cat }) => (
-            <button key={label} onClick={() => goTo(cat)}
-              className="w-full flex items-center justify-between px-4 py-3
-                         rounded-xl text-sm font-semibold transition-all duration-200"
-              style={{ color: 'rgba(255,255,255,0.6)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.2)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}>
-              {label}
-              <ChevronRight size={14} style={{ color: 'rgba(124,58,237,0.5)' }} />
+            {/* Language toggle */}
+            <button onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black
+                         transition-all border"
+              style={{
+                color: 'rgba(255,255,255,0.8)',
+                borderColor: 'rgba(124,58,237,0.4)',
+                background: 'rgba(124,58,237,0.15)',
+              }}
+              title={lang === 'fr' ? 'Switch to Arabic' : 'Passer en Français'}>
+              {lang === 'fr' ? 'عر' : 'FR'}
             </button>
-          ))}
-        </div>
 
-        <div className="px-6 py-4" style={{ borderTop: `1px solid rgba(124,58,237,0.2)` }}>
-          <p className="text-xs text-center italic" style={{ color: 'rgba(255,255,255,0.25)' }}>
-            BrandPack — Algérie
-          </p>
+            {/* Cart */}
+            <Link to="/cart" className="relative p-2 rounded-xl transition-all"
+              style={{ color: 'rgba(255,255,255,0.8)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <ShoppingBag size={22} />
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center
+                                 rounded-full text-white text-[10px] font-black"
+                  style={{ background: PURPLE }}>
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Menu mobile */}
+            <button onClick={() => setMenuOpen(o => !o)}
+              className="lg:hidden p-2 rounded-xl transition-all"
+              style={{ color: 'rgba(255,255,255,0.8)' }}>
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden"
+          onClick={() => setMenuOpen(false)}>
+          <div className="absolute inset-0" style={{ background: 'rgba(30,27,75,0.6)', backdropFilter: 'blur(4px)' }} />
+          <nav className="absolute top-16 left-0 right-0 py-4 px-4 space-y-1"
+            style={{ background: NAVY, borderBottom: '1px solid rgba(124,58,237,0.2)' }}
+            onClick={e => e.stopPropagation()}>
+            {NAV_LINKS.map(l => (
+              <Link key={l.to} to={l.to}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all"
+                style={{ color: 'rgba(255,255,255,0.7)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(124,58,237,0.15)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent' }}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
     </>
   )
 }
