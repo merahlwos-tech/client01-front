@@ -1,161 +1,246 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Star, Package, Upload, Truck } from 'lucide-react'
+import api from '../../utils/api'
+import ProductGrid from '../../Components/public/ProductGrid'
+import { useLang } from '../../context/LanguageContext'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
-const PURPLE_SOFT = 'rgba(124,58,237,0.65)'
-const PURPLE_XSOFT = 'rgba(124,58,237,0.35)'
+const WA     = '213554767444'
 
-const CAT_IMAGES = [
-  { label: 'Boites',  cat: 'Board',        image: '/boite.png' },
-  { label: 'Sacs',    cat: 'Bags',         image: '/sacs.png' },
-  { label: 'Cartes',  cat: 'Autocollants', image: '/carte.png' },
-  { label: 'Papier',  cat: 'Paper',        image: '/papier.png' },
+const CATEGORIES_FR = [
+  { value: 'Board',        label: 'Boites',  emoji: '📦', desc: 'Boites personnalisées' },
+  { value: 'Bags',         label: 'Sacs',    emoji: '🛍️', desc: 'Sacs d\'emballage' },
+  { value: 'Autocollants', label: 'Cartes',  emoji: '🎴', desc: 'Cartes & stickers' },
+  { value: 'Paper',        label: 'Papier',  emoji: '📄', desc: 'Papier d\'impression' },
 ]
-
-const STEPS = [
-  { n: '1', title: 'Choisissez votre produit',    desc: 'Parcourez nos catégories et choisissez le produit qui correspond à vos besoins, puis précisez la taille et la quantité.' },
-  { n: '2', title: 'Personnalisez votre design',  desc: "Téléchargez votre propre fichier de conception et choisissez le nombre de couleurs ainsi que les autres options d'impression." },
-  { n: '3', title: 'Soumettez votre demande',     desc: "Ajoutez le produit à votre panier, renseignez vos informations de livraison et confirmez votre commande. On s'occupe du reste !" },
+const CATEGORIES_AR = [
+  { value: 'Board',        label: 'صناديق', emoji: '📦', desc: 'صناديق مخصصة' },
+  { value: 'Bags',         label: 'أكياس',  emoji: '🛍️', desc: 'أكياس تغليف' },
+  { value: 'Autocollants', label: 'بطاقات', emoji: '🎴', desc: 'بطاقات وملصقات' },
+  { value: 'Paper',        label: 'ورق',    emoji: '📄', desc: 'ورق طباعة' },
 ]
-
-const FAQS = [
-  { q: "Livrez-vous dans toute l'Algérie ?",               a: "Oui, nous livrons dans les 58 wilayas. Le délai est généralement de 2 à 5 jours ouvrables." },
-  { q: 'Quel est le mode de paiement accepté ?',           a: 'Paiement à la livraison uniquement (cash). Vous payez quand vous recevez votre commande.' },
-  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nos produits peuvent être personnalisés avec votre logo. Contactez-nous via WhatsApp.' },
-  { q: "Quelle est la commande minimum ?",                 a: "Aucun minimum pour les produits en stock. Pour le sur-mesure, un minimum peut s'appliquer." },
-  { q: 'Comment suivre ma commande ?',                     a: "Notre équipe vous contacte par téléphone après confirmation pour vous informer de la livraison." },
-  { q: 'Vos emballages sont-ils résistants ?',             a: 'Absolument. Nos cartons sont testés pour des charges importantes. La qualité est notre priorité.' },
-]
-
-function FAQItem({ q, a }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm"
-      style={{ border: `1px solid ${PURPLE_XSOFT}` }}>
-      <button onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-5 text-left transition-colors duration-200"
-        style={{ background: open ? 'rgba(124,58,237,0.05)' : 'transparent' }}>
-        <span className="font-bold text-sm pr-4" style={{ color: NAVY }}>{q}</span>
-        <ChevronRight size={18} style={{ color: PURPLE }}
-          className={`flex-shrink-0 transition-transform duration-300 ${open ? 'rotate-90' : ''}`} />
-      </button>
-      {open && (
-        <div className="px-6 pb-5" style={{ borderTop: `1px solid ${PURPLE_XSOFT}` }}>
-          <p className="text-sm leading-relaxed pt-4" style={{ color: PURPLE_SOFT }}>{a}</p>
-        </div>
-      )}
-    </div>
-  )
-}
 
 function HomePage() {
-  const navigate = useNavigate()
+  const { t, lang, isRTL } = useLang()
+  const [products, setProducts]   = useState([])
+  const [loading, setLoading]     = useState(true)
+
+  useEffect(() => {
+    api.get('/products')
+      .then(res => setProducts((res.data || []).slice(0, 8)))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const categories = lang === 'ar' ? CATEGORIES_AR : CATEGORIES_FR
+
+  const STEPS = [
+    { icon: Package, title: t('how1title'), desc: t('how1desc'), num: '01' },
+    { icon: Upload,  title: t('how2title'), desc: t('how2desc'), num: '02' },
+    { icon: Truck,   title: t('how3title'), desc: t('how3desc'), num: '03' },
+  ]
+
+  const REVIEWS = [
+    { name: t('r1name'), text: t('r1text'), stars: 5 },
+    { name: t('r2name'), text: t('r2text'), stars: 5 },
+    { name: t('r3name'), text: t('r3text'), stars: 5 },
+  ]
 
   return (
-    <div className="min-h-screen"
-      style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%)' }}>
+    <div className="min-h-screen" dir={isRTL ? 'rtl' : 'ltr'}
+      style={{ background: 'linear-gradient(160deg,#f5f3ff 0%,#ede9fe 50%,#e0e7ff 100%)' }}>
 
       {/* ── Hero ── */}
-      <header className="px-4 py-6 pt-20">
-        <div className="relative overflow-hidden rounded-xl flex items-center justify-center min-h-[320px] md:min-h-[420px]"
-          style={{ background: NAVY }}>
-          <div className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.5), rgba(30,27,75,0.88)), url('/main.png')` }}
-          />
-          <div className="absolute top-10 right-10 opacity-30 animate-pulse text-5xl select-none" style={{ color: PURPLE }}>✦</div>
-          <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-16 max-w-2xl mx-auto">
-            <h1 className="text-white text-4xl md:text-6xl font-black leading-tight mb-5 italic">
-              L'emballage qui fait la différence
+      <section className="relative min-h-screen flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <img src="/main.png" alt="BrandPack" className="w-full h-full object-cover" />
+          <div className="absolute inset-0"
+            style={{ background: isRTL
+              ? 'linear-gradient(to left, rgba(30,27,75,0.92) 0%, rgba(30,27,75,0.7) 50%, transparent 100%)'
+              : 'linear-gradient(to right, rgba(30,27,75,0.92) 0%, rgba(30,27,75,0.7) 50%, transparent 100%)'
+            }} />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 pt-24 w-full">
+          <div className="max-w-2xl">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6"
+              style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)' }}>
+              <span>✨</span>
+              <span className="text-sm font-bold text-white">{t('heroBadge')}</span>
+            </div>
+
+            {/* Titre */}
+            <h1 className="font-black italic text-white leading-tight mb-6"
+              style={{ fontSize: 'clamp(2.2rem,5.5vw,4.5rem)' }}>
+              {t('heroTitle')}
             </h1>
-            <p className="text-white/75 text-sm md:text-base mb-8 leading-relaxed max-w-lg">
-              Découvrez notre gamme d'emballages de qualité — cartons, sacs, cartes et papiers —
-              livrés partout en Algérie.
+
+            <p className="text-lg leading-relaxed mb-8 max-w-lg"
+              style={{ color: 'rgba(255,255,255,0.75)' }}>
+              {t('heroSubtitle')}
             </p>
-            <button onClick={() => navigate('/products')}
-              className="px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 text-white shadow-lg"
-              style={{ background: PURPLE }}>
-              Découvrir la boutique
-            </button>
+
+            {/* Boutons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <Link to="/products"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl
+                           text-white font-black text-base transition-all hover:opacity-90 shadow-xl"
+                style={{ background: PURPLE }}>
+                {t('heroBtn1')}
+                <ArrowRight size={16} className={isRTL ? 'rotate-180' : ''} />
+              </Link>
+              <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl
+                           font-black text-base transition-all border-2 hover:bg-white/10"
+                style={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white' }}>
+                {t('heroBtn2')}
+              </a>
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-8">
+              {[
+                { val: t('stat1val'), label: t('stat1label') },
+                { val: t('stat2val'), label: t('stat2label') },
+                { val: t('stat3val'), label: t('stat3label') },
+              ].map(({ val, label }) => (
+                <div key={label}>
+                  <p className="font-black text-white text-2xl">{val}</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* ── Collections ── */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-3xl font-bold mb-8 text-center italic" style={{ color: PURPLE }}>
-          Nos collections
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {CAT_IMAGES.map(({ label, cat, image }) => (
-            <Link key={label} to={`/products?category=${cat}`} className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-xl transition-transform duration-500 group-hover:-translate-y-2"
-                style={{ boxShadow: `0 4px 20px rgba(124,58,237,0.2)` }}>
-                <img src={image} alt={label} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-end p-6"
-                  style={{ background: `linear-gradient(to top, rgba(30,27,75,0.85), transparent)` }}>
-                  <p className="text-white text-xl font-bold italic tracking-wide">{label}</p>
-                </div>
-              </div>
+      {/* ── Catégories ── */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 py-20">
+        <div className="text-center mb-12">
+          <p className="text-xs font-black uppercase tracking-widest mb-2"
+            style={{ color: PURPLE }}>{t('catSection')}</p>
+          <h2 className="font-black italic text-4xl md:text-5xl" style={{ color: NAVY }}>
+            {t('catSubtitle')}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {categories.map(({ value, label, emoji, desc }, i) => (
+            <Link key={value} to={`/products?category=${value}`}
+              className="group bg-white rounded-2xl p-6 text-center border-2 border-transparent
+                         transition-all duration-300 hover:-translate-y-1"
+              style={{ boxShadow: '0 2px 16px rgba(124,58,237,0.07)' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = PURPLE}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}>
+              <span className="text-5xl block mb-4">{emoji}</span>
+              <p className="font-black text-lg mb-1" style={{ color: NAVY }}>{label}</p>
+              <p className="text-xs text-gray-400">{desc}</p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ── Comment commander ── */}
-      <section className="py-20 px-4 my-4">
-        <div className="max-w-4xl mx-auto rounded-3xl p-8 md:p-12 relative"
-          style={{
-            borderTop: `8px solid ${PURPLE_XSOFT}`,
-            borderBottom: `8px solid ${PURPLE_XSOFT}`,
-            background: 'rgba(255,255,255,0.5)',
-            backdropFilter: 'blur(8px)',
-          }}>
-
-          <div className="absolute -top-11 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl
-                          font-bold text-sm uppercase tracking-widest text-center leading-snug
-                          w-max max-w-[300px] text-white shadow-lg"
-            style={{ background: PURPLE }}>
-            <span className="block">Passez votre commande</span>
-            <span className="block">en quelques clics</span>
+      {/* ── Comment ça marche ── */}
+      <section className="py-20" style={{ background: NAVY }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-10">
+          <div className="text-center mb-14">
+            <p className="text-xs font-black uppercase tracking-widest mb-2"
+              style={{ color: PURPLE }}>{t('howSubtitle')}</p>
+            <h2 className="font-black italic text-4xl md:text-5xl text-white">
+              {t('howTitle')}
+            </h2>
           </div>
 
-          <p className="text-center font-black italic text-xl mb-10 pt-2" style={{ color: NAVY }}>
-            Comment commander en 3 étapes simples
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-10 text-center">
-            {STEPS.map(({ n, title, desc }) => (
-              <div key={n} className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full text-white flex items-center
-                                justify-center mb-4 text-2xl font-bold flex-shrink-0 shadow-lg"
-                  style={{ background: PURPLE }}>
-                  {n}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STEPS.map(({ icon: Icon, title, desc, num }) => (
+              <div key={num} className="relative rounded-2xl p-8"
+                style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.2)' }}>
+                <p className="font-black text-5xl mb-4 opacity-20 text-white">{num}</p>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{ background: 'rgba(124,58,237,0.25)' }}>
+                  <Icon size={22} style={{ color: PURPLE }} />
                 </div>
-                <h3 className="font-bold text-base mb-2 italic" style={{ color: NAVY }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: PURPLE_SOFT }}>{desc}</p>
+                <h3 className="font-black text-white text-lg mb-2">{title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section className="max-w-3xl mx-auto px-4 py-16">
-        <div className="text-center mb-10">
-          <span className="font-bold text-xs uppercase tracking-widest mb-3 block" style={{ color: PURPLE }}>
-            Assistance
-          </span>
-          <h2 className="text-3xl font-black italic" style={{ color: PURPLE }}>
-            Questions les plus posées
-          </h2>
+      {/* ── Nouveaux produits ── */}
+      <section className="max-w-7xl mx-auto px-6 sm:px-10 py-20">
+        <div className="flex items-end justify-between mb-10">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
+              {t('newProducts')}
+            </p>
+            <h2 className="font-black italic text-4xl md:text-5xl" style={{ color: NAVY }}>
+              {t('newProductsSubtitle')}
+            </h2>
+          </div>
+          <Link to="/products"
+            className="hidden sm:flex items-center gap-2 text-sm font-bold transition-colors"
+            style={{ color: PURPLE }}>
+            {t('seeAll')}
+            <ArrowRight size={14} className={isRTL ? 'rotate-180' : ''} />
+          </Link>
         </div>
-        <div className="space-y-3">
-          {FAQS.map((faq) => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
+        <ProductGrid products={products} loading={loading} />
+      </section>
+
+      {/* ── Avis ── */}
+      <section className="py-20"
+        style={{ background: 'rgba(124,58,237,0.04)', borderTop: '1px solid rgba(124,58,237,0.08)' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-10">
+          <div className="text-center mb-12">
+            <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
+              {t('reviewTitle')}
+            </p>
+            <h2 className="font-black italic text-4xl md:text-5xl" style={{ color: NAVY }}>
+              {t('reviewSubtitle')}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {REVIEWS.map(({ name, text, stars }) => (
+              <div key={name} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: stars }).map((_, j) => (
+                    <Star key={j} size={14} className="fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-sm leading-relaxed mb-4 italic text-gray-500">"{text}"</p>
+                <p className="font-black text-sm" style={{ color: NAVY }}>— {name}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
+      {/* ── CTA Final ── */}
+      <section className="py-20" style={{ background: PURPLE }}>
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="font-black italic text-white text-4xl md:text-5xl mb-4">
+            {t('ctaTitle')}
+          </h2>
+          <p className="mb-8 text-base" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            {t('ctaSubtitle')}
+          </p>
+          <Link to="/products"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl
+                       font-black text-base transition-all hover:opacity-90 shadow-xl"
+            style={{ background: 'white', color: PURPLE }}>
+            {t('ctaBtn')}
+            <ArrowRight size={16} className={isRTL ? 'rotate-180' : ''} />
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

@@ -23,10 +23,10 @@ function Field({ label, icon: Icon, error, children }) {
 
 function CheckoutForm({ onSubmit, loading }) {
   const { t, isRTL } = useLang()
-  const [form, setForm]       = useState({ firstName: '', lastName: '', phone: '', wilaya: '', commune: '', description: '' })
-  const [errors, setErrors]   = useState({})
-  const [logoFiles, setLogoFiles]   = useState([])       // File objects (preview)
-  const [logoUrls, setLogoUrls]     = useState([])       // uploaded Cloudinary URLs
+  const [form, setForm]         = useState({ firstName: '', lastName: '', phone: '', wilaya: '', commune: '', description: '' })
+  const [errors, setErrors]     = useState({})
+  const [logoFiles, setLogoFiles]   = useState([])
+  const [logoUrls, setLogoUrls]     = useState([])
   const [uploading, setUploading]   = useState(false)
 
   const inputCls = err =>
@@ -35,14 +35,14 @@ function CheckoutForm({ onSubmit, loading }) {
 
   const validate = () => {
     const e = {}
-    if (!form.firstName.trim()) e.firstName   = t('errorFirstName')
-    if (!form.lastName.trim())  e.lastName    = t('errorLastName')
-    if (!form.phone.trim())     e.phone       = t('errorPhone')
+    if (!form.firstName.trim())   e.firstName   = t('errorFirstName')
+    if (!form.lastName.trim())    e.lastName    = t('errorLastName')
+    if (!form.phone.trim())       e.phone       = t('errorPhone')
     else if (!/^(0)(5|6|7)\d{8}$/.test(form.phone.replace(/\s/g, '')))
       e.phone = t('errorPhoneFormat')
-    if (!form.wilaya)           e.wilaya      = t('errorWilaya')
-    if (!form.commune.trim())   e.commune     = t('errorCommune')
-    if (logoUrls.length === 0)  e.logo        = t('errorLogo')
+    if (!form.wilaya)             e.wilaya      = t('errorWilaya')
+    if (!form.commune.trim())     e.commune     = t('errorCommune')
+    if (logoUrls.length === 0)    e.logo        = t('errorLogo')
     if (!form.description.trim()) e.description = t('errorDesc')
     return e
   }
@@ -55,6 +55,7 @@ function CheckoutForm({ onSubmit, loading }) {
 
   const handleLogoSelect = async (files) => {
     if (!files?.length) return
+    // Silently ignore if already at 2
     const remaining = 2 - logoFiles.length
     if (remaining <= 0) return
     const toUpload = Array.from(files).slice(0, remaining)
@@ -65,7 +66,7 @@ function CheckoutForm({ onSubmit, loading }) {
       setLogoUrls(p  => [...p, ...uploaded])
       setErrors(p => ({ ...p, logo: '' }))
     } catch {
-      setErrors(p => ({ ...p, logo: 'Erreur upload logo' }))
+      setErrors(p => ({ ...p, logo: t('errorLogo') }))
     } finally { setUploading(false) }
   }
 
@@ -88,12 +89,12 @@ function CheckoutForm({ onSubmit, loading }) {
       <div className="grid grid-cols-2 gap-3">
         <Field label={t('firstName')} icon={User} error={errors.firstName}>
           <input type="text" name="firstName" value={form.firstName}
-            onChange={handleChange} placeholder="Amina" autoComplete="given-name"
+            onChange={handleChange} autoComplete="given-name"
             className={inputCls(errors.firstName)} />
         </Field>
         <Field label={t('lastName')} icon={User} error={errors.lastName}>
           <input type="text" name="lastName" value={form.lastName}
-            onChange={handleChange} placeholder="Benali" autoComplete="family-name"
+            onChange={handleChange} autoComplete="family-name"
             className={inputCls(errors.lastName)} />
         </Field>
       </div>
@@ -124,16 +125,13 @@ function CheckoutForm({ onSubmit, loading }) {
       {/* Commune */}
       <Field label={t('commune')} icon={MapPin} error={errors.commune}>
         <input type="text" name="commune" value={form.commune}
-          onChange={handleChange} placeholder="Votre commune"
-          autoComplete="address-level2"
+          onChange={handleChange} autoComplete="address-level2"
           className={inputCls(errors.commune)} />
       </Field>
 
-      {/* Logo photos */}
+      {/* Logo */}
       <Field label={t('logoPhotos')} icon={Image} error={errors.logo}>
-        <p className="text-xs text-gray-400 mb-2">{t('logoDesc')}</p>
-
-        {/* Aperçu logos uploadés */}
+        {/* Aperçu */}
         {logoFiles.length > 0 && (
           <div className="flex gap-2 mb-3">
             {logoFiles.map((file, idx) => (
@@ -142,7 +140,8 @@ function CheckoutForm({ onSubmit, loading }) {
                 <img src={URL.createObjectURL(file)} alt="logo"
                   className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeLogo(idx)}
-                  className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 rounded-full
+                             flex items-center justify-center">
                   <X size={10} className="text-white" />
                 </button>
               </div>
@@ -150,17 +149,17 @@ function CheckoutForm({ onSubmit, loading }) {
           </div>
         )}
 
-        {/* Bouton upload */}
+        {/* Zone upload — cachée silencieusement si 2 photos atteintes */}
         {logoFiles.length < 2 && (
-          <label className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed
-                            cursor-pointer transition-all text-sm font-medium
+          <label className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl
+                            border-2 border-dashed cursor-pointer transition-all text-sm font-medium
                             ${uploading ? 'opacity-60 pointer-events-none' : 'hover:border-purple-400 hover:bg-purple-50'}`}
             style={{ borderColor: errors.logo ? '#fca5a5' : 'rgba(124,58,237,0.3)', color: PURPLE }}>
             <input type="file" accept="image/*" multiple className="hidden"
               onChange={e => handleLogoSelect(e.target.files)} />
             {uploading
-              ? <><Loader2 size={16} className="animate-spin" /> Upload...</>
-              : <><Image size={16} /> {t('logoPhotos').split('(')[0].trim()} ({logoFiles.length}/2)</>}
+              ? <><Loader2 size={16} className="animate-spin" /> {t('processing')}</>
+              : <><Image size={16} /> {t('logoPhotos').split('(')[0].trim()}</>}
           </label>
         )}
       </Field>
