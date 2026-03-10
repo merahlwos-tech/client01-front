@@ -59,23 +59,22 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   })
 
   return (
-    /* Backdrop — couvre tout l'écran y compris la barre mobile */
+    /* Backdrop — position absolue explicite pour compatibilité Android */
     <div
-      className="fixed z-50"
-      style={{ inset: 0, background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)' }}
+      className="fixed z-50 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4"
+      style={{
+        top: 0, left: 0, right: 0, bottom: 0,
+        width: '100%', height: '100%',
+        background: 'rgba(30,27,75,0.75)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
 
-      {/*
-        Desktop : modal centré
-        Mobile  : bottom sheet qui remonte depuis le bas
-        On utilise flex column + mt-auto sur mobile pour coller en bas,
-        et m-auto sur desktop pour centrer
-      */}
-      <div className="flex flex-col justify-end sm:justify-center items-center w-full h-full sm:p-4">
-        <div
-          className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col"
-          style={{ maxHeight: '92dvh', maxHeight: '92vh' }}
-          onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col"
+        style={{ maxHeight: '90dvh', maxHeight: '90vh', minHeight: 0 }}
+        onClick={e => e.stopPropagation()}>
 
         {/* Header — fixe en haut, ne scroll pas */}
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
@@ -222,7 +221,6 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
               </button>
             )}
           </div>
-        </div>
         </div>
       </div>
     </div>
