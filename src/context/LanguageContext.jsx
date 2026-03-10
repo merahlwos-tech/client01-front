@@ -14,6 +14,7 @@ export const T = {
     doubleSided: 'Impression des deux côtés', doubleSidedExtra: '+{price} DA / unité',
     deliveryInfo: "Livraison dans toute l'Algérie", deliveryDetail: 'Paiement à la livraison · 2 à 5 jours ouvrables',
     selectSize: 'Veuillez sélectionner une taille', added: 'ajouté au panier !',
+    fromPrice: 'à partir de', perUnit: '/ unité', chooseSizes: 'Choisir les tailles',
     // Cart
     myCart: 'Mon panier 🛍️', emptyCart: 'Panier vide', emptyCartDesc: 'Découvrez notre sélection d\'emballages',
     discover: 'Découvrir la boutique', continueShopping: 'Continuer mes achats',
@@ -80,6 +81,7 @@ export const T = {
     doubleSided: 'طباعة وجهين', doubleSidedExtra: '+{price} دج / وحدة',
     deliveryInfo: 'التوصيل لكل الجزائر', deliveryDetail: 'الدفع عند الاستلام · من 2 إلى 5 أيام',
     selectSize: 'يرجى اختيار مقاس', added: 'تمت الإضافة للسلة !',
+    fromPrice: 'ابتداءً من', perUnit: '/ وحدة', chooseSizes: 'اختر المقاس',
     // Cart
     myCart: 'سلتي 🛍️', emptyCart: 'السلة فارغة', emptyCartDesc: 'اكتشف تشكيلة التغليف لدينا',
     discover: 'اكتشف المتجر', continueShopping: 'مواصلة التسوق',
