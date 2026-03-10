@@ -24,7 +24,7 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty]   = useState(false)
 
-  // Bloquer le scroll du body quand le modal est ouvert
+  // Bloquer le scroll du body
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -54,12 +54,11 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   }
 
   const createdAt = new Date(order.createdAt).toLocaleDateString('fr-DZ', {
-    day: '2-digit', month: 'long', year: 'numeric',
+    day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
 
   return (
-    /* Backdrop — position absolue explicite pour compatibilité Android */
     <div
       className="fixed z-50 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4"
       style={{
@@ -76,75 +75,78 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
         style={{ maxHeight: '90dvh', maxHeight: '90vh', minHeight: 0 }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Header — fixe en haut, ne scroll pas */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-          style={{ borderBottom: `1px solid rgba(124,58,237,0.1)` }}>
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(124,58,237,0.1)' }}>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PURPLE }}>
               Commande #{order._id.slice(-6).toUpperCase()}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">{createdAt}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{createdAt}</p>
           </div>
           <button onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0 ml-2">
             <X size={18} style={{ color: NAVY }} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 overscroll-contain">
+        {/* ── Corps scrollable ── */}
+        <div className="px-4 sm:px-6 py-4 space-y-4 overflow-y-auto flex-1 overscroll-contain">
 
           {/* Client */}
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+          <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
               Client
             </p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Nom</p>
-                <p className="font-bold" style={{ color: NAVY }}>
+            {/* 2 colonnes sur >= 360px, 1 colonne en dessous */}
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 text-sm">
+              <div className="min-w-0">
+                <p className="text-gray-400 text-[11px] mb-0.5">Nom</p>
+                <p className="font-bold truncate" style={{ color: NAVY }}>
                   {order.customerInfo.firstName} {order.customerInfo.lastName}
                 </p>
               </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Téléphone</p>
-                <a href={`tel:${order.customerInfo.phone}`} className="font-bold" style={{ color: PURPLE }}>
+              <div className="min-w-0">
+                <p className="text-gray-400 text-[11px] mb-0.5">Téléphone</p>
+                <a href={`tel:${order.customerInfo.phone}`}
+                  className="font-bold block truncate" style={{ color: PURPLE }}>
                   {order.customerInfo.phone}
                 </a>
               </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Wilaya</p>
-                <p className="font-semibold" style={{ color: NAVY }}>{order.customerInfo.wilaya}</p>
+              <div className="min-w-0">
+                <p className="text-gray-400 text-[11px] mb-0.5">Wilaya</p>
+                <p className="font-semibold truncate" style={{ color: NAVY }}>{order.customerInfo.wilaya}</p>
               </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Commune</p>
-                <p className="font-semibold" style={{ color: NAVY }}>{order.customerInfo.commune}</p>
+              <div className="min-w-0">
+                <p className="text-gray-400 text-[11px] mb-0.5">Commune</p>
+                <p className="font-semibold truncate" style={{ color: NAVY }}>{order.customerInfo.commune}</p>
               </div>
             </div>
           </div>
 
-          {/* Description */}
+          {/* Instructions */}
           {order.customerInfo.description && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: PURPLE }}>
                 Instructions client
               </p>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-gray-700">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-gray-700 leading-relaxed">
                 {order.customerInfo.description}
               </div>
             </div>
           )}
 
-          {/* Logo client */}
+          {/* Logos */}
           {order.customerInfo.logoUrls?.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
                 Logo du client
               </p>
               <div className="flex gap-3 flex-wrap">
                 {order.customerInfo.logoUrls.map((url, idx) => (
-                  <div key={idx} className="relative">
+                  <div key={idx} className="relative flex-shrink-0">
                     <img src={url} alt={`logo ${idx + 1}`}
-                      className="w-28 h-28 object-contain rounded-xl border-2 bg-gray-50"
+                      className="w-24 h-24 sm:w-28 sm:h-28 object-contain rounded-xl border-2 bg-gray-50"
                       style={{ borderColor: 'rgba(124,58,237,0.2)' }} />
                     <button onClick={() => downloadLogo(url, idx)}
                       className="absolute -bottom-2 -right-2 flex items-center gap-1 px-2 py-1
@@ -160,22 +162,22 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
 
           {/* Articles */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
               Articles commandés
             </p>
             <div className="space-y-2">
               {order.items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 text-sm">
-                  <div className="flex-1">
-                    <p className="font-bold" style={{ color: NAVY }}>{item.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Taille: {item.size}
+                <div key={i} className="flex items-start justify-between gap-2 p-3 rounded-xl bg-gray-50 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate" style={{ color: NAVY }}>{item.name}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Taille : {item.size}
                       {item.doubleSided && <span className="ml-2 text-purple-500">• Recto-verso</span>}
                     </p>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-xs text-gray-400">{item.quantity.toLocaleString()} unités</p>
-                    <p className="font-black" style={{ color: PURPLE }}>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[11px] text-gray-400">{item.quantity.toLocaleString()} unités</p>
+                    <p className="font-black text-sm" style={{ color: PURPLE }}>
                       {(item.price * item.quantity).toLocaleString('fr-DZ')} DA
                     </p>
                   </div>
@@ -185,24 +187,25 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
           </div>
 
           {/* Total */}
-          <div className="flex justify-between items-center p-4 rounded-2xl"
+          <div className="flex justify-between items-center p-3 sm:p-4 rounded-xl"
             style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
             <span className="font-bold text-sm" style={{ color: NAVY }}>Total</span>
-            <span className="font-black text-2xl" style={{ color: PURPLE }}>
+            <span className="font-black text-xl sm:text-2xl" style={{ color: PURPLE }}>
               {(order.total ?? 0).toLocaleString('fr-DZ')}
-              <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
+              <span className="text-xs font-normal text-gray-400 ml-1">DA</span>
             </span>
           </div>
 
           {/* Statut */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+          <div className="pb-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: PURPLE }}>
               Statut de la commande
             </p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
               {STATUS_OPTIONS.map(opt => (
-                <button key={opt.value} onClick={() => { setStatus(opt.value); setDirty(opt.value !== order.status) }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+                <button key={opt.value}
+                  onClick={() => { setStatus(opt.value); setDirty(opt.value !== order.status) }}
+                  className="px-2 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold border-2 transition-all text-center"
                   style={{
                     background:  status === opt.value ? opt.color : 'white',
                     borderColor: status === opt.value ? opt.color : '#e5e7eb',
@@ -214,18 +217,20 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
             </div>
             {dirty && (
               <button onClick={handleSave} disabled={saving}
-                className="mt-3 flex items-center gap-2 px-5 py-2 rounded-xl text-white font-bold text-sm"
+                className="mt-3 w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm"
                 style={{ background: PURPLE }}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : null}
                 Enregistrer le statut
               </button>
             )}
           </div>
+
         </div>
       </div>
     </div>
   )
 }
+
 
 function AdminOrdersPage() {
   const [orders, setOrders]         = useState([])
