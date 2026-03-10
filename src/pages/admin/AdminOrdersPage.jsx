@@ -24,11 +24,15 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty]   = useState(false)
 
-  // Bloquer le scroll du body
+  // Bloquer le scroll + touche Escape pour fermer
   useEffect(() => {
-    const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
   }, [])
 
   const handleSave = async () => {
@@ -468,8 +472,8 @@ function AdminOrdersPage() {
 
       {/* Modal confirmation suppression */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)' }}>
+        <div className="fixed z-50 flex items-center justify-center p-4"
+          style={{ top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
