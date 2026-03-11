@@ -5,8 +5,8 @@ import { useCart } from '../../context/CartContext'
 import { useLang } from '../../context/LanguageContext'
 
 /* ── Palette ── */
-const BG_BASE    = '#3b3278'   /* mauve doux — remplace l'ancien #1e1b4b trop foncé */
-const BG_SCROLL  = '#322b6b'
+const BG_BASE    = '#6d28d9'   /* mauve doux — remplace l'ancien #1e1b4b trop foncé */
+const BG_SCROLL  = '#5b21b6'
 const PURPLE     = '#7c3aed'
 
 function Navbar() {
@@ -37,8 +37,8 @@ function Navbar() {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${fontCls}`}
         style={{
           background: scrolled
-            ? `rgba(50,43,107,0.98)`
-            : `rgba(59,50,120,0.93)`,
+            ? `rgba(109,40,217,0.98)`
+            : `rgba(109,40,217,0.93)`,
           backdropFilter: 'blur(14px)',
           borderBottom: scrolled ? '1px solid rgba(124,58,237,0.25)' : '1px solid transparent',
           boxShadow: scrolled ? '0 4px 24px rgba(30,27,75,0.18)' : 'none',

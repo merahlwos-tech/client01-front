@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { ChevronRight, Package } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 
@@ -65,27 +65,36 @@ function FAQItem({ q, a }) {
 }
 
 function HomePage() {
-  const navigate = useNavigate()
   const { lang, isRTL } = useLang()
+  const produitsSectionRef = useRef(null)
 
   const steps   = lang === 'ar' ? STEPS_AR : STEPS_FR
   const faqs    = lang === 'ar' ? FAQS_AR  : FAQS_FR
   const fontCls = lang === 'ar' ? 'font-arabic' : ''
 
+  /* ── Scroll smooth vers la section Nos Produits ── */
+  const scrollToProduits = () => {
+    produitsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div className={`min-h-screen ${fontCls}`} dir={isRTL ? 'rtl' : 'ltr'}
       style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%)' }}>
 
-      {/* ── HERO ── */}
+      {/* ══════════════════════════════════════
+          HERO
+      ══════════════════════════════════════ */}
       <header className="px-4 pt-20 pb-6">
 
-        {/* ── Desktop : 2 colonnes côte à côte ── */}
-        <div className="hidden md:flex items-center gap-0 rounded-2xl overflow-hidden max-w-7xl mx-auto"
-          style={{ minHeight: 420, background: 'white', boxShadow: '0 8px 40px rgba(124,58,237,0.12)' }}>
+        {/* Desktop — 2 colonnes */}
+        <div className="hidden md:flex items-stretch gap-0 rounded-2xl overflow-hidden max-w-7xl mx-auto"
+          style={{ minHeight: 440, background: 'white', boxShadow: '0 8px 40px rgba(124,58,237,0.13)' }}>
 
           {/* Texte */}
-          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}>
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-6"
+          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center
+                          ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}>
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest
+                             px-3 py-1 rounded-full mb-6"
               style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
               <Package size={12} />
               {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
@@ -106,10 +115,13 @@ function HomePage() {
             </p>
 
             <div className={`flex gap-3 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <button onClick={() => navigate('/products')}
-                className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
+              {/* ← scroll vers la section, pas navigate */}
+              <button
+                onClick={scrollToProduits}
+                className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg
+                           transition-all hover:scale-105 hover:opacity-90"
                 style={{ background: PURPLE }}>
-                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Voir nos produits'}
+                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
               </button>
               <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
                 className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
@@ -122,8 +134,8 @@ function HomePage() {
             <div className={`flex gap-8 mt-10 pt-8 ${isRTL ? 'flex-row-reverse' : ''}`}
               style={{ borderTop: '1px solid rgba(124,58,237,0.12)' }}>
               {[
-                { val: '500+', label: lang === 'ar' ? 'عميل راضٍ' : 'Clients satisfaits' },
-                { val: '69',   label: lang === 'ar' ? 'ولاية' : 'Wilayas' },
+                { val: '500+', label: lang === 'ar' ? 'عميل راضٍ'     : 'Clients satisfaits' },
+                { val: '69',   label: lang === 'ar' ? 'ولاية'          : 'Wilayas' },
                 { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
               ].map(s => (
                 <div key={s.val} className={isRTL ? 'text-right' : ''}>
@@ -134,23 +146,18 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Photo — pleine hauteur, pas de filtre violet */}
+          {/* Photo — pleine hauteur */}
           <div className="w-[42%] lg:w-[45%] self-stretch flex-shrink-0">
-            <img
-              src="/main.jpg"
-              alt="BrandPack emballages"
-              className="w-full h-full object-cover"
-              style={{ minHeight: 420 }}
-            />
+            <img src="/main.jpg" alt="BrandPack emballages"
+              className="w-full h-full object-cover" style={{ minHeight: 440 }} />
           </div>
         </div>
 
-        {/* ── Mobile : hero image plein écran ── */}
-        <div className="md:hidden relative overflow-hidden rounded-xl flex items-center justify-center min-h-[300px]"
+        {/* Mobile */}
+        <div className="md:hidden relative overflow-hidden rounded-2xl flex items-center justify-center min-h-[300px]"
           style={{ background: NAVY }}>
           <div className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.45), rgba(30,27,75,0.82)), url('/main.jpg')` }}
-          />
+            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.45), rgba(30,27,75,0.82)), url('/main.jpg')` }} />
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-14 max-w-2xl mx-auto">
             <h1 className="text-white text-3xl font-black leading-tight mb-4 italic">
               {lang === 'ar' ? 'التغليف الذي يصنع الفرق' : "L'emballage qui fait la différence"}
@@ -160,18 +167,26 @@ function HomePage() {
                 ? 'كراتين، أكياس، بطاقات وورق — توصيل لكل الجزائر.'
                 : 'Cartons, sacs, cartes et papier — livrés partout en Algérie.'}
             </p>
-            <button onClick={() => navigate('/products')}
+            {/* ← scroll vers la section, pas navigate */}
+            <button onClick={scrollToProduits}
               className="px-8 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105"
               style={{ background: PURPLE }}>
-              {lang === 'ar' ? 'اكتشف المتجر' : 'Découvrir la boutique'}
+              {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ── NOS PRODUITS ── */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className={`flex items-center gap-3 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      {/* ══════════════════════════════════════
+          NOS PRODUITS  ← ancre de scroll
+      ══════════════════════════════════════ */}
+      <section
+        ref={produitsSectionRef}
+        id="nos-produits"
+        className="max-w-7xl mx-auto px-4 py-14 scroll-mt-20">
+
+        {/* Titre section */}
+        <div className={`flex items-center gap-4 mb-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className="h-px flex-1" style={{ background: 'rgba(124,58,237,0.15)' }} />
           <h2 className="text-2xl md:text-3xl font-black italic whitespace-nowrap" style={{ color: PURPLE }}>
             {lang === 'ar' ? 'منتجاتنا' : 'Nos produits'}
@@ -179,31 +194,54 @@ function HomePage() {
           <div className="h-px flex-1" style={{ background: 'rgba(124,58,237,0.15)' }} />
         </div>
 
+        {/* Grille catégories */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {CAT_IMAGES.map(({ label_fr, label_ar, cat, image }) => (
-            <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-500 group-hover:-translate-y-2"
-                style={{ boxShadow: '0 4px 20px rgba(124,58,237,0.12)' }}>
-                {/* Image sans filtre violet */}
-                <img
-                  src={image}
-                  alt={lang === 'ar' ? label_ar : label_fr}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                {/* Label en bas avec léger dégradé sombre pour lisibilité */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 flex items-end p-4"
-                  style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.72), transparent)' }}>
-                  <p className="text-white text-lg font-black">
-                    {lang === 'ar' ? label_ar : label_fr}
-                  </p>
+          {CAT_IMAGES.map(({ label_fr, label_ar, cat, image }) => {
+            const label = lang === 'ar' ? label_ar : label_fr
+            return (
+              <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer block">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-500
+                                group-hover:-translate-y-2 group-hover:shadow-2xl"
+                  style={{ boxShadow: '0 4px 24px rgba(124,58,237,0.1)' }}>
+
+                  {/* Photo */}
+                  <img src={image} alt={label}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+
+                  {/* ── Label EN HAUT ── badge frosted glass */}
+                  <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} z-10`}>
+                    <span
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-black
+                                 backdrop-blur-md leading-none"
+                      style={{
+                        background: 'rgba(255,255,255,0.82)',
+                        color: NAVY,
+                        boxShadow: '0 2px 12px rgba(30,27,75,0.15)',
+                        border: '1px solid rgba(255,255,255,0.6)',
+                      }}>
+                      {/* Point violet décoratif */}
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PURPLE }} />
+                      {label}
+                    </span>
+                  </div>
+
+                  {/* Léger vignettage bas pour profondeur */}
+                  <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
+                    style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.3), transparent)' }} />
+
+                  {/* Hover overlay subtil */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: 'rgba(124,58,237,0.08)' }} />
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       </section>
 
-      {/* ── Comment commander ── */}
+      {/* ══════════════════════════════════════
+          COMMENT COMMANDER
+      ══════════════════════════════════════ */}
       <section className="py-20 px-4 my-4">
         <div className="max-w-4xl mx-auto rounded-3xl p-8 md:p-12 relative"
           style={{
@@ -212,7 +250,6 @@ function HomePage() {
             background: 'rgba(255,255,255,0.5)',
             backdropFilter: 'blur(8px)',
           }}>
-
           <div className="absolute -top-11 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl
                           font-bold text-sm uppercase tracking-widest text-center leading-snug
                           w-max max-w-[300px] text-white shadow-lg"
@@ -221,16 +258,14 @@ function HomePage() {
               ? <><span className="block">اطلب الآن</span><span className="block">بخطوات بسيطة</span></>
               : <><span className="block">Passez votre commande</span><span className="block">en quelques clics</span></>}
           </div>
-
           <p className="text-center font-black italic text-xl mb-10 pt-2" style={{ color: NAVY }}>
             {lang === 'ar' ? 'كيف تطلب في 3 خطوات بسيطة' : 'Comment commander en 3 étapes simples'}
           </p>
-
           <div className="grid md:grid-cols-3 gap-10 text-center">
             {steps.map(({ n, title, desc }) => (
               <div key={n} className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full text-white flex items-center
-                                justify-center mb-4 text-2xl font-bold flex-shrink-0 shadow-lg"
+                <div className="w-16 h-16 rounded-full text-white flex items-center justify-center
+                                mb-4 text-2xl font-bold flex-shrink-0 shadow-lg"
                   style={{ background: PURPLE }}>
                   {n}
                 </div>
@@ -242,7 +277,9 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
+      {/* ══════════════════════════════════════
+          FAQ
+      ══════════════════════════════════════ */}
       <section className="max-w-3xl mx-auto px-4 py-16">
         <div className="text-center mb-10">
           <span className="font-bold text-xs uppercase tracking-widest mb-3 block" style={{ color: PURPLE }}>

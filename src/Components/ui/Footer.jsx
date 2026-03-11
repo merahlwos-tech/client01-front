@@ -5,7 +5,7 @@ import { MessageCircle } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 
 /* ── Palette ── */
-const BG     = '#3b3278'   /* mauve doux */
+const BG     = '#6d28d9'   /* mauve doux */
 const PURPLE = '#7c3aed'
 const PHONE  = '+213554767444'
 const WA     = '213554767444'
