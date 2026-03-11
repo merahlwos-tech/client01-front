@@ -11,11 +11,11 @@ const CONTENT = {
   fr: {
     hero_badge:  'Emballage sur mesure · Algérie',
     hero_title:  'Qui sommes-nous ?',
-    hero_sub:    "BrandPack, votre partenaire d'emballage en Algérie — cartons, sacs, autocollants et papier.",
+    hero_sub:    "BrandPack, votre partenaire d\u2019emballage en Alg\u00e9rie \u2014 cartons, sacs, autocollants et papier.",
     mission_tag: 'Notre mission',
-    mission_h2:  "L'emballage au service de votre image",
+    mission_h2:  "L\u2019emballage au service de votre image",
     mission_p:   "Chez BrandPack, nous croyons que l'emballage est le premier contact de votre client avec votre marque. C'est pourquoi nous proposons des solutions d'emballage de qualité — cartons solides, sacs élégants, autocollants personnalisés et papiers créatifs — pour les professionnels et particuliers partout en Algérie.",
-    mission_quote: "L'emballage, c'est notre art",
+    mission_quote: "L\u2019emballage, c\u2019est notre art",
     products_tag: 'Ce que nous vendons',
     products_h2:  'Nos catégories',
     products: [
