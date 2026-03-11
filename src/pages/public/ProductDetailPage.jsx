@@ -6,6 +6,7 @@ import { useCart } from '../../context/CartContext'
 import SizeSelector from '../../Components/public/SizeSelector'
 import QuantitySelector from '../../Components/public/QuantitySelector'
 import { useLang } from '../../context/LanguageContext'
+import { trackViewContent, trackAddToCart } from '../../utils/metaPixel'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
@@ -34,6 +35,9 @@ function ProductDetailPage() {
         setProduct(res.data)
         if (res.data.sizes?.length > 0) setSelectedSize(res.data.sizes[0].size)
         setDoubleSided(res.data.doubleSided ?? false)
+        // ViewContent : on utilise le prix de la première taille disponible
+        const firstPrice = res.data.sizes?.[0]?.price ?? 0
+        trackViewContent(res.data, firstPrice)
       })
       .catch(() => navigate('/products'))
       .finally(() => setLoading(false))
@@ -59,12 +63,14 @@ function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
     addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided)
+    trackAddToCart(product, selectedSize, quantity, unitPrice)
     toast.success(`${product.name} ${t('added')}`)
   }
 
   const handleBuyNow = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
     addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided)
+    trackAddToCart(product, selectedSize, quantity, unitPrice)
     navigate('/cart')
   }
 

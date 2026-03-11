@@ -6,7 +6,8 @@ import CartItem from '../../Components/public/CartItem'
 import CheckoutForm from '../../Components/public/CheckoutForm'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { trackInitiateCheckout, trackPurchase } from '../../utils/metaPixel'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
@@ -17,12 +18,23 @@ function CartPage() {
   const navigate      = useNavigate()
   const [submitting, setSubmitting] = useState(false)
 
+  // InitiateCheckout — déclenché une fois quand l'utilisateur arrive sur la page panier
+  useEffect(() => {
+    if (items.length > 0) {
+      trackInitiateCheckout(items, total)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleOrder = async (customerInfo) => {
     if (items.length === 0) { toast.error('Votre panier est vide'); return }
     setSubmitting(true)
+
+    // 1. Pixel Purchase (côté client) — retourne l'event_id pour déduplication CAPI
+    const metaEventId = trackPurchase(items, total)
+
     try {
       await api.post('/orders', {
-        customerInfo, // contient firstName, lastName, phone, wilaya, commune, description, logoUrls
+        customerInfo,
         items: items.map(item => ({
           product:     item.productId,
           name:        item.name,
@@ -32,6 +44,7 @@ function CartPage() {
           price:       item.price,
         })),
         total,
+        metaEventId, // 2. Transmis au backend → CAPI Purchase avec même event_id
       })
       clearCart()
       navigate('/confirmation', { replace: true })

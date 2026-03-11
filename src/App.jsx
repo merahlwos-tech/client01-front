@@ -1,8 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { useEffect } from 'react'
 import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
+import { trackPageView } from './utils/metaPixel'
 import Navbar from './Components/ui/Navbar'
 import Footer from './Components/ui/Footer'
 import PrivateRoute from './Components/ui/PrivateRoute'
@@ -20,6 +22,13 @@ import AdminProductsPage from './pages/admin/AdminProductsPage'
 import AdminOrdersPage from './pages/admin/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage'
 
+// Déclenche un PageView Meta à chaque changement de route
+function PageViewTracker() {
+  const location = useLocation()
+  useEffect(() => { trackPageView() }, [location.pathname])
+  return null
+}
+
 function PublicLayout({ children }) {
   return (
     <div className="flex flex-col min-h-screen">
@@ -36,6 +45,7 @@ function App() {
       <LanguageProvider>
         <AuthProvider>
           <CartProvider>
+            <PageViewTracker />
             <Toaster position="top-right"
               toastOptions={{
                 style: {
