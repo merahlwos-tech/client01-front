@@ -9,10 +9,10 @@ const PURPLE_SOFT  = 'rgba(124,58,237,0.65)'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.35)'
 
 const CAT_IMAGES = [
-  { label_fr: 'Boites',  label_ar: 'صناديق', cat: 'Board',        image: '/boite.png' },
-  { label_fr: 'Sacs',    label_ar: 'أكياس',  cat: 'Bags',         image: '/sacs.png' },
-  { label_fr: 'Cartes',  label_ar: 'بطاقات', cat: 'Autocollants', image: '/carte.png' },
-  { label_fr: 'Papier',  label_ar: 'ورق',    cat: 'Paper',        image: '/papier.png' },
+  { label_fr: 'Boites',  label_ar: 'صناديق', cat: 'Board',        image: '/boite.webp' },
+  { label_fr: 'Sacs',    label_ar: 'أكياس',  cat: 'Bags',         image: '/sacs.webp' },
+  { label_fr: 'Cartes',  label_ar: 'بطاقات', cat: 'Autocollants', image: '/carte.webp' },
+  { label_fr: 'Papier',  label_ar: 'ورق',    cat: 'Paper',        image: '/papier.webp' },
 ]
 
 const STEPS_FR = [
@@ -148,7 +148,8 @@ function HomePage() {
 
           {/* Photo — pleine hauteur */}
           <div className="w-[42%] lg:w-[45%] self-stretch flex-shrink-0">
-            <img src="/main.jpg" alt="BrandPack emballages"
+            <img src="/main.webp" alt="BrandPack emballages"
+              fetchpriority="high" loading="eager"
               className="w-full h-full object-cover" style={{ minHeight: 440 }} />
           </div>
         </div>
@@ -157,7 +158,7 @@ function HomePage() {
         <div className="md:hidden relative overflow-hidden rounded-2xl flex items-center justify-center min-h-[300px]"
           style={{ background: NAVY }}>
           <div className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.45), rgba(30,27,75,0.82)), url('/main.jpg')` }} />
+            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.45), rgba(30,27,75,0.82)), url('/main.webp')` }} />
           <div className="relative z-10 w-full flex flex-col items-center text-center px-6 py-14 max-w-2xl mx-auto">
             <h1 className="text-white text-3xl font-black leading-tight mb-4 italic">
               {lang === 'ar' ? 'التغليف الذي يصنع الفرق' : "L'emballage qui fait la différence"}
@@ -222,7 +223,8 @@ function HomePage() {
                     style={{ boxShadow: '0 4px 24px rgba(124,58,237,0.1)' }}>
 
                     <img src={image} alt={label}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy" width="300" height="400" />
 
                     {/* Léger vignettage bas pour profondeur */}
                     <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
