@@ -200,38 +200,39 @@ function HomePage() {
             const label = lang === 'ar' ? label_ar : label_fr
             return (
               <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer block">
-                <div className="relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-500
-                                group-hover:-translate-y-2 group-hover:shadow-2xl"
-                  style={{ boxShadow: '0 4px 24px rgba(124,58,237,0.1)' }}>
+                <div className="flex flex-col items-center">
 
                   {/* Photo */}
-                  <img src={image} alt={label}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-500
+                                  group-hover:-translate-y-2 group-hover:shadow-2xl"
+                    style={{ boxShadow: '0 4px 24px rgba(124,58,237,0.1)' }}>
 
-                  {/* ── Label EN HAUT ── badge frosted glass */}
-                  <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} z-10`}>
+                    <img src={image} alt={label}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+
+                    {/* Léger vignettage bas pour profondeur */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
+                      style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.25), transparent)' }} />
+
+                    {/* Hover overlay subtil */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: 'rgba(124,58,237,0.08)' }} />
+                  </div>
+
+                  {/* ── Label EN DEHORS — badge violet style "Passez votre commande" ── */}
+                  <div className="relative -mt-4 z-10">
                     <span
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-black
-                                 backdrop-blur-md leading-none"
+                      className="flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-bold
+                                 text-white shadow-lg uppercase tracking-wide leading-none
+                                 transition-all duration-300 group-hover:scale-105"
                       style={{
-                        background: 'rgba(255,255,255,0.82)',
-                        color: NAVY,
-                        boxShadow: '0 2px 12px rgba(30,27,75,0.15)',
-                        border: '1px solid rgba(255,255,255,0.6)',
+                        background: PURPLE,
+                        boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
                       }}>
-                      {/* Point violet décoratif */}
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PURPLE }} />
                       {label}
                     </span>
                   </div>
 
-                  {/* Léger vignettage bas pour profondeur */}
-                  <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
-                    style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.3), transparent)' }} />
-
-                  {/* Hover overlay subtil */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: 'rgba(124,58,237,0.08)' }} />
                 </div>
               </Link>
             )
