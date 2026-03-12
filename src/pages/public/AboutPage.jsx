@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Package, Truck, Shield, Star, MapPin, Phone } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
-import { useSEO } from '../../utils/useSEO'
+import { useSEO } from '../../utils/UseSEO'
 
 const NAVY         = '#1e1b4b'
 const PURPLE       = '#7c3aed'

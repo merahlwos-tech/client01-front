@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../../utils/api'
 import ProductGrid from '../../Components/public/ProductGrid'
-import { useSEO } from '../../utils/useSEO'
+import { useSEO } from '../../utils/UseSEO'
 
 const CAT_TITLES = {
   Board:        'Boites d\'emballage personnalisées',

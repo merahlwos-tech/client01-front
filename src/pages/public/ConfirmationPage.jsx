@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useLang } from '../../context/LanguageContext'
-import { useSEO } from '../../utils/useSEO'
+import { useSEO } from '../../utils/UseSEO'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'

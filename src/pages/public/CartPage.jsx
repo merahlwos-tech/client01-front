@@ -8,7 +8,7 @@ import api from '../../utils/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import { trackInitiateCheckout, trackPurchase } from '../../utils/metaPixel'
-import { useSEO } from '../../utils/useSEO'
+import { useSEO } from '../../utils/UseSEO'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'

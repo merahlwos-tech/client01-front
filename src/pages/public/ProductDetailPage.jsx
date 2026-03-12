@@ -7,7 +7,7 @@ import SizeSelector from '../../Components/public/SizeSelector'
 import QuantitySelector from '../../Components/public/QuantitySelector'
 import { useLang } from '../../context/LanguageContext'
 import { trackViewContent, trackAddToCart, trackHighQualityVisitor, trackScrollToForm } from '../../utils/metaPixel'
-import { useSEO } from '../../utils/useSEO'
+import { useSEO } from '../../utils/UseSEO'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
