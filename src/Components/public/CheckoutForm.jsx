@@ -3,7 +3,14 @@ import { ChevronDown, User, Phone, MapPin, Map, Loader2, Package, Image, X, File
 import { useLang } from '../../context/LanguageContext'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
 import { trackFormEngagement } from '../../utils/metaPixel'
+import { wilayas as LOCAL_WILAYAS } from '../../data/wilayas'
 import toast from 'react-hot-toast'
+
+// Convertit les wilayas locales au format attendu par le composant
+const LOCAL_WILAYAS_FORMATTED = LOCAL_WILAYAS.map(w => ({
+  wilaya_id: w.code,
+  wilaya_name: w.name,
+}))
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
@@ -26,20 +33,26 @@ function useEcotrackData() {
   useEffect(() => {
     const cachedW = ssGet('eco_wilayas')
     const cachedF = ssGet('eco_fees')
-    if (cachedW && cachedF) { setWilayas(cachedW); setFees(cachedF); return }
+    if (cachedW?.length && cachedF) { setWilayas(cachedW); setFees(cachedF); return }
 
     setLoadingW(true)
     Promise.all([
-      fetch(`${API}/api/ecotrack/wilayas`).then(r => r.json()),
-      fetch(`${API}/api/ecotrack/fees`).then(r => r.json()),
+      fetch(`${API}/api/ecotrack/wilayas`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/ecotrack/fees`).then(r => r.json()).catch(() => null),
     ]).then(([w, f]) => {
-      const wList = Array.isArray(w) ? w : (w?.data || [])
+      let wList = Array.isArray(w) ? w : (w?.data || [])
+      if (!wList.length) {
+        console.warn('ECOTRACK indisponible — données locales utilisées')
+        wList = LOCAL_WILAYAS_FORMATTED
+      }
       const fList = Array.isArray(f) ? f : (f?.data || [])
       const sorted = [...wList].sort((a, b) => Number(a.wilaya_id) - Number(b.wilaya_id))
       setWilayas(sorted); ssSet('eco_wilayas', sorted)
-      setFees(fList);    ssSet('eco_fees', fList)
-    }).catch(err => console.error('ECOTRACK wilayas/fees:', err))
-      .finally(() => setLoadingW(false))
+      setFees(fList);     ssSet('eco_fees', fList)
+    }).catch(err => {
+      console.error('ECOTRACK wilayas/fees:', err)
+      setWilayas(LOCAL_WILAYAS_FORMATTED)
+    }).finally(() => setLoadingW(false))
   }, [])
 
   // Fetch communes when wilaya changes
