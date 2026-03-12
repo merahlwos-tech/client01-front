@@ -164,16 +164,16 @@ export function trackPurchase(items, total) {
 
   // Temporairement commenté pour tester le CAPI Purchase en mode test Meta
   // (le fbq déduplicait l'événement CAPI et l'empêchait d'apparaître dans l'onglet test)
-  // À remettre en production avec test_event_code commenté dans metaCAPI.js
-  //
-  // const numItems = items.reduce((s, i) => s + i.quantity, 0)
-  // fbq('track', 'Purchase', {
-  //   content_ids:  items.map(i => i.productId),
-  //   contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
-  //   num_items:    numItems,
-  //   value:        0,
-  //   currency:     'USD',
-  // }, { eventID: eventId })
+   À remettre en production avec test_event_code commenté dans metaCAPI.js
+  
+   const numItems = items.reduce((s, i) => s + i.quantity, 0)
+   fbq('track', 'Purchase', {
+     content_ids:  items.map(i => i.productId),
+     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
+     num_items:    numItems,
+     value:        0,
+     currency:     'USD',
+   }, { eventID: eventId })
 
   return eventId
 }
