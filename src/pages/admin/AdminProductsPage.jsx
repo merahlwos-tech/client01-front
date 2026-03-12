@@ -151,7 +151,7 @@ function AdminProductsPage() {
           style={{ top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
           onClick={e => { if (e.target === e.currentTarget) { setShowForm(false); setEditingProduct(null) } }}>
           <div className="bg-white w-full sm:max-w-xl sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden"
-            style={{ maxHeight: '92dvh', maxHeight: '92vh', minHeight: 0 }}
+            style={{ maxHeight: '92dvh', minHeight: 0 }}
             onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0"
                 style={{ background: NAVY }}>
