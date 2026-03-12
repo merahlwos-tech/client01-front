@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
-import { ChevronDown, User, Phone, MapPin, Map, Loader2, Package, Image, X, FileText } from 'lucide-react'
-import wilayas from '../../data/wilayas'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { ChevronDown, User, Phone, MapPin, Map, Loader2, Package, Image, X, FileText, Store, Truck } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
 import { trackFormEngagement } from '../../utils/metaPixel'
@@ -8,7 +7,68 @@ import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
+const API    = import.meta.env.VITE_API_URL || ''
 
+/* ── sessionStorage cache helper ── */
+function ssGet(key) { try { const v = sessionStorage.getItem(key); return v ? JSON.parse(v) : null } catch { return null } }
+function ssSet(key, val) { try { sessionStorage.setItem(key, JSON.stringify(val)) } catch {} }
+
+/* ── useEcotrackData hook ── */
+function useEcotrackData() {
+  const [wilayas, setWilayas]       = useState([])
+  const [fees, setFees]             = useState([])
+  const [communes, setCommunes]     = useState([])
+  const [loadingW, setLoadingW]     = useState(false)
+  const [loadingC, setLoadingC]     = useState(false)
+  const [wilayaId, setWilayaIdState] = useState('')
+
+  // Fetch wilayas + fees once
+  useEffect(() => {
+    const cachedW = ssGet('eco_wilayas')
+    const cachedF = ssGet('eco_fees')
+    if (cachedW && cachedF) { setWilayas(cachedW); setFees(cachedF); return }
+
+    setLoadingW(true)
+    Promise.all([
+      fetch(`${API}/api/ecotrack/wilayas`).then(r => r.json()),
+      fetch(`${API}/api/ecotrack/fees`).then(r => r.json()),
+    ]).then(([w, f]) => {
+      const wList = Array.isArray(w) ? w : (w?.data || [])
+      const fList = Array.isArray(f) ? f : (f?.data || [])
+      const sorted = [...wList].sort((a, b) => Number(a.wilaya_id) - Number(b.wilaya_id))
+      setWilayas(sorted); ssSet('eco_wilayas', sorted)
+      setFees(fList);    ssSet('eco_fees', fList)
+    }).catch(err => console.error('ECOTRACK wilayas/fees:', err))
+      .finally(() => setLoadingW(false))
+  }, [])
+
+  // Fetch communes when wilaya changes
+  const loadCommunes = useCallback((id) => {
+    if (!id) { setCommunes([]); setWilayaIdState(''); return }
+    setWilayaIdState(id)
+    const cacheKey = `eco_communes_${id}`
+    const cached = ssGet(cacheKey)
+    if (cached) { setCommunes(cached); return }
+
+    setLoadingC(true)
+    fetch(`${API}/api/ecotrack/communes?wilaya_id=${id}`)
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.data || [])
+        const sorted = [...list].sort((a, b) => a.commune_name?.localeCompare(b.commune_name))
+        setCommunes(sorted); ssSet(cacheKey, sorted)
+      }).catch(err => console.error('ECOTRACK communes:', err))
+        .finally(() => setLoadingC(false))
+  }, [])
+
+  const getFeesForWilaya = useCallback((id) => {
+    return fees.find(f => String(f.wilaya_id) === String(id)) || null
+  }, [fees])
+
+  return { wilayas, communes, loadingW, loadingC, wilayaId, loadCommunes, getFeesForWilaya }
+}
+
+/* ── Field wrapper ── */
 function Field({ label, icon: Icon, error, children }) {
   return (
     <div>
@@ -23,14 +83,22 @@ function Field({ label, icon: Icon, error, children }) {
   )
 }
 
+/* ── Main component ── */
 function CheckoutForm({ onSubmit, loading }) {
   const { t, isRTL, lang } = useLang()
-  const [form, setForm]         = useState({ firstName: '', lastName: '', phone: '', wilaya: '', commune: '', description: '' })
-  const [errors, setErrors]     = useState({})
-  const [logoFiles, setLogoFiles]   = useState([])
+  const [form, setForm]   = useState({ firstName: '', lastName: '', phone: '', wilayaId: '', wilayaName: '', commune: '', stopDesk: false, description: '' })
+  const [errors, setErrors] = useState({})
+  const [logoFiles, setLogoFiles] = useState([])
   const formEngagementFired = useRef(false)
-  const [logoUrls, setLogoUrls]     = useState([])
-  const [uploading, setUploading]   = useState(false)
+  const [logoUrls, setLogoUrls] = useState([])
+  const [uploading, setUploading] = useState(false)
+
+  const { wilayas, communes, loadingW, loadingC, loadCommunes, getFeesForWilaya } = useEcotrackData()
+
+  const currentFees = form.wilayaId ? getFeesForWilaya(form.wilayaId) : null
+  const deliveryFee = currentFees ? (form.stopDesk ? currentFees.tarif_stopdesk : currentFees.tarif) : null
+  const hasStopDesk = communes.some(c => c.has_stop_desk === 1)
+  const visibleCommunes = form.stopDesk ? communes.filter(c => c.has_stop_desk === 1) : communes
 
   const inputCls = err =>
     `w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all bg-white
@@ -43,8 +111,8 @@ function CheckoutForm({ onSubmit, loading }) {
     if (!form.phone.trim())       e.phone       = t('errorPhone')
     else if (!/^(0)(5|6|7)\d{8}$/.test(form.phone.replace(/\s/g, '')))
       e.phone = t('errorPhoneFormat')
-    if (!form.wilaya)             e.wilaya      = t('errorWilaya')
-    if (!form.commune.trim())     e.commune     = t('errorCommune')
+    if (!form.wilayaId)           e.wilaya      = t('errorWilaya')
+    if (!form.commune)            e.commune     = t('errorCommune')
     if (logoUrls.length === 0)    e.logo        = t('errorLogo')
     if (!form.description.trim()) e.description = t('errorDesc')
     return e
@@ -52,13 +120,26 @@ function CheckoutForm({ onSubmit, loading }) {
 
   const handleChange = useCallback(e => {
     const { name, value } = e.target
-    setForm(p  => ({ ...p,  [name]: value }))
-    setErrors(p => ({ ...p, [name]: ''    }))
+    setForm(p  => ({ ...p, [name]: value }))
+    setErrors(p => ({ ...p, [name]: '' }))
+  }, [])
+
+  const handleWilayaChange = useCallback(e => {
+    const selected = e.target.options[e.target.selectedIndex]
+    const id   = e.target.value
+    const name = selected?.dataset?.name || ''
+    setForm(p => ({ ...p, wilayaId: id, wilayaName: name, commune: '', stopDesk: false }))
+    setErrors(p => ({ ...p, wilaya: '', commune: '' }))
+    loadCommunes(id)
+  }, [loadCommunes])
+
+  const handleStopDesk = useCallback((val) => {
+    setForm(p => ({ ...p, stopDesk: val, commune: '' }))
+    setErrors(p => ({ ...p, commune: '' }))
   }, [])
 
   const handleLogoSelect = async (files) => {
     if (!files?.length) return
-    // Silently ignore if already at 2
     const remaining = 2 - logoFiles.length
     if (remaining <= 0) return
     const toUpload = Array.from(files).slice(0, remaining)
@@ -81,20 +162,16 @@ function CheckoutForm({ onSubmit, loading }) {
 
   const removeLogo = async idx => {
     const urlToDelete = logoUrls[idx]
-    // Supprimer du state immédiatement (UX fluide)
     setLogoFiles(p => p.filter((_, i) => i !== idx))
     setLogoUrls(p  => p.filter((_, i) => i !== idx))
-    // Supprimer de Cloudinary en arrière-plan
     if (urlToDelete) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/upload/logo`, {
+        await fetch(`${API}/api/upload/logo`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: urlToDelete }),
         })
-      } catch (err) {
-        console.error('Cloudinary logo delete error:', err.message)
-      }
+      } catch (err) { console.error('Cloudinary logo delete error:', err.message) }
     }
   }
 
@@ -139,28 +216,94 @@ function CheckoutForm({ onSubmit, loading }) {
       {/* Wilaya */}
       <Field label={t('wilaya')} icon={Map} error={errors.wilaya}>
         <div className="relative">
-          <select name="wilaya" value={form.wilaya} onChange={handleChange}
-            className={`${inputCls(errors.wilaya)} appearance-none pr-10 cursor-pointer`}>
-            <option value="">{t('selectWilaya')}</option>
-            {wilayas.map(w => (
-              <option key={w.code} value={w.name}>{w.code} — {w.name}</option>
-            ))}
-          </select>
-          <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: PURPLE }} />
+          {loadingW
+            ? <div className={`${inputCls(false)} flex items-center gap-2 text-gray-400`}>
+                <Loader2 size={14} className="animate-spin" /> Chargement des wilayas…
+              </div>
+            : <>
+                <select value={form.wilayaId} onChange={handleWilayaChange}
+                  className={`${inputCls(errors.wilaya)} appearance-none pr-10 cursor-pointer`}>
+                  <option value="">{t('selectWilaya')}</option>
+                  {wilayas.map(w => (
+                    <option key={w.wilaya_id} value={w.wilaya_id} data-name={w.wilaya_name}>
+                      {w.wilaya_id} — {w.wilaya_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: PURPLE }} />
+              </>
+          }
         </div>
       </Field>
 
+      {/* Stop desk toggle — only when wilaya selected */}
+      {form.wilayaId && (
+        <div className="flex gap-2">
+          <button type="button"
+            onClick={() => handleStopDesk(false)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all
+              ${!form.stopDesk ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+            <Truck size={15} /> À domicile
+            {currentFees && !form.stopDesk && (
+              <span className="ml-1 text-xs font-bold text-purple-600">{currentFees.tarif} DA</span>
+            )}
+          </button>
+          <button type="button"
+            onClick={() => handleStopDesk(true)}
+            disabled={!hasStopDesk && communes.length > 0}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all
+              ${form.stopDesk ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}
+              disabled:opacity-40 disabled:cursor-not-allowed`}>
+            <Store size={15} /> Stop Desk
+            {currentFees && form.stopDesk && (
+              <span className="ml-1 text-xs font-bold text-purple-600">{currentFees.tarif_stopdesk} DA</span>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Commune */}
       <Field label={t('commune')} icon={MapPin} error={errors.commune}>
-        <input type="text" name="commune" value={form.commune}
-          onChange={handleChange} autoComplete="address-level2"
-          className={inputCls(errors.commune)} />
+        <div className="relative">
+          {loadingC
+            ? <div className={`${inputCls(false)} flex items-center gap-2 text-gray-400`}>
+                <Loader2 size={14} className="animate-spin" /> Chargement des communes…
+              </div>
+            : !form.wilayaId
+              ? <input type="text" disabled placeholder={t('selectWilaya')}
+                  className={`${inputCls(false)} opacity-50 cursor-not-allowed`} />
+              : form.stopDesk && !hasStopDesk && communes.length > 0
+                ? <p className="text-sm text-amber-600 px-4 py-3 rounded-xl bg-amber-50 border-2 border-amber-200">
+                    Pas de stop desk disponible dans cette wilaya.
+                  </p>
+                : <>
+                    <select name="commune" value={form.commune} onChange={handleChange}
+                      className={`${inputCls(errors.commune)} appearance-none pr-10 cursor-pointer`}>
+                      <option value="">— Choisir une commune —</option>
+                      {visibleCommunes.map(c => (
+                        <option key={c.commune_id || c.commune_name} value={c.commune_name}>
+                          {c.commune_name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: PURPLE }} />
+                  </>
+          }
+        </div>
       </Field>
+
+      {/* Frais de livraison */}
+      {deliveryFee != null && (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-purple-50 border border-purple-200 text-sm">
+          <span className="text-gray-600 font-medium">Frais de livraison</span>
+          <span className="font-black text-purple-700 text-base">{deliveryFee} DA</span>
+        </div>
+      )}
 
       {/* Logo */}
       <Field label={t('logoPhotos')} icon={Image} error={errors.logo}>
-        {/* Aperçu */}
         {logoFiles.length > 0 && (
           <div className="flex gap-2 mb-3">
             {logoFiles.map((file, idx) => (
@@ -177,8 +320,6 @@ function CheckoutForm({ onSubmit, loading }) {
             ))}
           </div>
         )}
-
-        {/* Zone upload — cachée silencieusement si 2 photos atteintes */}
         {logoFiles.length < 2 && (
           <label className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl
                             border-2 border-dashed cursor-pointer transition-all text-sm font-medium

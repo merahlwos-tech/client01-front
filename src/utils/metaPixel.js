@@ -11,14 +11,10 @@
  *  VITE_META_PIXEL_ID   → votre Pixel ID (ex: "123456789012345")
  *  VITE_API_URL         → URL de l'API backend
  *
- * CHANGELOG :
- *  ✅ FIX  — Bug typeof fbq (HighQualityVisitor / ScrollToForm) → vérification window.fbq
- *  ✅ NEW  — getMetaCookies() : lecture _fbp et _fbc pour le matching CAPI
- *  ✅ NEW  — sendCAPIEvent inclut automatiquement fbp / fbc
- *  ✅ NEW  — trackAddPaymentInfo() : signal fort juste avant soumission
- *  ✅ NEW  — trackFormEngagement() envoie aussi Lead en CAPI
- *  ✅ FIX  — AddToCart CAPI inclut maintenant le tableau contents avec item_price
- *  ✅ FIX  — InitiateCheckout CAPI inclut maintenant le tableau contents
+ * CHANGELOG v2 :
+ *  ✅ NEW  — getFbc() : capture fbclid depuis l'URL et le persiste en localStorage
+ *  ✅ NEW  — ensureFbp() : génère _fbp manuellement si bloqué par le navigateur
+ *  ✅ UPD  — getMetaCookies() utilise getFbc() et ensureFbp() en fallback
  */
 
 const PIXEL_ID  = import.meta.env.VITE_META_PIXEL_ID || 'VOTRE_PIXEL_ID'
@@ -35,29 +31,103 @@ export function generateEventId() {
 }
 
 /* ─────────────────────────────────────────────
-   Lit les cookies Meta _fbp et _fbc depuis le navigateur.
-   Ces cookies permettent à Meta de faire le lien entre
-   une pub cliquée et une conversion — améliore considérablement
-   le matching côté CAPI.
-   - _fbp : Facebook Browser ID (persistant ~90j)
-   - _fbc  : Facebook Click ID (présent si l'user vient d'une pub)
+   getFbc() — Capture et persiste le fbclid Meta
+   
+   Quand un utilisateur clique sur une pub Meta, l'URL contient
+   un paramètre ?fbclid=XXXX. On le convertit en _fbc et on le
+   persiste dans localStorage pour les visites suivantes.
+   
+   Format Meta attendu : fb.{version}.{timestamp}.{fbclid}
+───────────────────────────────────────────────*/
+export function getFbc() {
+  if (typeof window === 'undefined') return undefined
+
+  // 1. Chercher fbclid dans l'URL actuelle
+  const urlParams = new URLSearchParams(window.location.search)
+  const fbclid = urlParams.get('fbclid')
+
+  if (fbclid) {
+    const fbc = `fb.1.${Date.now()}.${fbclid}`
+    try {
+      localStorage.setItem('_fbc_manual', fbc)
+    } catch { /* localStorage bloqué (mode privé strict) */ }
+    return fbc
+  }
+
+  // 2. Fallback : cookie _fbc natif du Pixel
+  const cookieMatch = document.cookie.match(/(^| )_fbc=([^;]+)/)
+  if (cookieMatch) return cookieMatch[2]
+
+  // 3. Fallback : valeur sauvegardée en localStorage
+  try {
+    return localStorage.getItem('_fbc_manual') || undefined
+  } catch {
+    return undefined
+  }
+}
+
+/* ─────────────────────────────────────────────
+   ensureFbp() — Génère _fbp si le Pixel est bloqué
+   
+   Certains navigateurs (Firefox, Brave, Safari ITP) bloquent
+   le cookie _fbp du Pixel. Cette fonction le génère manuellement
+   avec le même format que Meta et le persiste 90 jours.
+   
+   Format Meta : fb.{version}.{timestamp}.{random}
+───────────────────────────────────────────────*/
+export function ensureFbp() {
+  if (typeof document === 'undefined') return
+
+  // Si le cookie existe déjà (créé par le Pixel), ne rien faire
+  if (document.cookie.includes('_fbp=')) return
+
+  // Vérifier si on a déjà généré un _fbp manuellement
+  try {
+    const stored = localStorage.getItem('_fbp_manual')
+    if (stored) {
+      // Remettre en cookie si expiré
+      document.cookie = `_fbp=${stored};max-age=7776000;path=/;SameSite=Lax`
+      return
+    }
+  } catch { /* localStorage indisponible */ }
+
+  // Générer un nouveau _fbp
+  const fbp = `fb.1.${Date.now()}.${Math.floor(Math.random() * 10000000000)}`
+  document.cookie = `_fbp=${fbp};max-age=7776000;path=/;SameSite=Lax`
+
+  try {
+    localStorage.setItem('_fbp_manual', fbp)
+  } catch { /* localStorage bloqué */ }
+}
+
+/* ─────────────────────────────────────────────
+   getMetaCookies() — Lit _fbp et _fbc avec fallbacks
+   
+   Ordre de priorité pour chaque valeur :
+   1. Cookie natif (créé par le Pixel Meta)
+   2. Valeur générée/capturée manuellement
 ───────────────────────────────────────────────*/
 export function getMetaCookies() {
   if (typeof document === 'undefined') return {}
-  const get = name => {
+
+  const getCookie = name => {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
     return match ? match[2] : undefined
   }
-  return {
-    fbp: get('_fbp'),
-    fbc: get('_fbc'),
-  }
+
+  const fbp = getCookie('_fbp') || (() => {
+    try { return localStorage.getItem('_fbp_manual') || undefined } catch { return undefined }
+  })()
+
+  const fbc = getFbc()
+
+  return { fbp, fbc }
 }
 
 /* ─────────────────────────────────────────────
    Appel silencieux au backend CAPI (fire-and-forget)
    Ne bloque jamais l'UX en cas d'erreur réseau.
-   Inclut automatiquement _fbp et _fbc pour le matching.
+   Inclut automatiquement fbp et fbc pour le matching.
 ───────────────────────────────────────────────*/
 async function sendCAPIEvent(eventName, eventId, payload = {}) {
   const { fbp, fbc } = getMetaCookies()
@@ -92,23 +162,14 @@ function fbq(type, eventName, data = {}, options = {}) {
    ÉVÉNEMENTS PUBLICS
 ════════════════════════════════════════════ */
 
-/**
- * PageView — déclenché à chaque changement de route
- */
 export function trackPageView() {
   const eventId = generateEventId()
   fbq('track', 'PageView', {}, { eventID: eventId })
   sendCAPIEvent('PageView', eventId)
 }
 
-/**
- * ViewContent — visite d'une fiche produit
- * @param {object} product  - objet produit complet
- * @param {number} price    - prix unitaire calculé (avec options)
- */
 export function trackViewContent(product, price = 0) {
   const eventId = generateEventId()
-
   fbq('track', 'ViewContent', {
     content_name: product.name,
     content_ids:  [product._id],
@@ -116,7 +177,6 @@ export function trackViewContent(product, price = 0) {
     value:        price,
     currency:     'DZD',
   }, { eventID: eventId })
-
   sendCAPIEvent('ViewContent', eventId, {
     content_ids:  [product._id],
     content_name: product.name,
@@ -126,17 +186,9 @@ export function trackViewContent(product, price = 0) {
   })
 }
 
-/**
- * AddToCart — ajout au panier
- * @param {object} product
- * @param {string} size
- * @param {number} quantity
- * @param {number} unitPrice  - prix unitaire (taille + options)
- */
 export function trackAddToCart(product, size, quantity, unitPrice) {
   const eventId    = generateEventId()
   const totalValue = unitPrice * quantity
-
   fbq('track', 'AddToCart', {
     content_name: product.name,
     content_ids:  [product._id],
@@ -145,7 +197,6 @@ export function trackAddToCart(product, size, quantity, unitPrice) {
     currency:     'DZD',
     contents:     [{ id: product._id, quantity, item_price: unitPrice }],
   }, { eventID: eventId })
-
   sendCAPIEvent('AddToCart', eventId, {
     content_ids:  [product._id],
     content_name: product.name,
@@ -157,15 +208,9 @@ export function trackAddToCart(product, size, quantity, unitPrice) {
   })
 }
 
-/**
- * InitiateCheckout — ouverture du formulaire de commande
- * @param {Array}  items  - items du panier
- * @param {number} total  - total panier
- */
 export function trackInitiateCheckout(items, total) {
   const eventId  = generateEventId()
   const numItems = items.reduce((s, i) => s + i.quantity, 0)
-
   fbq('track', 'InitiateCheckout', {
     content_ids:  items.map(i => i.productId),
     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
@@ -173,7 +218,6 @@ export function trackInitiateCheckout(items, total) {
     value:        total,
     currency:     'DZD',
   }, { eventID: eventId })
-
   sendCAPIEvent('InitiateCheckout', eventId, {
     content_ids: items.map(i => i.productId),
     contents:    items.map(i => ({ id: i.productId, quantity: i.quantity })),
@@ -183,16 +227,9 @@ export function trackInitiateCheckout(items, total) {
   })
 }
 
-/**
- * AddPaymentInfo — formulaire entièrement rempli, clic sur "Confirmer la commande"
- * Signal très fort : l'intention d'achat est maximale.
- * @param {Array}  items
- * @param {number} total
- */
 export function trackAddPaymentInfo(items, total) {
   const eventId  = generateEventId()
   const numItems = items.reduce((s, i) => s + i.quantity, 0)
-
   fbq('track', 'AddPaymentInfo', {
     content_ids:  items.map(i => i.productId),
     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
@@ -200,7 +237,6 @@ export function trackAddPaymentInfo(items, total) {
     value:        total,
     currency:     'DZD',
   }, { eventID: eventId })
-
   sendCAPIEvent('AddPaymentInfo', eventId, {
     content_ids:  items.map(i => i.productId),
     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
@@ -211,21 +247,12 @@ export function trackAddPaymentInfo(items, total) {
 }
 
 /**
- * Purchase — commande confirmée (côté Pixel uniquement)
- * Le CAPI Purchase est déclenché directement par le backend /api/orders
- * avec les données utilisateur complètes (phone, nom, wilaya…) pour
- * maximiser le matching. On passe l'event_id en paramètre pour la déduplication.
- *
- * @param {Array}  items
- * @param {number} total
- * @returns {string} eventId — à transmettre au backend avec la commande
+ * Purchase — côté Pixel uniquement.
+ * @returns {string} eventId — à transmettre au backend
  */
 export function trackPurchase(items, total) {
   const eventId  = generateEventId()
   const numItems = items.reduce((s, i) => s + i.quantity, 0)
-
-  // Meta Pixel (navigateur) n'accepte pas DZD pour Purchase
-  // Les vraies valeurs DZD sont envoyées par le CAPI serveur
   fbq('track', 'Purchase', {
     content_ids:  items.map(i => i.productId),
     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
@@ -233,24 +260,13 @@ export function trackPurchase(items, total) {
     value:        0,
     currency:     'USD',
   }, { eventID: eventId })
-
   return eventId
 }
 
-/* ══════════════════════════════════════════════════════════════
-   HIGH INTENT EVENTS — Signaux de qualité pour l'algorithme Meta
+/* ════════════════════════════════════════════
+   HIGH INTENT EVENTS
+════════════════════════════════════════════ */
 
-   Ces événements "chauffent" le Pixel plus vite en lui donnant
-   des signaux comportementaux au-delà du simple Purchase.
-   Côté Pixel uniquement (sauf FormEngagement qui envoie Lead en CAPI).
-══════════════════════════════════════════════════════════════ */
-
-/**
- * HighQualityVisitor — visiteur resté +30s sur la fiche produit
- * Signal : "cet utilisateur s'intéresse vraiment au produit"
- * @param {string} productId
- * @param {string} productName
- */
 export function trackHighQualityVisitor(productId, productName) {
   if (typeof window === 'undefined' || !window.fbq) return
   window.fbq('trackCustom', 'HighQualityVisitor', {
@@ -260,12 +276,6 @@ export function trackHighQualityVisitor(productId, productName) {
   })
 }
 
-/**
- * ScrollToForm — visiteur scrollé jusqu'au formulaire de commande
- * Signal fort : "il a lu la page ET cherché le formulaire"
- * @param {string} productId
- * @param {string} productName
- */
 export function trackScrollToForm(productId, productName) {
   if (typeof window === 'undefined' || !window.fbq) return
   window.fbq('trackCustom', 'ScrollToForm', {
@@ -275,17 +285,10 @@ export function trackScrollToForm(productId, productName) {
   })
 }
 
-/**
- * FormEngagement — visiteur a commencé à remplir le formulaire
- * Signal très fort : "il est en train de passer commande"
- * Déclenché sur le focus du premier champ (prénom).
- * ✅ Envoyé aussi en CAPI comme événement Lead pour maximiser le matching.
- */
 export function trackFormEngagement() {
   const eventId = generateEventId()
   fbq('trackCustom', 'FormEngagement', {
     note: 'Started filling checkout form',
   }, { eventID: eventId })
-  // Lead côté CAPI — signal fort d'intention d'achat avec matching fbp/fbc
   sendCAPIEvent('Lead', eventId, { content_name: 'checkout_form' })
 }
