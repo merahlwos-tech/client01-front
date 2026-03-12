@@ -7,7 +7,7 @@ import CheckoutForm from '../../Components/public/CheckoutForm'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
-import { trackInitiateCheckout, trackPurchase } from '../../utils/metaPixel'
+import { trackInitiateCheckout, trackPurchase, trackAddPaymentInfo } from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
 
 const NAVY   = '#1e1b4b'
@@ -20,6 +20,7 @@ function CartPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useSEO({ title: 'Mon panier', description: 'Finalisez votre commande d\'emballages personnalisés BrandPack.' })
+
   // InitiateCheckout — déclenché une fois quand l'utilisateur arrive sur la page panier
   useEffect(() => {
     if (items.length > 0) {
@@ -31,7 +32,10 @@ function CartPage() {
     if (items.length === 0) { toast.error('Votre panier est vide'); return }
     setSubmitting(true)
 
-    // 1. Pixel Purchase (côté client) — retourne l'event_id pour déduplication CAPI
+    // 1. AddPaymentInfo — formulaire validé, intention d'achat maximale
+    trackAddPaymentInfo(items, total)
+
+    // 2. Pixel Purchase (côté client) — retourne l'event_id pour déduplication CAPI
     const metaEventId = trackPurchase(items, total)
 
     try {
@@ -46,7 +50,7 @@ function CartPage() {
           price:       item.price,
         })),
         total,
-        metaEventId, // 2. Transmis au backend → CAPI Purchase avec même event_id
+        metaEventId, // 3. Transmis au backend → CAPI Purchase avec même event_id
       })
       clearCart()
       navigate('/confirmation', { replace: true })
