@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Package, Truck, Shield, Star, MapPin, Phone } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
+import { useSEO } from '../../utils/useSEO'
 
 const NAVY         = '#1e1b4b'
 const PURPLE       = '#7c3aed'
@@ -75,6 +76,10 @@ function AboutPage() {
   const t       = CONTENT[lang] ?? CONTENT.fr
   const fontCls = lang === 'ar' ? 'font-arabic' : ''
 
+  useSEO({
+    title: 'À propos de BrandPack',
+    description: 'BrandPack — votre partenaire en emballages personnalisés en Algérie. Boites, sacs, cartes, papier. Livraison dans les 58 wilayas.',
+  })
   return (
     <div className={`min-h-screen ${fontCls}`} dir={isRTL ? 'rtl' : 'ltr'}
       style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%)' }}>

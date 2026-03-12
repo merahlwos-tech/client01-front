@@ -7,6 +7,7 @@ import SizeSelector from '../../Components/public/SizeSelector'
 import QuantitySelector from '../../Components/public/QuantitySelector'
 import { useLang } from '../../context/LanguageContext'
 import { trackViewContent, trackAddToCart } from '../../utils/metaPixel'
+import { useSEO } from '../../utils/useSEO'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
@@ -27,6 +28,14 @@ function ProductDetailPage() {
   const [quantity, setQuantity]         = useState(100)
   const [currentImage, setCurrentImage] = useState(0)
 
+  // SEO dynamique — se met à jour dès que le produit est chargé
+  const seoCatLabels = { Board: 'Boite', Bags: 'Sac', Autocollants: 'Carte', Paper: 'Papier' }
+  useSEO({
+    title: product ? product.name : 'Produit',
+    description: product
+      ? `${product.name} — ${seoCatLabels[product.category] || 'Emballage'} personnalisé à partir de ${Math.min(...(product.sizes?.map(s => s.price) || [0])).toLocaleString('fr-DZ')} DA. Commandez sur BrandPack Algérie.`
+      : 'Emballage personnalisé BrandPack Algérie.',
+  })
   useEffect(() => { window.scrollTo(0, 0) }, [id])
 
   useEffect(() => {

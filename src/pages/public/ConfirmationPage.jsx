@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useLang } from '../../context/LanguageContext'
+import { useSEO } from '../../utils/useSEO'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
 function ConfirmationPage() {
   const { t, isRTL } = useLang()
+  useSEO({ title: 'Commande confirmée' })
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 pt-20"

@@ -8,6 +8,7 @@ import api from '../../utils/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import { trackInitiateCheckout, trackPurchase } from '../../utils/metaPixel'
+import { useSEO } from '../../utils/useSEO'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
@@ -18,6 +19,7 @@ function CartPage() {
   const navigate      = useNavigate()
   const [submitting, setSubmitting] = useState(false)
 
+  useSEO({ title: 'Mon panier', description: 'Finalisez votre commande d\'emballages personnalisés BrandPack.' })
   // InitiateCheckout — déclenché une fois quand l'utilisateur arrive sur la page panier
   useEffect(() => {
     if (items.length > 0) {

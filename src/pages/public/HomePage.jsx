@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, Package } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
+import { useSEO } from '../../utils/useSEO'
 
 const NAVY         = '#1e1b4b'
 const PURPLE       = '#7c3aed'
@@ -67,6 +68,11 @@ function FAQItem({ q, a }) {
 function HomePage() {
   const { lang, isRTL } = useLang()
   const produitsSectionRef = useRef(null)
+
+  useSEO({
+    title: 'Emballages personnalisés Algérie — Boites, Sacs, Cartes, Papier',
+    description: 'BrandPack — Emballages sur mesure pour votre business en Algérie. Boites, sacs, autocollants, papier d\'emballage. Livraison dans les 58 wilayas.',
+  })
 
   const steps   = lang === 'ar' ? STEPS_AR : STEPS_FR
   const faqs    = lang === 'ar' ? FAQS_AR  : FAQS_FR
