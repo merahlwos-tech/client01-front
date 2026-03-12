@@ -77,9 +77,23 @@ function CheckoutForm({ onSubmit, loading }) {
     } finally { setUploading(false) }
   }
 
-  const removeLogo = idx => {
+  const removeLogo = async idx => {
+    const urlToDelete = logoUrls[idx]
+    // Supprimer du state immédiatement (UX fluide)
     setLogoFiles(p => p.filter((_, i) => i !== idx))
     setLogoUrls(p  => p.filter((_, i) => i !== idx))
+    // Supprimer de Cloudinary en arrière-plan
+    if (urlToDelete) {
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/upload/logo`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: urlToDelete }),
+        })
+      } catch (err) {
+        console.error('Cloudinary logo delete error:', err.message)
+      }
+    }
   }
 
   const handleSubmit = e => {

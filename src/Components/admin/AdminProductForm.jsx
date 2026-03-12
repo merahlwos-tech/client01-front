@@ -278,7 +278,24 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
           {saving ? <><Loader2 size={16} className="animate-spin" /> Enregistrement...</> : (isEditing ? 'Mettre à jour' : 'Créer le produit')}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel}
+          <button type="button" onClick={async () => {
+            // Supprimer les images uploadées pendant cette session si on annule
+            // (images qui n'existaient pas avant = nouvelles images ajoutées sans sauvegarder)
+            if (!isEditing) {
+              // Nouveau produit annulé → supprimer toutes les images uploadées
+              await Promise.all(form.images.map(url =>
+                api.delete('/upload', { data: { url } }).catch(() => {})
+              ))
+            } else {
+              // Édition annulée → supprimer uniquement les nouvelles images ajoutées
+              const originalImages = initialData.images || []
+              const newImages = form.images.filter(url => !originalImages.includes(url))
+              await Promise.all(newImages.map(url =>
+                api.delete('/upload', { data: { url } }).catch(() => {})
+              ))
+            }
+            onCancel()
+          }}
             className="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-500
                        font-semibold text-sm hover:bg-gray-50 transition-all">
             Annuler
