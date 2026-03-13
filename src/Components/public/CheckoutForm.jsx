@@ -68,7 +68,7 @@ function useEcotrackData() {
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : (data?.data || [])
-        const sorted = [...list].sort((a, b) => a.commune_name?.localeCompare(b.commune_name))
+        const sorted = [...list].sort((a, b) => a.nom?.localeCompare(b.nom))
         setCommunes(sorted); ssSet(cacheKey, sorted)
       }).catch(err => console.error('ECOTRACK communes:', err))
         .finally(() => setLoadingC(false))
@@ -295,8 +295,8 @@ function CheckoutForm({ onSubmit, loading }) {
                       className={`${inputCls(errors.commune)} appearance-none pr-10 cursor-pointer`}>
                       <option value="">— Choisir une commune —</option>
                       {visibleCommunes.map(c => (
-                        <option key={c.commune_id || c.commune_name} value={c.commune_name}>
-                          {c.commune_name}
+                        <option key={c.nom} value={c.nom}>
+                          {c.nom}
                         </option>
                       ))}
                     </select>
