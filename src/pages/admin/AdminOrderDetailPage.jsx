@@ -8,6 +8,7 @@ import {
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 
+const API    = import.meta.env.VITE_API_URL || ''
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
@@ -45,6 +46,13 @@ export default function AdminOrderDetailPage() {
   const [status, setStatus]         = useState('')
   const [dirty, setDirty]           = useState(false)
 
+  // Ecotrack wilaya/commune
+  const [wilayas, setWilayas]       = useState([])
+  const [communes, setCommunes]     = useState([])
+  const [loadingW, setLoadingW]     = useState(false)
+  const [loadingC, setLoadingC]     = useState(false)
+  const [fees, setFees]             = useState([])
+
   // Add product modal
   const [addModal, setAddModal]     = useState(false)
   const [products, setProducts]     = useState([])
@@ -71,10 +79,48 @@ export default function AdminOrderDetailPage() {
       } finally { setLoading(false) }
     }
     fetch_()
+
+    // Load wilayas + fees from Ecotrack
+    setLoadingW(true)
+    Promise.all([
+      fetch(`${API}/ecotrack/wilayas`).then(r => r.json()).catch(() => []),
+      fetch(`${API}/ecotrack/fees`).then(r => r.json()).catch(() => null),
+    ]).then(([w, f]) => {
+      const wList = Array.isArray(w) ? w : (w?.data || [])
+      const fList = Array.isArray(f) ? f : (f?.livraison || f?.data || [])
+      setWilayas([...wList].sort((a, b) => Number(a.wilaya_id) - Number(b.wilaya_id)))
+      setFees(fList)
+    }).finally(() => setLoadingW(false))
   }, [id])
 
   const computedTotal = items.reduce((s, i) => s + (Number(i.price) * Number(i.quantity)), 0)
     + Number(order?.customerInfo?.deliveryFee ?? 0)
+
+  const loadCommunes = async (wilayaId) => {
+    if (!wilayaId) { setCommunes([]); return }
+    setLoadingC(true)
+    try {
+      const data = await fetch(`${API}/ecotrack/communes?wilaya_id=${wilayaId}`).then(r => r.json())
+      const list = Array.isArray(data) ? data : (data?.data || [])
+      setCommunes([...list].sort((a, b) => (a.nom || '').localeCompare(b.nom || '')))
+    } catch { setCommunes([]) }
+    finally { setLoadingC(false) }
+  }
+
+  const handleWilayaChange = (wilayaId) => {
+    const w = wilayas.find(w => String(w.wilaya_id) === String(wilayaId))
+    setClientForm(p => ({ ...p, wilaya: w?.wilaya_name || wilayaId, wilayaId, commune: '' }))
+    setDirty(true)
+    loadCommunes(wilayaId)
+  }
+
+  const handleDeliveryMethodChange = (method) => {
+    const wilayaId = clientForm.wilayaId || wilayas.find(w => w.wilaya_name === clientForm.wilaya)?.wilaya_id
+    const fee = fees.find(f => String(f.wilaya_id) === String(wilayaId))
+    const feeAmount = fee ? Number(method === 'Stop Desk' ? fee.tarif_stopdesk : fee.tarif) : null
+    setClientForm(p => ({ ...p, deliveryMethod: method, deliveryFee: feeAmount }))
+    setDirty(true)
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -90,7 +136,7 @@ export default function AdminOrderDetailPage() {
           price:       Number(i.price),
         })),
         total: computedTotal,
-        ...(editClient ? { customerInfo: clientForm } : {}),
+        ...(editClient ? { customerInfo: { ...clientForm, deliveryMethod: clientForm.deliveryMethod || order.customerInfo.deliveryMethod, deliveryFee: clientForm.deliveryFee !== undefined ? clientForm.deliveryFee : order.customerInfo.deliveryFee } } : {}),
       }
       const res = await api.put(`/orders/${id}`, payload)
       setOrder(res.data)
@@ -241,8 +287,6 @@ export default function AdminOrderDetailPage() {
                   { key: 'firstName', label: 'Prénom' },
                   { key: 'lastName',  label: 'Nom' },
                   { key: 'phone',     label: 'Téléphone' },
-                  { key: 'wilaya',    label: 'Wilaya' },
-                  { key: 'commune',   label: 'Commune' },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">{label}</label>
@@ -254,6 +298,74 @@ export default function AdminOrderDetailPage() {
                     />
                   </div>
                 ))}
+
+                {/* Wilaya */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Wilaya</label>
+                  {loadingW
+                    ? <div className="px-3 py-2 rounded-xl border-2 text-sm text-gray-400" style={{ borderColor: '#e5e7eb' }}>Chargement…</div>
+                    : <select
+                        value={wilayas.find(w => w.wilaya_name === clientForm.wilaya)?.wilaya_id || ''}
+                        onChange={e => handleWilayaChange(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border-2 text-sm outline-none focus:border-purple-400 appearance-none"
+                        style={{ borderColor: '#e5e7eb', color: NAVY }}>
+                        <option value="">— Choisir —</option>
+                        {wilayas.map(w => (
+                          <option key={w.wilaya_id} value={w.wilaya_id}>
+                            {w.wilaya_id} — {w.wilaya_name}
+                          </option>
+                        ))}
+                      </select>
+                  }
+                </div>
+
+                {/* Commune */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-1">Commune</label>
+                  {loadingC
+                    ? <div className="px-3 py-2 rounded-xl border-2 text-sm text-gray-400" style={{ borderColor: '#e5e7eb' }}>Chargement…</div>
+                    : !clientForm.wilayaId && !wilayas.find(w => w.wilaya_name === clientForm.wilaya)
+                      ? <div className="px-3 py-2 rounded-xl border-2 text-sm text-gray-400" style={{ borderColor: '#e5e7eb' }}>Sélectionnez une wilaya</div>
+                      : <select
+                          value={clientForm.commune || ''}
+                          onChange={e => { setClientForm(p => ({ ...p, commune: e.target.value })); setDirty(true) }}
+                          className="w-full px-3 py-2 rounded-xl border-2 text-sm outline-none focus:border-purple-400 appearance-none"
+                          style={{ borderColor: '#e5e7eb', color: NAVY }}>
+                          <option value="">— Choisir —</option>
+                          {communes.map(c => (
+                            <option key={c.nom} value={c.nom}>{c.nom}</option>
+                          ))}
+                        </select>
+                  }
+                </div>
+
+                {/* Type de livraison */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2">Type de livraison</label>
+                  <div className="flex gap-2">
+                    {['Domicile', 'Stop Desk'].map(method => {
+                      const active = (clientForm.deliveryMethod || order.customerInfo.deliveryMethod) === method
+                      return (
+                        <button key={method} type="button"
+                          onClick={() => handleDeliveryMethodChange(method)}
+                          className="flex-1 py-2.5 rounded-xl border-2 text-sm font-bold transition-all"
+                          style={active ? {
+                            background: PURPLE, borderColor: PURPLE, color: 'white',
+                            boxShadow: '0 4px 12px rgba(124,58,237,0.3)',
+                          } : {
+                            background: 'white', borderColor: '#e5e7eb', color: '#9ca3af',
+                          }}>
+                          {method === 'Domicile' ? '🚚 À domicile' : '🏪 Stop Desk'}
+                          {clientForm.deliveryFee != null && active && (
+                            <span className="ml-1 text-xs opacity-80">
+                              ({Number(clientForm.deliveryFee).toLocaleString('fr-DZ')} DA)
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
