@@ -5,7 +5,7 @@ import { MessageCircle } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 
 /* ── Palette ── */
-const BG     = '#1e1b4b'   /* navy doux */
+const BG     = '#2d2b55'   /* navy plus doux */
 const PURPLE = '#7c3aed'
 const PHONE  = '+213554767444'
 const WA     = '213554767444'
@@ -60,7 +60,7 @@ function Footer() {
   return (
     <footer
       className={fontCls}
-      style={{ background: BG, borderTop: '1px solid rgba(124,58,237,0.18)' }}>
+      style={{ background: `linear-gradient(180deg, ${BG} 0%, #252350 100%)`, borderTop: '1px solid rgba(124,58,237,0.12)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 

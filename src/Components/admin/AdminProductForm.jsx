@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, Trash2, Upload, X, Loader2 } from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
@@ -25,6 +25,9 @@ const inputCls = err =>
   `w-full px-4 py-2.5 rounded-xl border-2 text-sm outline-none transition-all
    ${err ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white focus:border-[#7c3aed] focus:ring-2 focus:ring-purple-100'}`
 
+// Refs pour le scroll-to-error
+const fieldOrderAdmin = ['name', 'sizes', 'doubleSidedPrice', 'images']
+
 function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const isEditing = !!initialData
   const [form, setForm] = useState(() => {
@@ -46,6 +49,7 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const [uploading, setUploading]   = useState(false)
   const [saving, setSaving]         = useState(false)
   const [dragOver, setDragOver]     = useState(false)
+  const fieldRefs = useRef({})
 
   useEffect(() => {
     setForm(p => ({ ...p, doubleSided: DOUBLE_PRINT_CATS.includes(p.category) }))
@@ -96,7 +100,17 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const handleSubmit = async e => {
     e.preventDefault()
     const errs = validate()
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      // Scroll vers le premier champ en erreur
+      const firstErr = fieldOrderAdmin.find(k => errs[k])
+      if (firstErr && fieldRefs.current[firstErr]) {
+        fieldRefs.current[firstErr].scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const input = fieldRefs.current[firstErr].querySelector('input,select,textarea')
+        if (input) setTimeout(() => input.focus(), 350)
+      }
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -117,7 +131,7 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
     <form onSubmit={handleSubmit} className="space-y-7" noValidate>
 
       {/* Nom */}
-      <div>
+      <div ref={el => { if (el) fieldRefs.current['name'] = el }}>
         <label className={labelCls} style={{ color: NAVY }}>Nom du produit *</label>
         <input value={form.name} onChange={e => set('name', e.target.value)}
           placeholder="Ex: Boite kraft personnalisée..."
@@ -135,7 +149,7 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
       </div>
 
       {/* Tailles + Prix */}
-      <div>
+      <div ref={el => { if (el) fieldRefs.current['sizes'] = el }}>
         <div className="flex items-center justify-between mb-3">
           <label className={labelCls} style={{ color: NAVY }}>Tailles & Prix *</label>
           <button type="button" onClick={addSize}
@@ -230,7 +244,7 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
       </div>
 
       {/* Images */}
-      <div>
+      <div ref={el => { if (el) fieldRefs.current['images'] = el }}>
         <label className={labelCls} style={{ color: NAVY }}>Images {!isEditing && '*'}</label>
         <label className={`relative flex flex-col items-center justify-center gap-3 border-2 border-dashed
                          rounded-2xl p-8 cursor-pointer transition-all

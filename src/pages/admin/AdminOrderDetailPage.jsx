@@ -424,17 +424,24 @@ export default function AdminOrderDetailPage() {
                     <p className="font-bold text-sm truncate" style={{ color: NAVY }}>{item.name}</p>
                     <p className="text-xs text-gray-400">{item.size} — {Number(item.price).toLocaleString('fr-DZ')} DA/u</p>
                   </div>
-                  {/* Qty controls */}
+                  {/* Qty — saisie directe au clavier */}
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => updateQty(i, item.quantity - 1)}
-                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm font-bold"
-                      style={{ borderColor: '#e5e7eb', color: NAVY }}>−</button>
-                    <span className="w-8 text-center text-sm font-black" style={{ color: PURPLE }}>
-                      {item.quantity.toLocaleString()}
-                    </span>
-                    <button onClick={() => updateQty(i, item.quantity + 1)}
-                      className="w-7 h-7 rounded-lg border flex items-center justify-center text-sm font-bold"
-                      style={{ borderColor: '#e5e7eb', color: NAVY }}>+</button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={e => {
+                        const val = parseInt(e.target.value, 10)
+                        if (!isNaN(val) && val >= 1) updateQty(i, val)
+                      }}
+                      onBlur={e => {
+                        const val = parseInt(e.target.value, 10)
+                        if (isNaN(val) || val < 1) updateQty(i, 1)
+                      }}
+                      className="w-20 text-center text-sm font-black rounded-lg border-2 py-1.5 outline-none focus:border-purple-400 transition-all"
+                      style={{ borderColor: '#e5e7eb', color: PURPLE }}
+                    />
+                    <span className="text-xs text-gray-400">unités</span>
                   </div>
                   <span className="text-sm font-black w-24 text-right" style={{ color: PURPLE }}>
                     {(Number(item.price) * Number(item.quantity)).toLocaleString('fr-DZ')} DA
