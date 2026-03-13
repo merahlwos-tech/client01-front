@@ -15,10 +15,32 @@ const CATEGORIES = [
 
 const DOUBLE_PRINT_CATS = ['Bags', 'Paper', 'Autocollants']
 
+// Palette de couleurs prédéfinies
+const PRESET_COLORS = [
+  { hex: '#000000', fr: 'Noir',        ar: 'أسود' },
+  { hex: '#FFFFFF', fr: 'Blanc',       ar: 'أبيض' },
+  { hex: '#EF4444', fr: 'Rouge',       ar: 'أحمر' },
+  { hex: '#3B82F6', fr: 'Bleu',        ar: 'أزرق' },
+  { hex: '#22C55E', fr: 'Vert',        ar: 'أخضر' },
+  { hex: '#EAB308', fr: 'Jaune',       ar: 'أصفر' },
+  { hex: '#F97316', fr: 'Orange',      ar: 'برتقالي' },
+  { hex: '#EC4899', fr: 'Rose',        ar: 'وردي' },
+  { hex: '#A855F7', fr: 'Violet',      ar: 'بنفسجي' },
+  { hex: '#92400E', fr: 'Marron',      ar: 'بني' },
+  { hex: '#6B7280', fr: 'Gris',        ar: 'رمادي' },
+  { hex: '#D97706', fr: 'Doré',        ar: 'ذهبي' },
+  { hex: '#94A3B8', fr: 'Argenté',     ar: 'فضي' },
+  { hex: '#1E3A8A', fr: 'Bleu marine', ar: 'أزرق داكن' },
+  { hex: '#7F1D1D', fr: 'Bordeaux',    ar: 'بوردو' },
+  { hex: '#0D9488', fr: 'Turquoise',   ar: 'تركوازي' },
+  { hex: '#F5E6C8', fr: 'Beige',       ar: 'بيج' },
+  { hex: '#8B5CF6', fr: 'Lavande',     ar: 'لافندر' },
+]
+
 const EMPTY = {
   name: '', category: 'Board',
   sizes: [{ size: '', price: '' }],
-  colors: [], doubleSided: false, doubleSidedPrice: '', images: [],
+  colors: [], numberOfColors: '', doubleSided: false, doubleSidedPrice: '', images: [],
 }
 
 const inputCls = err =>
@@ -39,12 +61,12 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
         ? initialData.sizes.map(s => ({ size: String(s.size), price: String(s.price ?? '') }))
         : [{ size: '', price: '' }],
       colors: initialData.colors || [],
+      numberOfColors: initialData.numberOfColors != null ? String(initialData.numberOfColors) : '',
       doubleSided: initialData.doubleSided ?? DOUBLE_PRINT_CATS.includes(initialData.category),
       doubleSidedPrice: String(initialData.doubleSidedPrice ?? ''),
       images: initialData.images || [],
     }
   })
-  const [colorInput, setColorInput] = useState('')
   const [errors, setErrors]         = useState({})
   const [uploading, setUploading]   = useState(false)
   const [saving, setSaving]         = useState(false)
@@ -61,8 +83,10 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const removeSize = i  => setForm(p => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }))
   const updateSize = (i, field, val) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === i ? { ...s, [field]: val } : s) }))
 
-  const addColor    = () => { const c = colorInput.trim(); if (c && !form.colors.includes(c)) setForm(p => ({ ...p, colors: [...p.colors, c] })); setColorInput('') }
-  const removeColor = c  => setForm(p => ({ ...p, colors: p.colors.filter(x => x !== c) }))
+  const toggleColor = (hex) => setForm(p => ({
+    ...p,
+    colors: p.colors.includes(hex) ? p.colors.filter(c => c !== hex) : [...p.colors, hex],
+  }))
 
   const uploadFiles = async files => {
     if (!files?.length) return
@@ -116,6 +140,7 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
       const payload = {
         ...form,
         sizes: form.sizes.filter(s => s.size.trim()).map(s => ({ size: s.size, price: Number(s.price) })),
+        numberOfColors: form.numberOfColors !== '' ? Number(form.numberOfColors) : null,
         doubleSidedPrice: form.doubleSided ? Number(form.doubleSidedPrice) : 0,
       }
       if (isEditing) { await api.put(`/products/${initialData._id}`, payload); toast.success('Produit mis à jour') }
@@ -185,32 +210,71 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
         {errors.sizes && <p className="text-red-500 text-xs mt-1">{errors.sizes}</p>}
       </div>
 
-      {/* Couleurs */}
+      {/* Couleurs disponibles */}
       <div>
         <label className={labelCls} style={{ color: NAVY }}>
           Couleurs disponibles <span className="text-gray-400 font-normal" style={{ textTransform: 'none' }}>(optionnel)</span>
         </label>
-        <div className="flex gap-2 mb-2">
-          <input value={colorInput} onChange={e => setColorInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor() } }}
-            placeholder="Ex: Rouge, Noir..."
-            className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white text-sm
-                       outline-none focus:border-purple-400 transition-all" />
-          <button type="button" onClick={addColor}
-            className="px-4 py-2.5 rounded-xl text-white text-sm font-bold"
-            style={{ background: PURPLE }}><Plus size={16} /></button>
+        <div className="grid grid-cols-9 gap-2 p-3 rounded-xl border-2 border-gray-200 bg-gray-50">
+          {PRESET_COLORS.map(({ hex, fr }) => {
+            const selected = form.colors.includes(hex)
+            const isWhite  = hex === '#FFFFFF'
+            return (
+              <button key={hex} type="button" title={fr}
+                onClick={() => toggleColor(hex)}
+                className="relative flex flex-col items-center gap-1 group"
+              >
+                <div
+                  className="w-8 h-8 rounded-full transition-all"
+                  style={{
+                    background: hex,
+                    border: isWhite ? '2px solid #e5e7eb' : selected ? `3px solid ${PURPLE}` : '2px solid transparent',
+                    boxShadow: selected ? `0 0 0 2px ${PURPLE}40` : 'none',
+                    transform: selected ? 'scale(1.15)' : 'scale(1)',
+                  }}
+                />
+                {selected && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2.5 7l3.5 3.5 5.5-6" stroke={isWhite ? '#7c3aed' : 'white'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+                <span className="text-[9px] text-gray-400 text-center leading-tight max-w-[32px] truncate">{fr}</span>
+              </button>
+            )
+          })}
         </div>
         {form.colors.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {form.colors.map(c => (
-              <span key={c} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm text-white font-medium"
-                style={{ background: PURPLE }}>
-                {c}
-                <button type="button" onClick={() => removeColor(c)} className="opacity-70 hover:opacity-100"><X size={12} /></button>
-              </span>
-            ))}
+            {form.colors.map(hex => {
+              const preset = PRESET_COLORS.find(p => p.hex === hex)
+              return (
+                <span key={hex} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
+                  style={{ background: `${hex}20`, borderColor: hex === '#FFFFFF' ? '#e5e7eb' : hex, color: NAVY }}>
+                  <span className="w-3 h-3 rounded-full flex-shrink-0 border border-gray-200" style={{ background: hex }} />
+                  {preset?.fr || hex}
+                  <button type="button" onClick={() => toggleColor(hex)} className="opacity-60 hover:opacity-100 ml-0.5"><X size={10} /></button>
+                </span>
+              )
+            })}
           </div>
         )}
+      </div>
+
+      {/* Nombre de couleurs dans le design */}
+      <div>
+        <label className={labelCls} style={{ color: NAVY }}>
+          Nombre de couleurs dans le design <span className="text-gray-400 font-normal" style={{ textTransform: 'none' }}>(optionnel)</span>
+        </label>
+        <input
+          type="number" min="1" max="12"
+          value={form.numberOfColors}
+          onChange={e => set('numberOfColors', e.target.value)}
+          placeholder="Ex: 2"
+          className={inputCls(false)}
+        />
+        <p className="text-xs text-gray-400 mt-1">Le client pourra saisir le nombre de couleurs souhaité dans son design.</p>
       </div>
 
       {/* Double impression */}

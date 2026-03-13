@@ -9,6 +9,8 @@ export const T = {
     boxes: 'Boites', bags: 'Sacs', cards: 'Cartes', paper: 'Papier', all: 'Tous',
     // Product
     availableSizes: 'Tailles disponibles', availableColors: 'Couleurs disponibles',
+    numberOfColors: 'Nombre de couleurs dans le design', numberOfColorsPlaceholder: 'ex: 2',
+    selectColor: 'Choisir une couleur',
     quantity: 'Quantité', units: 'unités', addToCart: 'Ajouter au panier',
     orderNow: 'Commander maintenant', estimatedTotal: 'Total estimé',
     doubleSided: 'Impression des deux côtés', doubleSidedExtra: '+{price} DA / unité',
@@ -83,6 +85,8 @@ export const T = {
     boxes: 'صناديق', bags: 'أكياس', cards: 'بطاقات', paper: 'ورق', all: 'الكل',
     // Product
     availableSizes: 'المقاسات المتاحة', availableColors: 'الألوان المتاحة',
+    numberOfColors: 'عدد الألوان في التصميم', numberOfColorsPlaceholder: 'مثال: 2',
+    selectColor: 'اختر لوناً',
     quantity: 'الكمية', units: 'وحدة', addToCart: 'أضف إلى السلة',
     orderNow: 'اطلب الآن', estimatedTotal: 'المجموع التقديري',
     doubleSided: 'طباعة وجهين', doubleSidedExtra: '+{price} دج / وحدة',

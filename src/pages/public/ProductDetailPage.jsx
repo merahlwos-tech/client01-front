@@ -27,6 +27,8 @@ function ProductDetailPage() {
   const [doubleSided, setDoubleSided]   = useState(false)
   const [quantity, setQuantity]         = useState(100)
   const [currentImage, setCurrentImage] = useState(0)
+  const [selectedColors, setSelectedColors] = useState([])
+  const [numberOfColors, setNumberOfColors] = useState('')
 
   // SEO dynamique — se met à jour dès que le produit est chargé
   const seoCatLabels = { Board: 'Boite', Bags: 'Sac', Autocollants: 'Carte', Paper: 'Papier' }
@@ -71,7 +73,7 @@ function ProductDetailPage() {
       .then(res => {
         setProduct(res.data)
         if (res.data.sizes?.length > 0) setSelectedSize(res.data.sizes[0].size)
-        setDoubleSided(res.data.doubleSided ?? false)
+        setDoubleSided(false)  // toujours désactivé par défaut, le client l'active si besoin
         // ViewContent : on utilise le prix de la première taille disponible
         const firstPrice = res.data.sizes?.[0]?.price ?? 0
         trackViewContent(res.data, firstPrice)
@@ -99,14 +101,14 @@ function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
-    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided)
+    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColors, numberOfColors ? Number(numberOfColors) : null)
     trackAddToCart(product, selectedSize, quantity, unitPrice)
     toast.success(`${product.name} ${t('added')}`)
   }
 
   const handleBuyNow = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
-    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided)
+    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColors, numberOfColors ? Number(numberOfColors) : null)
     trackAddToCart(product, selectedSize, quantity, unitPrice)
     navigate('/cart')
   }
@@ -207,14 +209,56 @@ function ProductDetailPage() {
                   <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>
                     {t('availableColors')}
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {product.colors.map(c => (
-                      <span key={c} className="px-3 py-1 rounded-full text-sm font-medium border"
-                        style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE, background: 'rgba(124,58,237,0.06)' }}>
-                        {c}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap gap-2.5">
+                    {product.colors.map(hex => {
+                      const isSelected = selectedColors.includes(hex)
+                      const isWhite    = hex === '#FFFFFF'
+                      return (
+                        <button key={hex} type="button"
+                          onClick={() => setSelectedColors(p => p.includes(hex) ? p.filter(c => c !== hex) : [...p, hex])}
+                          className="relative w-9 h-9 rounded-full transition-all"
+                          style={{
+                            background: hex,
+                            border: isWhite ? '2px solid #e5e7eb' : isSelected ? `3px solid ${PURPLE}` : '2px solid transparent',
+                            boxShadow: isSelected ? `0 0 0 2px rgba(124,58,237,0.35)` : '0 1px 4px rgba(0,0,0,0.12)',
+                            transform: isSelected ? 'scale(1.18)' : 'scale(1)',
+                          }}>
+                          {isSelected && (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2.5 7l3.5 3.5 5.5-6" stroke={isWhite ? '#7c3aed' : 'white'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
+                  {selectedColors.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      {lang === 'ar' ? `${selectedColors.length} لون محدد` : `${selectedColors.length} couleur(s) sélectionnée(s)`}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Nombre de couleurs dans le design */}
+              {product.numberOfColors != null && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: NAVY }}>
+                    {t('numberOfColors')}
+                  </p>
+                  <input
+                    type="number" min="1" max={product.numberOfColors}
+                    value={numberOfColors}
+                    onChange={e => setNumberOfColors(e.target.value)}
+                    placeholder={t('numberOfColorsPlaceholder')}
+                    className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all focus:border-purple-400"
+                    style={{ borderColor: '#e5e7eb', color: NAVY }}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {lang === 'ar' ? `الحد الأقصى: ${product.numberOfColors} ألوان` : `Maximum : ${product.numberOfColors} couleur(s)`}
+                  </p>
                 </div>
               )}
 
@@ -359,12 +403,56 @@ function ProductDetailPage() {
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>
                 {t('availableColors')}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {product.colors.map(c => (
-                  <span key={c} className="px-3 py-1 rounded-full text-sm font-medium border"
-                    style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE, background: 'rgba(124,58,237,0.06)' }}>{c}</span>
-                ))}
+              <div className="flex flex-wrap gap-2.5">
+                {product.colors.map(hex => {
+                  const isSelected = selectedColors.includes(hex)
+                  const isWhite    = hex === '#FFFFFF'
+                  return (
+                    <button key={hex} type="button"
+                      onClick={() => setSelectedColors(p => p.includes(hex) ? p.filter(c => c !== hex) : [...p, hex])}
+                      className="relative w-9 h-9 rounded-full transition-all"
+                      style={{
+                        background: hex,
+                        border: isWhite ? '2px solid #e5e7eb' : isSelected ? `3px solid ${PURPLE}` : '2px solid transparent',
+                        boxShadow: isSelected ? `0 0 0 2px rgba(124,58,237,0.35)` : '0 1px 4px rgba(0,0,0,0.12)',
+                        transform: isSelected ? 'scale(1.18)' : 'scale(1)',
+                      }}>
+                      {isSelected && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2.5 7l3.5 3.5 5.5-6" stroke={isWhite ? '#7c3aed' : 'white'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
+              {selectedColors.length > 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  {lang === 'ar' ? `${selectedColors.length} لون محدد` : `${selectedColors.length} couleur(s) sélectionnée(s)`}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Nombre de couleurs dans le design */}
+          {product.numberOfColors != null && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: NAVY }}>
+                {t('numberOfColors')}
+              </p>
+              <input
+                type="number" min="1" max={product.numberOfColors}
+                value={numberOfColors}
+                onChange={e => setNumberOfColors(e.target.value)}
+                placeholder={t('numberOfColorsPlaceholder')}
+                className="w-full px-4 py-3 rounded-xl border-2 text-sm outline-none transition-all focus:border-purple-400"
+                style={{ borderColor: '#e5e7eb', color: NAVY }}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                {lang === 'ar' ? `الحد الأقصى: ${product.numberOfColors} ألوان` : `Maximum : ${product.numberOfColors} couleur(s)`}
+              </p>
             </div>
           )}
 

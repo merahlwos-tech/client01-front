@@ -133,12 +133,14 @@ export default function AdminOrderDetailPage() {
       const payload = {
         status,
         items: items.map(i => ({
-          product:     i.product?._id || i.product,
-          name:        i.name,
-          size:        i.size,
-          doubleSided: i.doubleSided,
-          quantity:    Number(i.quantity),
-          price:       Number(i.price),
+          product:        i.product?._id || i.product,
+          name:           i.name,
+          size:           i.size,
+          doubleSided:    i.doubleSided,
+          selectedColors: i.selectedColors || [],
+          numberOfColors: i.numberOfColors || null,
+          quantity:       Number(i.quantity),
+          price:          Number(i.price),
         })),
         total: computedTotal,
         ...(editClient ? { customerInfo: { ...clientForm, deliveryMethod: clientForm.deliveryMethod || order.customerInfo.deliveryMethod, deliveryFee: clientForm.deliveryFee !== undefined ? clientForm.deliveryFee : order.customerInfo.deliveryFee } } : {}),
@@ -481,6 +483,18 @@ export default function AdminOrderDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate" style={{ color: NAVY }}>{item.name}</p>
                     <p className="text-xs text-gray-400">{item.size} — {Number(item.price).toLocaleString('fr-DZ')} DA/u</p>
+                    {item.selectedColors?.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {item.selectedColors.map(hex => (
+                          <span key={hex} className="w-4 h-4 rounded-full border border-gray-200 flex-shrink-0"
+                            style={{ background: hex }} />
+                        ))}
+                        <span className="text-xs text-gray-400">{item.selectedColors.length} couleur(s)</span>
+                      </div>
+                    )}
+                    {item.numberOfColors != null && (
+                      <p className="text-xs text-gray-400 mt-0.5">Design : {item.numberOfColors} couleur(s)</p>
+                    )}
                   </div>
                   {/* Qty — saisie directe au clavier */}
                   <div className="flex items-center gap-1.5">
