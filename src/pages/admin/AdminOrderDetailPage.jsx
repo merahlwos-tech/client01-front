@@ -169,6 +169,16 @@ export default function AdminOrderDetailPage() {
               <InfoBlock label="Commune" icon={MapPin}>
                 {order.customerInfo.commune}
               </InfoBlock>
+              {order.customerInfo.deliveryMethod && (
+                <InfoBlock label="Livraison" icon={Truck}>
+                  {order.customerInfo.deliveryMethod}
+                </InfoBlock>
+              )}
+              {order.customerInfo.deliveryFee != null && (
+                <InfoBlock label="Frais" icon={Package}>
+                  {order.customerInfo.deliveryFee.toLocaleString('fr-DZ')} DA
+                </InfoBlock>
+              )}
             </div>
 
             {order.customerInfo.description && (
@@ -258,7 +268,21 @@ export default function AdminOrderDetailPage() {
             </div>
 
             {/* Total */}
-            <div className="flex items-center justify-between px-4 py-3 mt-3 rounded-xl"
+            {order.customerInfo.deliveryFee != null && (
+              <div className="flex items-center justify-between px-4 py-2 mt-3 rounded-xl"
+                style={{ background: 'rgba(124,58,237,0.03)', border: '1px solid rgba(124,58,237,0.1)' }}>
+                <span className="text-sm text-gray-500">
+                  Frais de livraison
+                  {order.customerInfo.deliveryMethod && (
+                    <span className="ml-1 text-xs text-purple-400">({order.customerInfo.deliveryMethod})</span>
+                  )}
+                </span>
+                <span className="font-bold text-sm" style={{ color: NAVY }}>
+                  {order.customerInfo.deliveryFee.toLocaleString('fr-DZ')} DA
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between px-4 py-3 mt-2 rounded-xl"
               style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
               <span className="font-bold text-sm" style={{ color: NAVY }}>Total commande</span>
               <span className="font-black text-2xl" style={{ color: PURPLE }}>

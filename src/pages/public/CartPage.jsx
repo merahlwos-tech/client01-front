@@ -18,6 +18,7 @@ function CartPage() {
   const { t, isRTL } = useLang()
   const navigate      = useNavigate()
   const [submitting, setSubmitting] = useState(false)
+  const [deliveryInfo, setDeliveryInfo] = useState({ fee: null, method: null })
 
   useSEO({ title: 'Mon panier', description: 'Finalisez votre commande d\'emballages personnalisés BrandPack.' })
 
@@ -29,6 +30,7 @@ function CartPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOrder = async (customerInfo) => {
+    setDeliveryInfo({ fee: customerInfo.deliveryFee ?? null, method: customerInfo.deliveryMethod ?? null })
     if (items.length === 0) { toast.error('Votre panier est vide'); return }
     setSubmitting(true)
 
@@ -153,6 +155,16 @@ function CartPage() {
                   ))}
                 </div>
                 <div className="h-px bg-gray-100 mb-3" />
+                {deliveryInfo.fee != null && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-500">
+                      Livraison {deliveryInfo.method && <span className="text-xs text-purple-400">({deliveryInfo.method})</span>}
+                    </span>
+                    <span className="font-bold text-sm" style={{ color: NAVY }}>
+                      {deliveryInfo.fee.toLocaleString('fr-DZ')} DA
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">{t('total')}</span>
                   <span className="font-black text-2xl" style={{ color: PURPLE }}>
