@@ -179,7 +179,7 @@ export default function AdminOrderDetailPage() {
     const tracking = order?.ecotrackTracking
     if (!tracking) return
     const token = localStorage.getItem('adminToken') || ''
-    const API   = import.meta.env.VITE_API_URL || ''
+    const API   = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '')
 
     try {
       toast.loading('Chargement de l\'étiquette…', { id: 'label' })
@@ -191,10 +191,8 @@ export default function AdminOrderDetailPage() {
       const blob = await resp.blob()
       const url  = URL.createObjectURL(blob)
 
-      // Ouvre le PDF dans un nouvel onglet
       const win = window.open(url, '_blank')
       if (!win) {
-        // Si popup bloqué → téléchargement direct
         const a = document.createElement('a')
         a.href     = url
         a.download = `etiquette-${tracking}.pdf`
