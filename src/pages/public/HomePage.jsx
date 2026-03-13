@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, Package } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
@@ -61,6 +61,79 @@ function FAQItem({ q, a }) {
           <p className="text-sm leading-relaxed pt-4" style={{ color: PURPLE_SOFT }}>{a}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+
+/* ── Before / After Slider ── */
+function BeforeAfterSlider() {
+  const [pos, setPos]       = useState(50)
+  const [drag, setDrag]     = useState(false)
+  const containerRef        = useRef(null)
+
+  const calc = useCallback((clientX) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = Math.min(Math.max(clientX - rect.left, 0), rect.width)
+    setPos(Math.round((x / rect.width) * 100))
+  }, [])
+
+  const onMouseMove  = (e) => { if (drag) calc(e.clientX) }
+  const onTouchMove  = (e) => { calc(e.touches[0].clientX) }
+  const stop         = () => setDrag(false)
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden rounded-2xl shadow-xl select-none"
+      style={{ aspectRatio: '16/9', cursor: 'col-resize', maxHeight: 420 }}
+      onMouseMove={onMouseMove}
+      onMouseUp={stop}
+      onMouseLeave={stop}
+      onTouchMove={onTouchMove}
+      onTouchEnd={stop}
+    >
+      {/* BEFORE — image pleine */}
+      <img src="/before.webp" alt="Avant" draggable={false}
+        className="absolute inset-0 w-full h-full object-cover" />
+
+      {/* AFTER — clippé à gauche */}
+      <div className="absolute inset-0 overflow-hidden"
+        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        <img src="/after.webp" alt="Après" draggable={false}
+          className="absolute inset-0 w-full h-full object-cover" />
+      </div>
+
+      {/* Labels */}
+      <span className="absolute top-3 left-3 text-[11px] font-black uppercase tracking-widest
+                       bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full shadow"
+        style={{ color: '#1e1b4b' }}>Avant</span>
+      <span className="absolute top-3 right-3 text-[11px] font-black uppercase tracking-widest
+                       bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full shadow"
+        style={{ color: '#7c3aed' }}>Après</span>
+
+      {/* Handle line */}
+      <div className="absolute inset-y-0 w-0.5 -translate-x-1/2 pointer-events-none"
+        style={{ left: `${pos}%`, background: 'white', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }} />
+
+      {/* Handle circle */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full
+                   flex items-center justify-center shadow-xl z-10 touch-none"
+        style={{
+          left: `${pos}%`,
+          background: 'white',
+          border: '3px solid #7c3aed',
+          cursor: 'grab',
+        }}
+        onMouseDown={(e) => { e.preventDefault(); setDrag(true) }}
+        onTouchStart={() => setDrag(true)}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5">
+          <path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/>
+        </svg>
+      </div>
     </div>
   )
 }
@@ -245,6 +318,23 @@ function HomePage() {
               </Link>
             )
           })}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          BEFORE / AFTER SLIDER
+      ══════════════════════════════════════ */}
+      <section className="py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-center font-black italic text-xl mb-3" style={{ color: NAVY }}>
+            {lang === 'ar' ? 'قبل وبعد' : 'Avant & Après'}
+          </p>
+          <p className="text-center text-sm mb-6" style={{ color: PURPLE_SOFT }}>
+            {lang === 'ar'
+              ? 'اسحب لترى الفرق'
+              : 'Faites glisser pour voir la différence'}
+          </p>
+          <BeforeAfterSlider />
         </div>
       </section>
 
