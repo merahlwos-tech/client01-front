@@ -97,7 +97,7 @@ function Field({ label, icon: Icon, error, children }) {
 }
 
 /* ── Main component ── */
-function CheckoutForm({ onSubmit, loading }) {
+function CheckoutForm({ onSubmit, loading, onDeliveryChange }) {
   const { t, isRTL, lang } = useLang()
   const [form, setForm]   = useState({ firstName: '', lastName: '', phone: '', wilayaId: '', wilayaName: '', commune: '', stopDesk: false, description: '' })
   const [errors, setErrors] = useState({})
@@ -110,6 +110,16 @@ function CheckoutForm({ onSubmit, loading }) {
 
   const currentFees = form.wilayaId ? getFeesForWilaya(form.wilayaId) : null
   const deliveryFee = currentFees ? (form.stopDesk ? currentFees.tarif_stopdesk : currentFees.tarif) : null
+
+  // Notify parent in real-time when delivery info changes
+  useEffect(() => {
+    if (onDeliveryChange) {
+      onDeliveryChange({
+        fee: deliveryFee ?? null,
+        method: form.stopDesk ? 'Stop Desk' : 'Domicile',
+      })
+    }
+  }, [deliveryFee, form.stopDesk])
   const hasStopDesk = communes.some(c => c.has_stop_desk === 1)
   const visibleCommunes = form.stopDesk ? communes.filter(c => c.has_stop_desk === 1) : communes
 

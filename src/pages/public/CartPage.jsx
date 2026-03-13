@@ -19,6 +19,7 @@ function CartPage() {
   const navigate      = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [deliveryInfo, setDeliveryInfo] = useState({ fee: null, method: null })
+  const totalWithDelivery = total + (deliveryInfo.fee ?? 0)
 
   useSEO({ title: 'Mon panier', description: 'Finalisez votre commande d\'emballages personnalisés BrandPack.' })
 
@@ -30,15 +31,14 @@ function CartPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOrder = async (customerInfo) => {
-    setDeliveryInfo({ fee: customerInfo.deliveryFee ?? null, method: customerInfo.deliveryMethod ?? null })
     if (items.length === 0) { toast.error('Votre panier est vide'); return }
     setSubmitting(true)
 
     // 1. AddPaymentInfo — formulaire validé, intention d'achat maximale
-    trackAddPaymentInfo(items, total)
+    trackAddPaymentInfo(items, totalWithDelivery)
 
     // 2. Pixel Purchase (côté client) — retourne l'event_id pour déduplication CAPI
-    const metaEventId = trackPurchase(items, total)
+    const metaEventId = trackPurchase(items, totalWithDelivery)
 
     try {
       await api.post('/orders', {
@@ -51,7 +51,7 @@ function CartPage() {
           quantity:    item.quantity,
           price:       item.price,
         })),
-        total,
+        total: totalWithDelivery,
         metaEventId, // 3. Transmis au backend → CAPI Purchase avec même event_id
       })
       clearCart()
@@ -124,7 +124,7 @@ function CartPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">{t('total')}</span>
                 <span className="font-black text-2xl" style={{ color: PURPLE }}>
-                  {total.toLocaleString('fr-DZ')}
+                  {totalWithDelivery.toLocaleString('fr-DZ')}
                   <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
                 </span>
               </div>
@@ -168,7 +168,7 @@ function CartPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">{t('total')}</span>
                   <span className="font-black text-2xl" style={{ color: PURPLE }}>
-                    {total.toLocaleString('fr-DZ')}
+                    {totalWithDelivery.toLocaleString('fr-DZ')}
                     <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
                   </span>
                 </div>
@@ -180,7 +180,7 @@ function CartPage() {
                 <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: PURPLE }}>
                   {t('deliveryInfo2')}
                 </p>
-                <CheckoutForm onSubmit={handleOrder} loading={submitting} />
+                <CheckoutForm onSubmit={handleOrder} loading={submitting} onDeliveryChange={setDeliveryInfo} />
               </div>
             </div>
           </div>
