@@ -3,14 +3,9 @@ import { ChevronDown, User, Phone, MapPin, Map, Loader2, Package, Image, X, File
 import { useLang } from '../../context/LanguageContext'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
 import { trackFormEngagement } from '../../utils/metaPixel'
-import { wilayas as LOCAL_WILAYAS } from '../../data/wilayas'
 import toast from 'react-hot-toast'
 
 // Convertit les wilayas locales au format attendu par le composant
-const LOCAL_WILAYAS_FORMATTED = LOCAL_WILAYAS.map(w => ({
-  wilaya_id: w.code,
-  wilaya_name: w.name,
-}))
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
@@ -37,21 +32,16 @@ function useEcotrackData() {
 
     setLoadingW(true)
     Promise.all([
-      fetch(`${API}/ecotrack/wilayas`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/ecotrack/fees`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/ecotrack/wilayas`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/ecotrack/fees`).then(r => r.json()).catch(() => null),
     ]).then(([w, f]) => {
-      let wList = Array.isArray(w) ? w : (w?.data || [])
-      if (!wList.length) {
-        console.warn('ECOTRACK indisponible — données locales utilisées')
-        wList = LOCAL_WILAYAS_FORMATTED
-      }
+      const wList = Array.isArray(w) ? w : (w?.data || [])
       const fList = Array.isArray(f) ? f : (f?.data || [])
       const sorted = [...wList].sort((a, b) => Number(a.wilaya_id) - Number(b.wilaya_id))
       setWilayas(sorted); ssSet('eco_wilayas', sorted)
       setFees(fList);     ssSet('eco_fees', fList)
     }).catch(err => {
       console.error('ECOTRACK wilayas/fees:', err)
-      setWilayas(LOCAL_WILAYAS_FORMATTED)
     }).finally(() => setLoadingW(false))
   }, [])
 
@@ -64,11 +54,11 @@ function useEcotrackData() {
     if (cached) { setCommunes(cached); return }
 
     setLoadingC(true)
-    fetch(`${API}/ecotrack/communes?wilaya_id=${id}`)
+    fetch(`${API}/api/ecotrack/communes?wilaya_id=${id}`)
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : (data?.data || [])
-        const sorted = [...list].sort((a, b) => a.commune_name?.localeCompare(b.commune_name))
+        const sorted = [...list].sort((a, b) => a.nom?.localeCompare(b.nom))
         setCommunes(sorted); ssSet(cacheKey, sorted)
       }).catch(err => console.error('ECOTRACK communes:', err))
         .finally(() => setLoadingC(false))
@@ -295,8 +285,8 @@ function CheckoutForm({ onSubmit, loading }) {
                       className={`${inputCls(errors.commune)} appearance-none pr-10 cursor-pointer`}>
                       <option value="">— Choisir une commune —</option>
                       {visibleCommunes.map(c => (
-                        <option key={c.commune_id || c.commune_name} value={c.commune_name}>
-                          {c.commune_name}
+                        <option key={c.nom} value={c.nom}>
+                          {c.nom}
                         </option>
                       ))}
                     </select>
