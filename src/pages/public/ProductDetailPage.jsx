@@ -63,10 +63,6 @@ function ColorDropdown({ colors, value, onChange, lang }) {
           boxShadow: open ? '0 0 0 3px rgba(124,58,237,0.1)' : 'none',
         }}>
         <span className="flex items-center gap-2.5">
-          {value && (
-            <span className="w-5 h-5 rounded-full border border-gray-200 flex-shrink-0"
-              style={{ background: value }} />
-          )}
           {label}
         </span>
         <ChevronDown size={16} className={`transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}
@@ -94,8 +90,6 @@ function ColorDropdown({ colors, value, onChange, lang }) {
                   onMouseEnter={e => { if (value !== hex) e.currentTarget.style.background = 'rgba(124,58,237,0.04)' }}
                   onMouseLeave={e => { if (value !== hex) e.currentTarget.style.background = 'transparent' }}>
                   <span className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full border border-gray-200 flex-shrink-0"
-                      style={{ background: hex, borderColor: hex === '#FFFFFF' ? '#e5e7eb' : 'transparent' }} />
                     {name}
                   </span>
                   {value === hex && <Check size={14} style={{ color: PURPLE }} />}
@@ -199,7 +193,7 @@ function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
     if (product.colors?.length > 0 && !selectedColor) { toast.error(lang === 'ar' ? 'يرجى اختيار لون' : 'Veuillez choisir une couleur'); return }
-    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColor ? [selectedColor] : [], nbColors)
+    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColor ? [COLOR_NAMES[selectedColor]?.[lang] || COLOR_NAMES[selectedColor]?.fr || selectedColor] : [], nbColors)
     trackAddToCart(product, selectedSize, quantity, unitPrice)
     toast.success(`${product.name} ${t('added')}`)
   }
@@ -207,7 +201,7 @@ function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!selectedSize) { toast.error(t('selectSize')); return }
     if (product.colors?.length > 0 && !selectedColor) { toast.error(lang === 'ar' ? 'يرجى اختيار لون' : 'Veuillez choisir une couleur'); return }
-    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColor ? [selectedColor] : [], nbColors)
+    addToCart({ ...product, computedPrice: unitPrice }, selectedSize, quantity, doubleSided, selectedColor ? [COLOR_NAMES[selectedColor]?.[lang] || COLOR_NAMES[selectedColor]?.fr || selectedColor] : [], nbColors)
     trackAddToCart(product, selectedSize, quantity, unitPrice)
     navigate('/cart')
   }

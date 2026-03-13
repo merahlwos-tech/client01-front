@@ -45,10 +45,11 @@ function CartItem({ item }) {
           {/* Couleur sélectionnée */}
           {item.selectedColors?.length > 0 && (
             <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="w-4 h-4 rounded-full border border-gray-200 flex-shrink-0"
-                style={{ background: item.selectedColors[0], boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} />
               <span className="text-xs text-gray-400">
-                {lang === 'ar' ? 'اللون المختار' : 'Couleur choisie'}
+                {lang === 'ar' ? 'اللون:' : 'Couleur :'}{' '}
+                <span className="font-semibold" style={{ color: NAVY }}>
+                  {item.selectedColors[0]}
+                </span>
               </span>
             </div>
           )}
