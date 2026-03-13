@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Download, Loader2, CheckCircle2,
+  ArrowLeft, Download, Loader2, CheckCircle2, Truck,
   Phone, MapPin, User, Package, FileText, Tag, Hash
 } from 'lucide-react'
 import api from '../../utils/api'
