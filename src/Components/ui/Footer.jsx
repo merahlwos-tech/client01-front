@@ -67,7 +67,7 @@ function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <img src="/icon.jpg" alt="BrandPack" className="w-10 h-10 rounded-full object-contain" />
+              <img src="/icon.webp" alt="BrandPack" className="w-10 h-10 rounded-full object-contain" />
               <div>
                 <p className="font-black italic text-white text-xl leading-none">BrandPack</p>
                 <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>for packaging</p>

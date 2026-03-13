@@ -51,7 +51,7 @@ function Navbar() {
           <Link to="/"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2.5 flex-shrink-0">
-            <img src="/icon.jpg" alt="BrandPack" className="w-9 h-9 rounded-full object-contain"
+            <img src="/icon.webp" alt="BrandPack" className="w-9 h-9 rounded-full object-contain"
               width="36" height="36" />
             <span className="font-black italic text-white text-lg leading-none hidden sm:block">
               BrandPack

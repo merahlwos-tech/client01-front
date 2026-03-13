@@ -64,7 +64,7 @@ function AdminLoginPage() {
           <div className="relative mb-4">
             <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl ring-2"
               style={{ ringColor: 'rgba(124,58,237,0.4)', boxShadow: `0 0 40px rgba(124,58,237,0.35)` }}>
-              <img src="/icon.jpg" alt="BrandPack"
+              <img src="/icon.webp" alt="BrandPack"
                 className="w-full h-full object-cover" />
             </div>
             {/* Point vert "en ligne" */}

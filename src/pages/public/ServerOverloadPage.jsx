@@ -27,7 +27,7 @@ function ServerOverloadPage() {
 
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-6">
-          <img src="/icon.jpg" alt="BrandPack" className="w-10 h-10 rounded-full" />
+          <img src="/icon.webp" alt="BrandPack" className="w-10 h-10 rounded-full" />
           <span className="font-black italic text-2xl" style={{ color: NAVY }}>BrandPack</span>
         </div>
 

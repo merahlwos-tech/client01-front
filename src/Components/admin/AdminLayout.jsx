@@ -22,7 +22,7 @@ function SidebarContent({ onClose, onLogout }) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5"
         style={{ borderBottom: '1px solid rgba(124,58,237,0.2)' }}>
-        <img src="/icon.jpg" alt="BrandPack"
+        <img src="/icon.webp" alt="BrandPack"
           className="w-9 h-9 rounded-full object-contain flex-shrink-0" />
         <div>
           <p className="text-white font-black italic text-base leading-none">BrandPack</p>
