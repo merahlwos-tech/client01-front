@@ -164,33 +164,32 @@ function HomePage() {
       <header className="px-4 pt-20 pb-6">
 
         {/* Desktop — plein background mainPC */}
-        <div className="hidden md:flex items-center rounded-2xl overflow-hidden max-w-7xl mx-auto relative"
+        <div className="hidden md:flex flex-col rounded-2xl overflow-hidden max-w-7xl mx-auto relative"
           style={{ minHeight: 440, backgroundImage: "url('/mainPC.webp')", backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 8px 40px rgba(80,40,40,0.18)' }}>
 
-          {/* Texte */}
-          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center relative z-10
-                          ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}>
+          {/* Badge en haut */}
+          <div className="w-full flex justify-center pt-8 relative z-10">
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest
-                             px-3 py-1 rounded-full mb-6"
+                             px-3 py-1 rounded-full"
               style={{ background: 'rgba(255,255,255,0.55)', color: '#5b2333', backdropFilter: 'blur(6px)' }}>
               <Package size={12} />
               {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
             </span>
+          </div>
 
-            <h1 className="font-black leading-tight mb-5"
+          {/* Titre centré */}
+          <div className="w-full flex justify-center mt-4 relative z-10">
+            <h1 className="font-black leading-tight text-center"
               style={{ color: '#2d1a1a', fontSize: 'clamp(2rem, 3.5vw, 3rem)', textShadow: '0 1px 8px rgba(255,255,255,0.4)' }}>
               {lang === 'ar'
-                ? <>التغليف الذي<br /><span style={{ color: '#7c3aed' }}>يصنع الفرق</span></>
-                : <>L'emballage qui<br /><span style={{ color: '#7c3aed' }}>fait la différence</span></>}
+                ? <>التغليف الذي <span style={{ color: '#7c3aed' }}>يصنع الفرق</span></>
+                : <>L'emballage qui <span style={{ color: '#7c3aed' }}>fait la différence</span></>}
             </h1>
+          </div>
 
-            <p className="text-sm leading-relaxed mb-8 max-w-sm font-medium"
-              style={{ color: '#3d2020' }}>
-              {lang === 'ar'
-                ? 'كراتين، أكياس، بطاقات وورق مطبوع بشعارك — جودة عالية، دفع عند الاستلام.'
-                : 'Cartons, sacs, cartes et papier imprimés à votre image — qualité premium, paiement à la livraison.'}
-            </p>
-
+          {/* Boutons + stats en bas */}
+          <div className={`flex-1 flex flex-col justify-end px-10 lg:px-16 pb-10 relative z-10
+                          ${isRTL ? 'items-end' : 'items-start'}`}>
             <div className={`flex gap-3 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
               <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
                 className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
@@ -206,7 +205,7 @@ function HomePage() {
             </div>
 
             {/* Stats */}
-            <div className={`flex gap-8 mt-10 pt-8 ${isRTL ? 'flex-row-reverse' : ''}`}
+            <div className={`flex gap-8 mt-8 pt-6 ${isRTL ? 'flex-row-reverse' : ''}`}
               style={{ borderTop: '1px solid rgba(255,255,255,0.4)' }}>
               {[
                 { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
