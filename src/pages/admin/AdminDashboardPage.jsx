@@ -83,12 +83,12 @@ function AdminDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={TrendingUp} label="Gains (livrés)"
+          <StatCard icon={TrendingUp} label="Chiffre d'affaires (confirmés)"
             value={stats?.totalRevenue != null ? `${stats.totalRevenue.toLocaleString('fr-DZ')} DA` : '—'}
             color="#059669" accent />
-          <StatCard icon={ShoppingBag} label="Total commandes" value={stats?.totalOrders} />
-          <StatCard icon={Package}     label="Livrées"          value={stats?.deliveredOrders} color="#059669" />
-          <StatCard icon={RefreshCcw}  label="Retours"          value={stats?.returnOrders}    color="#ef4444" />
+          <StatCard icon={ShoppingBag} label="Total commandes"  value={stats?.totalOrders} />
+          <StatCard icon={Package}     label="Confirmées"        value={stats?.confirmedOrders}  color="#10b981" />
+          <StatCard icon={RefreshCcw}  label="Annulées"          value={stats?.cancelledOrders}  color="#ef4444" />
         </div>
       )}
 
@@ -98,12 +98,11 @@ function AdminDashboardPage() {
           <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: PURPLE }}>
             Répartition des commandes
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             {[
-              { label: 'Confirmé',    count: stats.confirmedOrders,  color: '#3b82f6', bg: '#eff6ff' },
-              { label: 'En livraison',count: stats.inDeliveryOrders, color: '#f59e0b', bg: '#fffbeb' },
-              { label: 'Livré',       count: stats.deliveredOrders,  color: '#059669', bg: '#ecfdf5' },
-              { label: 'Retour',      count: stats.returnOrders,     color: '#ef4444', bg: '#fef2f2' },
+              { label: 'En attente', count: stats.pendingOrders,   color: '#9ca3af', bg: '#f3f4f6' },
+              { label: 'Confirmé',   count: stats.confirmedOrders, color: '#10b981', bg: '#ecfdf5' },
+              { label: 'Annulé',     count: stats.cancelledOrders, color: '#ef4444', bg: '#fef2f2' },
             ].map(({ label, count, color, bg }) => (
               <div key={label} className="text-center p-4 rounded-2xl" style={{ background: bg }}>
                 <p className="text-3xl font-black mb-1" style={{ color }}>{count ?? 0}</p>
@@ -127,8 +126,7 @@ function AdminDashboardPage() {
             </div>
             <p className="text-sm text-gray-600 mb-2">
               Cette action supprimera toutes les commandes{' '}
-              <span className="text-green-600 font-bold">livrées</span> et{' '}
-              <span className="text-red-500 font-bold">retournées</span>.
+              <span className="text-red-500 font-bold">annulées</span>.
             </p>
             <p className="text-xs text-gray-400 mb-6">Cette opération est irréversible.</p>
             <div className="flex gap-3">
