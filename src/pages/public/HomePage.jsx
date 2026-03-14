@@ -165,13 +165,11 @@ function HomePage() {
 
         {/* Desktop — 2 colonnes */}
         <div className="hidden md:flex items-stretch gap-0 rounded-2xl overflow-hidden max-w-7xl mx-auto"
-          style={{ minHeight: 440, background: 'white', boxShadow: '0 8px 40px rgba(124,58,237,0.13)' }}>
+          style={{ minHeight: 440, background: 'linear-gradient(to right, #f5f0eb, #faf7f4)', boxShadow: '0 8px 40px rgba(124,58,237,0.13)' }}>
 
           {/* Texte */}
-          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center relative overflow-hidden
-                          ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}
-            style={{ backgroundImage: "url('/mainPC.webp')", backgroundSize: "cover", backgroundPosition: "center" }}>
-            <div className="relative z-10 flex flex-col w-full h-full">
+          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center
+                          ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}>
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest
                              px-3 py-1 rounded-full mb-6"
               style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
@@ -220,7 +218,6 @@ function HomePage() {
                 </div>
               ))}
             </div>
-          </div>
           </div>
 
           {/* Photo — pleine hauteur */}
