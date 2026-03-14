@@ -177,7 +177,7 @@ function HomePage() {
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6"
               style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(6px)' }}>
               <Package size={11} />
-              {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
+              {lang === 'ar' ? 'تغليف مخصص · توصيل لجميع ولايات الجزائر' : 'Emballage sur mesure · Livraison dans toutes les wilayas d\'Algérie'}
             </span>
 
             <h1 className="text-white font-black leading-tight mb-8 italic"
@@ -190,12 +190,12 @@ function HomePage() {
             <div className="flex gap-4 flex-wrap justify-center mb-10">
               <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
                 className="px-8 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
-                style={{ background: PURPLE }}>
+                style={{ background: '#25D366' }}>
                 WhatsApp
               </a>
               <button onClick={scrollToProduits}
                 className="px-8 py-3 rounded-full font-bold text-sm transition-all hover:scale-105"
-                style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
+                style={{ background: PURPLE, color: 'white', border: 'none' }}>
                 {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
               </button>
             </div>
@@ -203,8 +203,8 @@ function HomePage() {
             {/* Stats */}
             <div className="flex gap-12 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
               {[
-                { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
-                { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
+                { val: '69',   label: lang === 'ar' ? 'ولاية'             : 'Wilayas' },
+                { val: '100%', label: lang === 'ar' ? 'جودة ممتازة'       : 'Excellente qualité' },
               ].map(s => (
                 <div key={s.val} className="text-center">
                   <p className="text-3xl font-black" style={{ color: '#c4b5fd' }}>{s.val}</p>
