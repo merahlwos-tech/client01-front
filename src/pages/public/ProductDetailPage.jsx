@@ -48,12 +48,12 @@ function ColorDropdown({ colors, value, onChange, lang }) {
 
   const label = value
     ? (COLOR_NAMES[value]?.[lang] || COLOR_NAMES[value]?.fr || value)
-    : (lang === 'ar' ? 'اختر لوناً *' : 'Choisir une couleur *')
+    : (lang === 'ar' ? 'اختر لوناً' : 'Choisir une couleur')
 
   return (
     <div ref={ref} className="relative w-full">
       <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: NAVY }}>
-        {lang === 'ar' ? 'الألوان المتاحة' : 'Couleur disponible'} <span style={{ color: '#ef4444' }}>*</span>
+        {lang === 'ar' ? 'الألوان المتاحة' : 'Couleur disponible'}
       </p>
       <button type="button" onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all"
@@ -382,12 +382,10 @@ function ProductDetailPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-bold" style={{ color: doubleSided ? '#9ca3af' : PURPLE }}>OFF</span>
                       <div className="relative w-11 h-6 rounded-full transition-colors"
                         style={{ background: doubleSided ? PURPLE : '#d1d5db' }}>
                         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${doubleSided ? 'left-5' : 'left-0.5'}`} />
                       </div>
-                      <span className="text-xs font-bold" style={{ color: doubleSided ? PURPLE : '#9ca3af' }}>ON</span>
                     </div>
                   </label>
                 </div>
@@ -556,12 +554,10 @@ function ProductDetailPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs font-bold" style={{ color: doubleSided ? '#9ca3af' : PURPLE }}>OFF</span>
                   <div className="relative w-11 h-6 rounded-full transition-colors"
                     style={{ background: doubleSided ? PURPLE : '#d1d5db' }}>
                     <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${doubleSided ? 'left-5' : 'left-0.5'}`} />
                   </div>
-                  <span className="text-xs font-bold" style={{ color: doubleSided ? PURPLE : '#9ca3af' }}>ON</span>
                 </div>
               </label>
             </div>
