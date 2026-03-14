@@ -484,13 +484,9 @@ export default function AdminOrderDetailPage() {
                     <p className="font-bold text-sm truncate" style={{ color: NAVY }}>{item.name}</p>
                     <p className="text-xs text-gray-400">{item.size} — {Number(item.price).toLocaleString('fr-DZ')} DA/u</p>
                     {item.selectedColors?.length > 0 && (
-                      <div className="flex items-center gap-1 mt-1 flex-wrap">
-                        {item.selectedColors.map(hex => (
-                          <span key={hex} className="w-4 h-4 rounded-full border border-gray-200 flex-shrink-0"
-                            style={{ background: hex }} />
-                        ))}
-                        <span className="text-xs text-gray-400">{item.selectedColors.length} couleur(s)</span>
-                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Couleur : <span className="font-semibold" style={{ color: NAVY }}>{item.selectedColors[0]}</span>
+                      </p>
                     )}
                     {item.numberOfColors != null && (
                       <p className="text-xs text-gray-400 mt-0.5">Design : {item.numberOfColors} couleur(s)</p>
