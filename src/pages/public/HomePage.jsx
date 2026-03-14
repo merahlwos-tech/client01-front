@@ -163,59 +163,66 @@ function HomePage() {
       ══════════════════════════════════════ */}
       <header className="px-4 pt-20 pb-6">
 
-        {/* Desktop — plein background mainPC */}
-        <div className="hidden md:flex flex-col rounded-2xl overflow-hidden max-w-7xl mx-auto relative"
-          style={{ minHeight: 440, backgroundImage: "url('/mainPC.webp')", backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 8px 40px rgba(80,40,40,0.18)' }}>
+        {/* Desktop — image pleine + contenu en dessous */}
+        <div className="hidden md:block max-w-7xl mx-auto">
 
-          {/* Badge en haut */}
-          <div className="w-full flex justify-center pt-8 relative z-10">
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest
-                             px-3 py-1 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.55)', color: '#5b2333', backdropFilter: 'blur(6px)' }}>
-              <Package size={12} />
-              {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
-            </span>
+          {/* Image seule */}
+          <div className="w-full rounded-2xl overflow-hidden"
+            style={{ boxShadow: '0 8px 40px rgba(80,40,40,0.18)' }}>
+            <img src="/mainPC.webp" alt="BrandPack" fetchpriority="high" loading="eager"
+              className="w-full object-cover" style={{ maxHeight: 460, width: '100%' }} />
           </div>
 
-          {/* Titre centré */}
-          <div className="w-full flex justify-center mt-4 relative z-10">
-            <h1 className="font-black leading-tight text-center"
-              style={{ color: '#2d1a1a', fontSize: 'clamp(2rem, 3.5vw, 3rem)', textShadow: '0 1px 8px rgba(255,255,255,0.4)' }}>
-              {lang === 'ar'
-                ? <>التغليف الذي <span style={{ color: '#7c3aed' }}>يصنع الفرق</span></>
-                : <>L'emballage qui <span style={{ color: '#7c3aed' }}>fait la différence</span></>}
-            </h1>
-          </div>
+          {/* Contenu sous l'image */}
+          <div className="mt-8 px-1" dir={isRTL ? 'rtl' : 'ltr'}>
 
-          {/* Boutons + stats en bas */}
-          <div className={`flex-1 flex flex-col justify-end px-10 lg:px-16 pb-10 relative z-10
-                          ${isRTL ? 'items-end' : 'items-start'}`}>
-            <div className={`flex gap-3 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
-                className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
-                style={{ background: '#25D366' }}>
-                WhatsApp
-              </a>
-              <button
-                onClick={scrollToProduits}
-                className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
-                style={{ borderColor: '#7c3aed', color: '#7c3aed', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(4px)' }}>
-                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
-              </button>
+            {/* Ligne 1 — badge */}
+            <div className="flex justify-center mb-4">
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full"
+                style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>
+                <Package size={11} />
+                {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
+              </span>
             </div>
 
-            {/* Stats */}
-            <div className={`flex gap-8 mt-8 pt-6 ${isRTL ? 'flex-row-reverse' : ''}`}
-              style={{ borderTop: '1px solid rgba(255,255,255,0.4)' }}>
-              {[
-                { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
-                { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
-              ].map(s => (
-                <div key={s.val} className={isRTL ? 'text-right' : ''}>
-                  <p className="text-2xl font-black" style={{ color: '#7c3aed', textShadow: '0 1px 4px rgba(255,255,255,0.5)' }}>{s.val}</p>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color: '#3d2020' }}>{s.label}</p>
-                </div>
-              ))}
+            {/* Ligne 2 — titre centré */}
+            <h1 className="text-center font-black leading-tight mb-8"
+              style={{ color: NAVY, fontSize: 'clamp(2rem, 3.5vw, 3rem)' }}>
+              {lang === 'ar'
+                ? <>التغليف الذي <span style={{ color: PURPLE }}>يصنع الفرق</span></>
+                : <>L'emballage qui <span style={{ color: PURPLE }}>fait la différence</span></>}
+            </h1>
+
+            {/* Ligne 3 — boutons + stats côte à côte */}
+            <div className={`flex items-center justify-between gap-6 pt-6 ${isRTL ? 'flex-row-reverse' : ''}`}
+              style={{ borderTop: '1px solid rgba(124,58,237,0.12)' }}>
+
+              {/* Boutons */}
+              <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
+                  className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
+                  style={{ background: '#25D366' }}>
+                  WhatsApp
+                </a>
+                <button onClick={scrollToProduits}
+                  className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
+                  style={{ borderColor: PURPLE, color: PURPLE, background: 'transparent' }}>
+                  {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
+                </button>
+              </div>
+
+              {/* Stats */}
+              <div className={`flex gap-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {[
+                  { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
+                  { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
+                ].map(s => (
+                  <div key={s.val} className="text-center">
+                    <p className="text-3xl font-black" style={{ color: PURPLE }}>{s.val}</p>
+                    <p className="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-widest">{s.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
