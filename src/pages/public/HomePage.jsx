@@ -163,29 +163,29 @@ function HomePage() {
       ══════════════════════════════════════ */}
       <header className="px-4 pt-20 pb-6">
 
-        {/* Desktop — 2 colonnes */}
-        <div className="hidden md:flex items-stretch gap-0 rounded-2xl overflow-hidden max-w-7xl mx-auto"
-          style={{ minHeight: 440, background: 'linear-gradient(to right, #d4b2ac, #e5d0ca)', boxShadow: '0 8px 40px rgba(124,58,237,0.13)' }}>
+        {/* Desktop — plein background mainPC */}
+        <div className="hidden md:flex items-center rounded-2xl overflow-hidden max-w-7xl mx-auto relative"
+          style={{ minHeight: 440, backgroundImage: "url('/mainPC.webp')", backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 8px 40px rgba(80,40,40,0.18)' }}>
 
           {/* Texte */}
-          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center
+          <div className={`flex-1 px-10 lg:px-16 py-12 flex flex-col justify-center relative z-10
                           ${isRTL ? 'items-end text-right' : 'items-start text-left'}`}>
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest
                              px-3 py-1 rounded-full mb-6"
-              style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+              style={{ background: 'rgba(255,255,255,0.55)', color: '#5b2333', backdropFilter: 'blur(6px)' }}>
               <Package size={12} />
               {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
             </span>
 
             <h1 className="font-black leading-tight mb-5"
-              style={{ color: NAVY, fontSize: 'clamp(2rem, 3.5vw, 3rem)' }}>
+              style={{ color: '#2d1a1a', fontSize: 'clamp(2rem, 3.5vw, 3rem)', textShadow: '0 1px 8px rgba(255,255,255,0.4)' }}>
               {lang === 'ar'
-                ? <>التغليف الذي<br /><span style={{ color: PURPLE }}>يصنع الفرق</span></>
-                : <>L'emballage qui<br /><span style={{ color: PURPLE }}>fait la différence</span></>}
+                ? <>التغليف الذي<br /><span style={{ color: '#7c3aed' }}>يصنع الفرق</span></>
+                : <>L'emballage qui<br /><span style={{ color: '#7c3aed' }}>fait la différence</span></>}
             </h1>
 
-            <p className="text-sm leading-relaxed mb-8 max-w-sm"
-              style={{ color: 'rgba(30,27,75,0.6)' }}>
+            <p className="text-sm leading-relaxed mb-8 max-w-sm font-medium"
+              style={{ color: '#3d2020' }}>
               {lang === 'ar'
                 ? 'كراتين، أكياس، بطاقات وورق مطبوع بشعارك — جودة عالية، دفع عند الاستلام.'
                 : 'Cartons, sacs, cartes et papier imprimés à votre image — qualité premium, paiement à la livraison.'}
@@ -200,31 +200,24 @@ function HomePage() {
               <button
                 onClick={scrollToProduits}
                 className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
-                style={{ borderColor: PURPLE, color: PURPLE, background: 'transparent' }}>
+                style={{ borderColor: '#7c3aed', color: '#7c3aed', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(4px)' }}>
                 {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
               </button>
             </div>
 
             {/* Stats */}
             <div className={`flex gap-8 mt-10 pt-8 ${isRTL ? 'flex-row-reverse' : ''}`}
-              style={{ borderTop: '1px solid rgba(124,58,237,0.12)' }}>
+              style={{ borderTop: '1px solid rgba(255,255,255,0.4)' }}>
               {[
                 { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
                 { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
               ].map(s => (
                 <div key={s.val} className={isRTL ? 'text-right' : ''}>
-                  <p className="text-2xl font-black" style={{ color: PURPLE }}>{s.val}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+                  <p className="text-2xl font-black" style={{ color: '#7c3aed', textShadow: '0 1px 4px rgba(255,255,255,0.5)' }}>{s.val}</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: '#3d2020' }}>{s.label}</p>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Photo — pleine hauteur */}
-          <div className="w-[42%] lg:w-[45%] self-stretch flex-shrink-0">
-            <img src="/main.webp" alt="BrandPack emballages"
-              fetchpriority="high" loading="eager"
-              className="w-full h-full object-cover" style={{ minHeight: 440 }} />
           </div>
         </div>
 
