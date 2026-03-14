@@ -31,7 +31,7 @@ const FAQS_FR = [
   { q: 'Quelle est la qualité de votre impression ?',      a: 'Oui, bien sûr ! Nous sommes une société d\'impression qui offre une qualité d\'impression parmi les meilleures du marché. Votre choix de travailler avec nous rendra votre emballage vraiment unique.' },
   { q: "Livrez-vous dans toute l'Algérie ?",               a: "Oui, nous livrons dans les 69 wilayas. Le délai est généralement de 2 à 5 jours ouvrables." },
   { q: 'Quel est le mode de paiement accepté ?',           a: 'Paiement à la livraison (cash). Les clients qui paient à l\'avance sont prioritaires sur les commandes.' },
-  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nos produits peuvent être personnalisés avec votre logo. Commandez directement sur le site et nous ferons de votre emballage une véritable œuvre d\'art. Les clients qui paient à l\'avance sont prioritaires.' },
+  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nos produits peuvent être personnalisés avec votre logo. Commandez directement sur le site et nous ferons de votre emballage une véritable œuvre d\'art.' },
   { q: 'Comment suivre ma commande ?',                     a: "Notre équipe vous contacte par téléphone après confirmation pour vous informer de la livraison." },
 ]
 const FAQS_AR = [
