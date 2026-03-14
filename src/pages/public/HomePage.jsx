@@ -163,66 +163,54 @@ function HomePage() {
       ══════════════════════════════════════ */}
       <header className="px-4 pt-20 pb-6">
 
-        {/* Desktop — image pleine + contenu en dessous */}
-        <div className="hidden md:block max-w-7xl mx-auto">
+        {/* Desktop — même effet que mobile, texte dans la photo */}
+        <div className="hidden md:relative md:flex md:items-center md:justify-center rounded-2xl overflow-hidden max-w-7xl mx-auto"
+          style={{ minHeight: 480, background: NAVY, boxShadow: '0 8px 40px rgba(30,27,75,0.2)' }}>
 
-          {/* Image seule */}
-          <div className="w-full rounded-2xl overflow-hidden"
-            style={{ boxShadow: '0 8px 40px rgba(80,40,40,0.18)' }}>
-            <img src="/mainPC.webp" alt="BrandPack" fetchpriority="high" loading="eager"
-              className="w-full object-cover" style={{ maxHeight: 460, width: '100%' }} />
-          </div>
+          {/* Overlay + image */}
+          <div className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.38), rgba(30,27,75,0.75)), url('/mainPC.webp')` }} />
 
-          {/* Contenu sous l'image */}
-          <div className="mt-8 px-1" dir={isRTL ? 'rtl' : 'ltr'}>
+          {/* Contenu centré */}
+          <div className="relative z-10 w-full flex flex-col items-center text-center px-10 py-16 max-w-3xl mx-auto">
 
-            {/* Ligne 1 — badge */}
-            <div className="flex justify-center mb-4">
-              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full"
-                style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>
-                <Package size={11} />
-                {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
-              </span>
-            </div>
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6"
+              style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(6px)' }}>
+              <Package size={11} />
+              {lang === 'ar' ? 'تغليف مخصص · توصيل لكل الجزائر' : 'Emballage sur mesure · Livraison Algérie'}
+            </span>
 
-            {/* Ligne 2 — titre centré */}
-            <h1 className="text-center font-black leading-tight mb-8"
-              style={{ color: NAVY, fontSize: 'clamp(2rem, 3.5vw, 3rem)' }}>
+            <h1 className="text-white font-black leading-tight mb-8 italic"
+              style={{ fontSize: 'clamp(2.2rem, 4vw, 3.2rem)', textShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
               {lang === 'ar'
-                ? <>التغليف الذي <span style={{ color: PURPLE }}>يصنع الفرق</span></>
-                : <>L'emballage qui <span style={{ color: PURPLE }}>fait la différence</span></>}
+                ? <>التغليف الذي <span style={{ color: '#c4b5fd' }}>يصنع الفرق</span></>
+                : <>L'emballage qui <span style={{ color: '#c4b5fd' }}>fait la différence</span></>}
             </h1>
 
-            {/* Ligne 3 — boutons + stats côte à côte */}
-            <div className={`flex items-center justify-between gap-6 pt-6 ${isRTL ? 'flex-row-reverse' : ''}`}
-              style={{ borderTop: '1px solid rgba(124,58,237,0.12)' }}>
+            <div className="flex gap-4 flex-wrap justify-center mb-10">
+              <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
+                className="px-8 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
+                style={{ background: PURPLE }}>
+                WhatsApp
+              </a>
+              <button onClick={scrollToProduits}
+                className="px-8 py-3 rounded-full font-bold text-sm transition-all hover:scale-105"
+                style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
+                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
+              </button>
+            </div>
 
-              {/* Boutons */}
-              <div className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
-                  className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
-                  style={{ background: '#25D366' }}>
-                  WhatsApp
-                </a>
-                <button onClick={scrollToProduits}
-                  className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
-                  style={{ borderColor: PURPLE, color: PURPLE, background: 'transparent' }}>
-                  {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
-                </button>
-              </div>
-
-              {/* Stats */}
-              <div className={`flex gap-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                {[
-                  { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
-                  { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
-                ].map(s => (
-                  <div key={s.val} className="text-center">
-                    <p className="text-3xl font-black" style={{ color: PURPLE }}>{s.val}</p>
-                    <p className="text-xs text-gray-400 mt-1 font-semibold uppercase tracking-widest">{s.label}</p>
-                  </div>
-                ))}
-              </div>
+            {/* Stats */}
+            <div className="flex gap-12 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              {[
+                { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
+                { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
+              ].map(s => (
+                <div key={s.val} className="text-center">
+                  <p className="text-3xl font-black" style={{ color: '#c4b5fd' }}>{s.val}</p>
+                  <p className="text-xs font-semibold mt-1 uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.6)' }}>{s.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
