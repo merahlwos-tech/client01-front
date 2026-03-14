@@ -1,12 +1,51 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, ChevronDown, Check } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import { useLang } from '../../context/LanguageContext'
+import { useState, useRef, useEffect } from 'react'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
+const QTY_OPTIONS = [100,200,300,400,500,600,700,800,900,1000,1500,2000,3000,5000]
+
+function QtyDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 text-xs font-bold transition-all"
+        style={{ borderColor: open ? PURPLE : 'rgba(124,58,237,0.3)', color: NAVY, background: 'white' }}>
+        {value.toLocaleString('fr-DZ')}
+        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} style={{ color: PURPLE }} />
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1 rounded-xl overflow-hidden z-50 min-w-[90px]"
+          style={{ background: 'white', border: '2px solid rgba(124,58,237,0.2)', boxShadow: '0 8px 24px rgba(124,58,237,0.15)' }}>
+          <div className="max-h-44 overflow-y-auto py-1">
+            {QTY_OPTIONS.map(q => (
+              <button key={q} type="button" onClick={() => { onChange(q); setOpen(false) }}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-left transition-all"
+                style={{ background: value === q ? 'rgba(124,58,237,0.08)' : 'transparent', color: value === q ? PURPLE : NAVY }}
+                onMouseEnter={e => { if (value !== q) e.currentTarget.style.background = 'rgba(124,58,237,0.04)' }}
+                onMouseLeave={e => { if (value !== q) e.currentTarget.style.background = 'transparent' }}>
+                {q.toLocaleString('fr-DZ')}
+                {value === q && <Check size={11} style={{ color: PURPLE }} />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function CartItem({ item }) {
-  const { removeFromCart } = useCart()
+  const { removeFromCart, updateQuantity } = useCart()
   const { lang } = useLang()
 
   return (
@@ -30,10 +69,7 @@ function CartItem({ item }) {
               style={{ background: PURPLE }}>
               {item.size}
             </span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(124,58,237,0.08)', color: PURPLE }}>
-              {item.quantity.toLocaleString('fr-DZ')} {lang === 'ar' ? 'وحدة' : 'unités'}
-            </span>
+            <QtyDropdown value={item.quantity} onChange={qty => updateQuantity(item.key, qty)} />
             {item.doubleSided && (
               <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                 style={{ background: NAVY }}>

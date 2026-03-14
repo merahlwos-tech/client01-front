@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
-const CAT_LABELS_FR = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes', Paper: 'Papier' }
+const CAT_LABELS_FR = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes et Autocollants', Paper: 'Papier' }
 const CAT_LABELS_AR = { Board: 'صناديق', Bags: 'أكياس', Autocollants: 'بطاقات', Paper: 'ورق' }
 
 const COLOR_NAMES = {
@@ -119,12 +119,30 @@ function ProductDetailPage() {
   const [numberOfColors, setNumberOfColors] = useState('1')
 
   // SEO dynamique — se met à jour dès que le produit est chargé
-  const seoCatLabels = { Board: 'Boite', Bags: 'Sac', Autocollants: 'Carte', Paper: 'Papier' }
+  const seoCatLabels = { Board: 'Boite', Bags: 'Sac', Autocollants: 'Cartes et Autocollants', Paper: 'Papier' }
+  const minPrice = product ? Math.min(...(product.sizes?.map(s => s.price) || [0])) : 0
   useSEO({
     title: product ? product.name : 'Produit',
     description: product
-      ? `${product.name} — ${seoCatLabels[product.category] || 'Emballage'} personnalisé à partir de ${Math.min(...(product.sizes?.map(s => s.price) || [0])).toLocaleString('fr-DZ')} DA. Commandez sur BrandPack Algérie.`
+      ? `${product.name} — ${seoCatLabels[product.category] || 'Emballage'} personnalisé à partir de ${minPrice.toLocaleString('fr-DZ')} DA. Commandez sur BrandPack Algérie.`
       : 'Emballage personnalisé BrandPack Algérie.',
+    canonical: product ? `/products/${product._id}` : undefined,
+    image: product?.images?.[0],
+    schema: product ? {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      image: product.images || [],
+      description: `${seoCatLabels[product.category] || 'Emballage'} personnalisé à partir de ${minPrice.toLocaleString('fr-DZ')} DA.`,
+      brand: { '@type': 'Brand', name: 'BrandPack' },
+      offers: product.sizes?.map(s => ({
+        '@type': 'Offer',
+        price: s.price,
+        priceCurrency: 'DZD',
+        availability: 'https://schema.org/InStock',
+        name: s.size,
+      })),
+    } : undefined,
   })
   useEffect(() => { window.scrollTo(0, 0) }, [id])
 

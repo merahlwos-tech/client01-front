@@ -40,7 +40,7 @@ function cartReducer(state, action) {
     case ACTIONS.UPDATE_QTY:
       return state.map(item =>
         item.key === action.payload.key
-          ? { ...item, quantity: Math.max(100, action.payload.quantity) }
+          ? { ...item, quantity: action.payload.quantity }
           : item
       )
 

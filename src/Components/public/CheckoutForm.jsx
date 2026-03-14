@@ -310,15 +310,10 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
             } : { borderColor: '#e5e7eb', background: 'white', color: '#9ca3af' }}>
             <Truck size={18} />
             <span>À domicile</span>
-            {currentFees && !isFreeDelivery && (
+            {currentFees && (
               <span className="text-xs font-black"
                 style={{ color: !form.stopDesk ? 'rgba(255,255,255,0.9)' : '#d1d5db' }}>
                 {Number(currentFees.tarif).toLocaleString('fr-DZ')} DA
-              </span>
-            )}
-            {isFreeDelivery && !form.stopDesk && (
-              <span className="text-xs font-black" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                {lang === 'ar' ? 'مجاني 🎉' : 'Gratuit 🎉'}
               </span>
             )}
           </button>

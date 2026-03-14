@@ -12,7 +12,7 @@ const PURPLE_XSOFT = 'rgba(124,58,237,0.35)'
 const CAT_IMAGES = [
   { label_fr: 'Boites',  label_ar: 'صناديق', cat: 'Board',        image: '/boite.webp' },
   { label_fr: 'Sacs',    label_ar: 'أكياس',  cat: 'Bags',         image: '/sacs.webp' },
-  { label_fr: 'Cartes',  label_ar: 'بطاقات', cat: 'Autocollants', image: '/carte.webp' },
+  { label_fr: 'Cartes et Autocollants', label_ar: 'بطاقات وملصقات', cat: 'Autocollants', image: '/carte.webp' },
   { label_fr: 'Papier',  label_ar: 'ورق',    cat: 'Paper',        image: '/papier.webp' },
 ]
 
@@ -194,27 +194,24 @@ function HomePage() {
             </p>
 
             <div className={`flex gap-3 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-              {/* ← scroll vers la section, pas navigate */}
-              <button
-                onClick={scrollToProduits}
-                className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg
-                           transition-all hover:scale-105 hover:opacity-90"
-                style={{ background: PURPLE }}>
-                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
-              </button>
               <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
-                className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
-                style={{ borderColor: PURPLE, color: PURPLE, background: 'transparent' }}>
+                className="px-7 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
+                style={{ background: '#25D366' }}>
                 WhatsApp
               </a>
+              <button
+                onClick={scrollToProduits}
+                className="px-7 py-3 rounded-full font-bold text-sm border-2 transition-all hover:scale-105"
+                style={{ borderColor: PURPLE, color: PURPLE, background: 'transparent' }}>
+                {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
+              </button>
             </div>
 
             {/* Stats */}
             <div className={`flex gap-8 mt-10 pt-8 ${isRTL ? 'flex-row-reverse' : ''}`}
               style={{ borderTop: '1px solid rgba(124,58,237,0.12)' }}>
               {[
-                { val: '500+', label: lang === 'ar' ? 'عميل راضٍ'     : 'Clients satisfaits' },
-                { val: '69',   label: lang === 'ar' ? 'ولاية'          : 'Wilayas' },
+                { val: '69',   label: lang === 'ar' ? 'ولاية'            : 'Wilayas' },
                 { val: '100%', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
               ].map(s => (
                 <div key={s.val} className={isRTL ? 'text-right' : ''}>

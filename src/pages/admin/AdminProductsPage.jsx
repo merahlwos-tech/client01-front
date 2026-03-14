@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
-const CAT_LABELS = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes', Paper: 'Papier' }
+const CAT_LABELS = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes et Autocollants', Paper: 'Papier' }
 
 function AdminProductsPage() {
   const [products, setProducts]   = useState([])

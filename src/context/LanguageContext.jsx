@@ -6,7 +6,7 @@ export const T = {
   fr: {
     // Nav
     home: 'Accueil', products: 'Produits', about: 'Qui sommes-nous', cart: 'Panier',
-    boxes: 'Boites', bags: 'Sacs', cards: 'Cartes', paper: 'Papier', all: 'Tous',
+    boxes: 'Boites', bags: 'Sacs', cards: 'Cartes et Autocollants', paper: 'Papier', all: 'Tous',
     // Product
     availableSizes: 'Tailles disponibles', availableColors: 'Couleurs disponibles',
     numberOfColors: 'Nombre de couleurs dans votre design', numberOfColorsPlaceholder: 'ex: 2',

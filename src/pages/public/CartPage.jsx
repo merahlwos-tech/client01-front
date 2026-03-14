@@ -91,7 +91,7 @@ function CartPage() {
   const [pendingOrder, setPendingOrder] = useState(null)
 
   const totalUnits = items.reduce((s, i) => s + Number(i.quantity), 0)
-  const isFreeDelivery = totalUnits >= 500
+  const isFreeDelivery = totalUnits >= 500 && deliveryInfo.method === 'Stop Desk'
   const effectiveDeliveryFee = isFreeDelivery ? 0 : Number(deliveryInfo.fee ?? 0)
   const totalWithDelivery = Number(total) + effectiveDeliveryFee
 
@@ -207,8 +207,8 @@ function CartPage() {
               <div className="rounded-2xl px-4 py-3 text-center text-xs font-medium"
                 style={{ background: 'rgba(124,58,237,0.04)', border: '1px dashed rgba(124,58,237,0.25)', color: '#7c3aed' }}>
                 {lang === 'ar'
-                  ? `أضف ${500 - totalUnits} وحدة للحصول على توصيل مجاني 🚚`
-                  : `Ajoutez ${500 - totalUnits} unités pour la livraison gratuite 🚚`}
+                  ? `أضف ${500 - totalUnits} وحدة للحصول على توصيل مجاني إلى المكتب 🚚`
+                  : `Ajoutez ${500 - totalUnits} unités pour la livraison Stop Desk gratuite 🚚`}
               </div>
             )}
 
@@ -232,43 +232,51 @@ function CartPage() {
                 </p>
                 <div className="space-y-2 mb-4">
                   {items.map(item => (
-                    <div key={item.key} className="flex justify-between text-sm">
-                      <span className="text-gray-500 truncate mr-4 flex-1">
-                        {item.name}
-                        <span className="text-gray-400 ml-1">× {item.quantity.toLocaleString()}</span>
-                        {item.doubleSided && <span className="text-gray-400 ml-1">(r-v)</span>}
-                      </span>
-                      <span className="font-bold whitespace-nowrap" style={{ color: NAVY }}>
-                        {(item.price * item.quantity).toLocaleString('fr-DZ')} DA
-                      </span>
+                    <div key={item.key} className="flex justify-between items-start gap-3 text-sm py-1.5"
+                      style={{ borderBottom: '1px solid #f9fafb' }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate" style={{ color: NAVY }}>{item.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {item.size}
+                          {item.doubleSided && <span className="ml-1">(r-v)</span>}
+                          {item.selectedColors?.length > 0 && <span className="ml-1">· {item.selectedColors[0]}</span>}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-black text-sm" style={{ color: PURPLE }}>
+                          {(item.price * item.quantity).toLocaleString('fr-DZ')} DA
+                        </p>
+                        <p className="text-xs text-gray-400">× {item.quantity.toLocaleString()}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="h-px bg-gray-100 mb-3" />
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-500">
-                    {lang === 'ar' ? 'التوصيل' : 'Livraison'}
-                    {deliveryInfo.method && !isFreeDelivery && (
-                      <span className="text-xs text-purple-400 ml-1">({deliveryInfo.method})</span>
-                    )}
-                  </span>
-                  <span className="font-bold text-sm" style={{ color: isFreeDelivery ? '#10b981' : NAVY }}>
-                    {isFreeDelivery
-                      ? (lang === 'ar' ? '🎉 مجاني' : '🎉 Gratuit')
-                      : deliveryInfo.fee != null
-                        ? `${Number(deliveryInfo.fee).toLocaleString('fr-DZ')} DA`
-                        : '—'
-                    }
-                  </span>
+                <div className="space-y-2 pt-2" style={{ borderTop: '2px solid #f3f4f6' }}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      {lang === 'ar' ? 'التوصيل' : 'Livraison'}
+                      {deliveryInfo.method && (
+                        <span className="text-xs text-purple-400 ml-1">({deliveryInfo.method})</span>
+                      )}
+                    </span>
+                    <span className="font-bold text-sm" style={{ color: isFreeDelivery ? '#10b981' : NAVY }}>
+                      {isFreeDelivery
+                        ? (lang === 'ar' ? '🎉 مجاني' : '🎉 Gratuit')
+                        : deliveryInfo.fee != null
+                          ? `${Number(deliveryInfo.fee).toLocaleString('fr-DZ')} DA`
+                          : '—'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-sm font-bold" style={{ color: NAVY }}>{t('total')}</span>
+                    <span className="font-black text-2xl" style={{ color: PURPLE }}>
+                      {totalWithDelivery.toLocaleString('fr-DZ')}
+                      <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
+                    </span>
+                  </div>
+                  <p className="text-gray-400 text-xs text-right">{t('cashOnDelivery')}</p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">{t('total')}</span>
-                  <span className="font-black text-2xl" style={{ color: PURPLE }}>
-                    {totalWithDelivery.toLocaleString('fr-DZ')}
-                    <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
-                  </span>
-                </div>
-                <p className="text-gray-400 text-xs mt-1 text-right">{t('cashOnDelivery')}</p>
               </div>
 
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">

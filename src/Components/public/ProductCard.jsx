@@ -4,7 +4,7 @@ import { useLang } from '../../context/LanguageContext'
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
-const CAT_LABELS_FR = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes', Paper: 'Papier' }
+const CAT_LABELS_FR = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes et Autocollants', Paper: 'Papier' }
 const CAT_LABELS_AR = { Board: 'صناديق', Bags: 'أكياس', Autocollants: 'بطاقات', Paper: 'ورق' }
 
 function ProductCard({ product }) {
