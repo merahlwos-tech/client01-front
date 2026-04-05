@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, Package, RefreshCcw, ShoppingBag, AlertTriangle, Loader2 } from 'lucide-react'
+import {
+  TrendingUp, Package, RefreshCcw, ShoppingBag,
+  AlertTriangle, Loader2, EyeOff, Eye, Send, Phone,
+} from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
+/* ── Catégories disponibles (même enum que le modèle Product) ── */
+const ALL_CATEGORIES = [
+  { key: 'Board',        label: 'Boites' },
+  { key: 'Bags',         label: 'Sacs' },
+  { key: 'Autocollants', label: 'Cartes & Autocollants' },
+  { key: 'Paper',        label: 'Papier' },
+]
+
+/* ── Carte de stat ── */
 function StatCard({ icon: Icon, label, value, accent, color }) {
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
@@ -26,10 +38,200 @@ function StatCard({ icon: Icon, label, value, accent, color }) {
   )
 }
 
-function AdminDashboardPage() {
-  const [stats, setStats]       = useState(null)
+/* ══════════════════════════════════════════════
+   SECTION : Cacher des catégories
+══════════════════════════════════════════════ */
+function HiddenCategoriesSection() {
+  const [hidden, setHidden]     = useState([])
   const [loading, setLoading]   = useState(true)
-  const [resetting, setResetting] = useState(false)
+  const [saving, setSaving]     = useState(false)
+
+  useEffect(() => {
+    api.get('/admin/hidden-categories')
+      .then(res => setHidden(res.data || []))
+      .catch(() => toast.error('Erreur chargement catégories'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggle = (key) => {
+    setHidden(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await api.post('/admin/hidden-categories', { categories: hidden })
+      toast.success('Visibilité mise à jour')
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(124,58,237,0.1)' }}>
+          <EyeOff size={17} style={{ color: PURPLE }} />
+        </div>
+        <div>
+          <p className="font-black text-sm" style={{ color: NAVY }}>Cacher des catégories</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Les catégories cachées n'apparaissent plus pour les visiteurs
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <Loader2 size={14} className="animate-spin" /> Chargement…
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            {ALL_CATEGORIES.map(({ key, label }) => {
+              const isHidden = hidden.includes(key)
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggle(key)}
+                  className="flex items-center justify-between px-4 py-3 rounded-xl border-2
+                             text-sm font-semibold transition-all"
+                  style={{
+                    borderColor: isHidden ? '#ef4444' : '#e5e7eb',
+                    background:  isHidden ? '#fef2f2' : '#f9fafb',
+                    color:       isHidden ? '#ef4444' : '#374151',
+                  }}>
+                  <span>{label}</span>
+                  {isHidden
+                    ? <EyeOff size={15} className="flex-shrink-0" style={{ color: '#ef4444' }} />
+                    : <Eye    size={15} className="flex-shrink-0" style={{ color: '#9ca3af' }} />
+                  }
+                </button>
+              )
+            })}
+          </div>
+
+          {hidden.length > 0 && (
+            <p className="text-xs text-red-400 mb-4 font-medium">
+              {hidden.length} catégorie{hidden.length > 1 ? 's' : ''} cachée{hidden.length > 1 ? 's' : ''} aux visiteurs
+            </p>
+          )}
+
+          <button
+            onClick={save}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
+                       text-white text-sm font-bold transition-all hover:opacity-90"
+            style={{ background: PURPLE }}>
+            {saving && <Loader2 size={13} className="animate-spin" />}
+            Enregistrer la visibilité
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   SECTION : Signaler un numéro
+══════════════════════════════════════════════ */
+function SignalerSection() {
+  const [phone, setPhone]       = useState('')
+  const [sending, setSending]   = useState(false)
+
+  /* Configuration initiale du chat Telegram (à faire une seule fois) */
+  const discoverTelegram = async () => {
+    try {
+      const res = await api.get('/admin/telegram/discover')
+      toast.success(`Chat ID configuré : ${res.data.chatId}`)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erreur découverte Telegram')
+    }
+  }
+
+  const signaler = async () => {
+    if (!phone.trim()) return toast.error('Entrez un numéro')
+    setSending(true)
+    try {
+      await api.post('/admin/signaler', { phone: phone.trim() })
+      toast.success('Numéro signalé sur Telegram ✓')
+      setPhone('')
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erreur envoi'
+      toast.error(msg)
+      /* Si le chat n'est pas encore configuré, propose la configuration */
+      if (err?.response?.status === 503) {
+        toast('Configurez d\'abord Telegram via le bouton "Configurer Telegram"', {
+          icon: 'ℹ️', duration: 5000,
+        })
+      }
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(239,68,68,0.1)' }}>
+          <Send size={17} style={{ color: '#ef4444' }} />
+        </div>
+        <div>
+          <p className="font-black text-sm" style={{ color: NAVY }}>Signaler un numéro</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Envoi immédiat sur votre bot Telegram
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && signaler()}
+            placeholder="0xxxxxxxxx"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200
+                       text-sm font-medium outline-none focus:border-purple-400 transition-colors"
+            style={{ color: NAVY }}
+          />
+        </div>
+        <button
+          onClick={signaler}
+          disabled={sending || !phone.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm
+                     font-bold transition-all hover:opacity-90 disabled:opacity-50"
+          style={{ background: '#ef4444' }}>
+          {sending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          Signaler
+        </button>
+      </div>
+
+      {/* Bouton de configuration Telegram (à utiliser une seule fois) */}
+      <button
+        onClick={discoverTelegram}
+        className="text-xs text-gray-400 hover:text-gray-600 underline transition-colors">
+        Configurer Telegram (à faire une seule fois)
+      </button>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   PAGE PRINCIPALE
+══════════════════════════════════════════════ */
+function AdminDashboardPage() {
+  const [stats, setStats]           = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [resetting, setResetting]   = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
   const fetchStats = async () => {
@@ -112,6 +314,12 @@ function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ── Nouvelles sections : Cacher + Signaler ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <HiddenCategoriesSection />
+        <SignalerSection />
+      </div>
 
       {/* Modal reset */}
       {showConfirm && (
