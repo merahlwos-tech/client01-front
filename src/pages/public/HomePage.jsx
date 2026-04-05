@@ -9,11 +9,12 @@ const PURPLE       = '#7c3aed'
 const PURPLE_SOFT  = 'rgba(124,58,237,0.65)'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.35)'
 
+/* Boites en premier, ensuite Sacs — label arabe : علب كرتونية */
 const CAT_IMAGES = [
-  { label_fr: 'Boites',  label_ar: 'صناديق', cat: 'Board',        image: '/boite.webp' },
-  { label_fr: 'Sacs',    label_ar: 'أكياس',  cat: 'Bags',         image: '/sacs.webp' },
+  { label_fr: 'Boites',  label_ar: 'علب كرتونية',         cat: 'Board',        image: '/boite.webp' },
+  { label_fr: 'Sacs',    label_ar: 'أكياس',               cat: 'Bags',         image: '/sacs.webp' },
   { label_fr: 'Cartes et Autocollants', label_ar: 'بطاقات وملصقات', cat: 'Autocollants', image: '/carte.webp' },
-  { label_fr: 'Papier',  label_ar: 'ورق',    cat: 'Paper',        image: '/papier.webp' },
+  { label_fr: 'Papier',  label_ar: 'ورق',                 cat: 'Paper',        image: '/papier.webp' },
 ]
 
 const STEPS_FR = [
@@ -163,7 +164,7 @@ function HomePage() {
       ══════════════════════════════════════ */}
       <header className="px-4 pt-20 pb-6">
 
-        {/* Desktop — même effet que mobile, texte dans la photo */}
+        {/* Desktop */}
         <div className="hidden md:relative md:flex md:items-center md:justify-center rounded-2xl overflow-hidden max-w-7xl mx-auto"
           style={{ minHeight: 480, background: NAVY, boxShadow: '0 8px 40px rgba(30,27,75,0.2)' }}>
 
@@ -203,8 +204,8 @@ function HomePage() {
             {/* Stats */}
             <div className="flex gap-12 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
               {[
-                { val: '69',   label: lang === 'ar' ? 'ولاية'             : 'Wilayas' },
-                { val: '100%', label: lang === 'ar' ? 'جودة ممتازة'       : 'Excellente qualité' },
+                { val: '69',   label: lang === 'ar' ? 'ولاية'       : 'Wilayas' },
+                { val: '100%', label: lang === 'ar' ? 'جودة ممتازة' : 'Excellente qualité' },
               ].map(s => (
                 <div key={s.val} className="text-center">
                   <p className="text-3xl font-black" style={{ color: '#c4b5fd' }}>{s.val}</p>
@@ -229,7 +230,6 @@ function HomePage() {
                 ? 'كراتين، أكياس، بطاقات وورق — توصيل لكل الجزائر.'
                 : 'Cartons, sacs, cartes et papier — livrés partout en Algérie.'}
             </p>
-            {/* ← scroll vers la section, pas navigate */}
             <button onClick={scrollToProduits}
               className="px-8 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105"
               style={{ background: PURPLE }}>
@@ -264,7 +264,7 @@ function HomePage() {
               <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer block">
                 <div className="flex flex-col items-center">
 
-                  {/* ── Label EN HAUT — badge violet style "Passez votre commande" ── */}
+                  {/* Label EN HAUT */}
                   <div className="relative -mb-4 z-10">
                     <span
                       className="flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-bold
@@ -290,11 +290,9 @@ function HomePage() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy" width="300" height="400" />
 
-                    {/* Léger vignettage bas pour profondeur */}
                     <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
                       style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.25), transparent)' }} />
 
-                    {/* Hover overlay subtil */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       style={{ background: 'rgba(124,58,237,0.08)' }} />
                   </div>
