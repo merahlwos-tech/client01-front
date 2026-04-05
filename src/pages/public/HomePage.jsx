@@ -1,20 +1,21 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, Package } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useSEO } from '../../utils/UseSEO'
+import api from '../../utils/api'
 
 const NAVY         = '#1e1b4b'
 const PURPLE       = '#7c3aed'
 const PURPLE_SOFT  = 'rgba(124,58,237,0.65)'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.35)'
 
-/* Boites en premier, ensuite Sacs — label arabe : علب كرتونية */
+/* Boites toujours en premier — label arabe : علب كرتونية */
 const CAT_IMAGES = [
-  { label_fr: 'Boites',  label_ar: 'علب كرتونية',         cat: 'Board',        image: '/boite.webp' },
-  { label_fr: 'Sacs',    label_ar: 'أكياس',               cat: 'Bags',         image: '/sacs.webp' },
+  { label_fr: 'Boites',               label_ar: 'علب كرتونية',     cat: 'Board',        image: '/boite.webp' },
+  { label_fr: 'Sacs',                 label_ar: 'أكياس',           cat: 'Bags',         image: '/sacs.webp' },
   { label_fr: 'Cartes et Autocollants', label_ar: 'بطاقات وملصقات', cat: 'Autocollants', image: '/carte.webp' },
-  { label_fr: 'Papier',  label_ar: 'ورق',                 cat: 'Paper',        image: '/papier.webp' },
+  { label_fr: 'Papier',               label_ar: 'ورق',             cat: 'Paper',        image: '/papier.webp' },
 ]
 
 const STEPS_FR = [
@@ -29,10 +30,10 @@ const STEPS_AR = [
 ]
 
 const FAQS_FR = [
-  { q: 'Quelle est la qualité de votre impression ?',      a: 'Oui, bien sûr ! Nous sommes une société d\'impression qui offre une qualité d\'impression parmi les meilleures du marché. Votre choix de travailler avec nous rendra votre emballage vraiment unique.' },
+  { q: 'Quelle est la qualité de votre impression ?',      a: "Oui, bien sûr ! Nous sommes une société d'impression qui offre une qualité d'impression parmi les meilleures du marché. Votre choix de travailler avec nous rendra votre emballage vraiment unique." },
   { q: "Livrez-vous dans toute l'Algérie ?",               a: "Oui, nous livrons dans les 69 wilayas. Le délai est généralement de 2 à 5 jours ouvrables." },
-  { q: 'Quel est le mode de paiement accepté ?',           a: 'Paiement à la livraison (cash). Les clients qui paient à l\'avance sont prioritaires sur les commandes.' },
-  { q: 'Puis-je commander des emballages personnalisés ?', a: 'Oui ! Nos produits peuvent être personnalisés avec votre logo. Commandez directement sur le site et nous ferons de votre emballage une véritable œuvre d\'art.' },
+  { q: 'Quel est le mode de paiement accepté ?',           a: "Paiement à la livraison (cash). Les clients qui paient à l'avance sont prioritaires sur les commandes." },
+  { q: 'Puis-je commander des emballages personnalisés ?', a: "Oui ! Nos produits peuvent être personnalisés avec votre logo. Commandez directement sur le site et nous ferons de votre emballage une véritable œuvre d'art." },
   { q: 'Comment suivre ma commande ?',                     a: "Notre équipe vous contacte par téléphone après confirmation pour vous informer de la livraison." },
 ]
 const FAQS_AR = [
@@ -64,12 +65,10 @@ function FAQItem({ q, a }) {
   )
 }
 
-
-/* ── Before / After Slider ── */
 function BeforeAfterSlider() {
-  const [pos, setPos]       = useState(50)
-  const [drag, setDrag]     = useState(false)
-  const containerRef        = useRef(null)
+  const [pos, setPos]   = useState(50)
+  const [drag, setDrag] = useState(false)
+  const containerRef    = useRef(null)
 
   const calc = useCallback((clientX) => {
     const rect = containerRef.current?.getBoundingClientRect()
@@ -78,9 +77,9 @@ function BeforeAfterSlider() {
     setPos(Math.round((x / rect.width) * 100))
   }, [])
 
-  const onMouseMove  = (e) => { if (drag) calc(e.clientX) }
-  const onTouchMove  = (e) => { calc(e.touches[0].clientX) }
-  const stop         = () => setDrag(false)
+  const onMouseMove = (e) => { if (drag) calc(e.clientX) }
+  const onTouchMove = (e) => { calc(e.touches[0].clientX) }
+  const stop        = () => setDrag(false)
 
   return (
     <div
@@ -93,39 +92,25 @@ function BeforeAfterSlider() {
       onTouchMove={onTouchMove}
       onTouchEnd={stop}
     >
-      {/* AFTER — image pleine (côté droit) */}
       <img src="/after.webp" alt="Après" draggable={false}
         className="absolute inset-0 w-full h-full object-cover" />
-
-      {/* BEFORE — clippé à gauche (côté gauche visible) */}
       <div className="absolute inset-0 overflow-hidden"
         style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
         <img src="/before.webp" alt="Avant" draggable={false}
           className="absolute inset-0 w-full h-full object-cover" />
       </div>
-
-      {/* Labels */}
       <span className="absolute top-3 left-3 text-[11px] font-black uppercase tracking-widest
                        bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full shadow"
         style={{ color: '#1e1b4b' }}>Avant</span>
       <span className="absolute top-3 right-3 text-[11px] font-black uppercase tracking-widest
                        bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full shadow"
         style={{ color: '#7c3aed' }}>Après</span>
-
-      {/* Handle line */}
       <div className="absolute inset-y-0 w-0.5 -translate-x-1/2 pointer-events-none"
         style={{ left: `${pos}%`, background: 'white', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }} />
-
-      {/* Handle circle */}
       <div
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full
                    flex items-center justify-center shadow-xl z-10 touch-none"
-        style={{
-          left: `${pos}%`,
-          background: 'white',
-          border: '3px solid #7c3aed',
-          cursor: 'grab',
-        }}
+        style={{ left: `${pos}%`, background: 'white', border: '3px solid #7c3aed', cursor: 'grab' }}
         onMouseDown={(e) => { e.preventDefault(); setDrag(true) }}
         onTouchStart={() => setDrag(true)}
       >
@@ -138,19 +123,29 @@ function BeforeAfterSlider() {
 }
 
 function HomePage() {
-  const { lang, isRTL } = useLang()
-  const produitsSectionRef = useRef(null)
+  const { lang, isRTL }         = useLang()
+  const produitsSectionRef      = useRef(null)
+  const [hiddenCats, setHiddenCats] = useState([])
+
+  /* Récupère les catégories cachées par l'admin */
+  useEffect(() => {
+    api.get('/settings/hidden-categories')
+      .then(res => setHiddenCats(res.data || []))
+      .catch(() => {})   // silencieux — en cas d'erreur on affiche tout
+  }, [])
+
+  /* Filtre les catégories cachées */
+  const visibleCats = CAT_IMAGES.filter(c => !hiddenCats.includes(c.cat))
 
   useSEO({
     title: 'Emballages personnalisés Algérie — Boites, Sacs, Cartes, Papier',
-    description: 'BrandPack — Emballages sur mesure pour votre business en Algérie. Boites, sacs, autocollants, papier d\'emballage. Livraison dans les 58 wilayas.',
+    description: "BrandPack — Emballages sur mesure pour votre business en Algérie. Boites, sacs, autocollants, papier d'emballage. Livraison dans les 58 wilayas.",
   })
 
   const steps   = lang === 'ar' ? STEPS_AR : STEPS_FR
   const faqs    = lang === 'ar' ? FAQS_AR  : FAQS_FR
   const fontCls = lang === 'ar' ? 'font-arabic' : ''
 
-  /* ── Scroll smooth vers la section Nos Produits ── */
   const scrollToProduits = () => {
     produitsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -159,49 +154,36 @@ function HomePage() {
     <div className={`min-h-screen ${fontCls}`} dir={isRTL ? 'rtl' : 'ltr'}
       style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%)' }}>
 
-      {/* ══════════════════════════════════════
-          HERO
-      ══════════════════════════════════════ */}
+      {/* ── HERO ── */}
       <header className="px-4 pt-20 pb-6">
 
         {/* Desktop */}
         <div className="hidden md:relative md:flex md:items-center md:justify-center rounded-2xl overflow-hidden max-w-7xl mx-auto"
           style={{ minHeight: 480, background: NAVY, boxShadow: '0 8px 40px rgba(30,27,75,0.2)' }}>
-
-          {/* Overlay + image */}
           <div className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `linear-gradient(to bottom, rgba(30,27,75,0.38), rgba(30,27,75,0.75)), url('/mainPC.webp')` }} />
-
-          {/* Contenu centré */}
           <div className="relative z-10 w-full flex flex-col items-center text-center px-10 py-16 max-w-3xl mx-auto">
-
             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6"
               style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(6px)' }}>
               <Package size={11} />
-              {lang === 'ar' ? 'تغليف مخصص · توصيل لجميع ولايات الجزائر' : 'Emballage sur mesure · Livraison dans toutes les wilayas d\'Algérie'}
+              {lang === 'ar' ? 'تغليف مخصص · توصيل لجميع ولايات الجزائر' : "Emballage sur mesure · Livraison dans toutes les wilayas d'Algérie"}
             </span>
-
             <h1 className="text-white font-black leading-tight mb-8 italic"
               style={{ fontSize: 'clamp(2.2rem, 4vw, 3.2rem)', textShadow: '0 2px 16px rgba(0,0,0,0.3)' }}>
               {lang === 'ar'
                 ? <>التغليف الذي <span style={{ color: '#c4b5fd' }}>يصنع الفرق</span></>
                 : <>L'emballage qui <span style={{ color: '#c4b5fd' }}>fait la différence</span></>}
             </h1>
-
             <div className="flex gap-4 flex-wrap justify-center mb-10">
               <a href="https://wa.me/213554767444" target="_blank" rel="noreferrer"
                 className="px-8 py-3 rounded-full font-bold text-white text-sm shadow-lg transition-all hover:scale-105 hover:opacity-90"
-                style={{ background: '#25D366' }}>
-                WhatsApp
-              </a>
+                style={{ background: '#25D366' }}>WhatsApp</a>
               <button onClick={scrollToProduits}
                 className="px-8 py-3 rounded-full font-bold text-sm transition-all hover:scale-105"
                 style={{ background: PURPLE, color: 'white', border: 'none' }}>
                 {lang === 'ar' ? 'اكتشف منتجاتنا' : 'Découvrir nos produits'}
               </button>
             </div>
-
-            {/* Stats */}
             <div className="flex gap-12 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
               {[
                 { val: '69',   label: lang === 'ar' ? 'ولاية'       : 'Wilayas' },
@@ -239,15 +221,12 @@ function HomePage() {
         </div>
       </header>
 
-      {/* ══════════════════════════════════════
-          NOS PRODUITS  ← ancre de scroll
-      ══════════════════════════════════════ */}
+      {/* ── NOS PRODUITS ── */}
       <section
         ref={produitsSectionRef}
         id="nos-produits"
         className="max-w-7xl mx-auto px-4 py-14 scroll-mt-20">
 
-        {/* Titre section */}
         <div className={`flex items-center gap-4 mb-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className="h-px flex-1" style={{ background: 'rgba(124,58,237,0.15)' }} />
           <h2 className="text-2xl md:text-3xl font-black italic whitespace-nowrap" style={{ color: PURPLE }}>
@@ -256,47 +235,40 @@ function HomePage() {
           <div className="h-px flex-1" style={{ background: 'rgba(124,58,237,0.15)' }} />
         </div>
 
-        {/* Grille catégories */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {CAT_IMAGES.map(({ label_fr, label_ar, cat, image }) => {
+        {/*
+          dir="ltr" forcé sur la grille :
+          évite que le CSS Grid inverse l'ordre visuel en mode arabe (RTL).
+          Boites reste toujours en haut à gauche quelle que soit la langue.
+        */}
+        <div dir="ltr" className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {visibleCats.map(({ label_fr, label_ar, cat, image }) => {
             const label = lang === 'ar' ? label_ar : label_fr
             return (
               <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer block">
                 <div className="flex flex-col items-center">
-
-                  {/* Label EN HAUT */}
                   <div className="relative -mb-4 z-10">
                     <span
                       className="flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-bold
                                  text-white shadow-lg uppercase tracking-wide leading-none
                                  transition-all duration-300 group-hover:scale-105"
-                      style={{
-                        background: PURPLE,
-                        boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
-                      }}>
+                      style={{ background: PURPLE, boxShadow: '0 4px 16px rgba(124,58,237,0.35)' }}>
                       {label}
                     </span>
                   </div>
-
-                  {/* Photo */}
                   <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-500
                                   group-hover:-translate-y-2 group-hover:shadow-2xl"
                     style={{
                       boxShadow: '0 4px 24px rgba(124,58,237,0.1)',
                       background: cat === 'Board' ? '#f5e8e4' : 'transparent',
                     }}>
-
                     <img src={image} alt={label}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy" width="300" height="400" />
-
                     <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
                       style={{ background: 'linear-gradient(to top, rgba(15,10,40,0.25), transparent)' }} />
-
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       style={{ background: 'rgba(124,58,237,0.08)' }} />
                   </div>
-
                 </div>
               </Link>
             )
@@ -304,26 +276,20 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          BEFORE / AFTER SLIDER
-      ══════════════════════════════════════ */}
+      {/* ── BEFORE / AFTER ── */}
       <section className="py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <p className="text-center font-black italic text-xl mb-3" style={{ color: NAVY }}>
             {lang === 'ar' ? 'قبل وبعد' : 'Avant & Après'}
           </p>
           <p className="text-center text-sm mb-6" style={{ color: PURPLE_SOFT }}>
-            {lang === 'ar'
-              ? 'اسحب لترى الفرق'
-              : 'Faites glisser pour voir la différence'}
+            {lang === 'ar' ? 'اسحب لترى الفرق' : 'Faites glisser pour voir la différence'}
           </p>
           <BeforeAfterSlider />
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          COMMENT COMMANDER
-      ══════════════════════════════════════ */}
+      {/* ── COMMENT COMMANDER ── */}
       <section className="py-20 px-4 my-4">
         <div className="max-w-4xl mx-auto rounded-3xl p-8 md:p-12 relative"
           style={{
@@ -348,9 +314,7 @@ function HomePage() {
               <div key={n} className="flex flex-col items-center">
                 <div className="w-16 h-16 rounded-full text-white flex items-center justify-center
                                 mb-4 text-2xl font-bold flex-shrink-0 shadow-lg"
-                  style={{ background: PURPLE }}>
-                  {n}
-                </div>
+                  style={{ background: PURPLE }}>{n}</div>
                 <h3 className="font-bold text-base mb-2 italic" style={{ color: NAVY }}>{title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: PURPLE_SOFT }}>{desc}</p>
               </div>
@@ -359,9 +323,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          FAQ
-      ══════════════════════════════════════ */}
+      {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-4 py-16">
         <div className="text-center mb-10">
           <span className="font-bold text-xs uppercase tracking-widest mb-3 block" style={{ color: PURPLE }}>
