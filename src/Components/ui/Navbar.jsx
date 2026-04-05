@@ -3,34 +3,48 @@ import { Link } from 'react-router-dom'
 import { ShoppingBag, Menu, X } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
 import { useLang } from '../../context/LanguageContext'
+import api from '../../utils/api'
 
 const BG_BASE   = '#6d28d9'
 const BG_SCROLL = '#5b21b6'
 const PURPLE    = '#7c3aed'
 
-function Navbar() {
-  const { itemCount }                   = useCart()
-  const { t, lang, setLang, isRTL }     = useLang()
-  const [menuOpen, setMenuOpen]         = useState(false)
-  const [scrolled, setScrolled]         = useState(false)
+/* Tous les liens possibles — même ordre que la HomePage */
+const ALL_NAV_LINKS = [
+  { to: '/products?category=Board',        label_key: 'boxes',  cat: 'Board' },
+  { to: '/products?category=Bags',         label_key: 'bags',   cat: 'Bags' },
+  { to: '/products?category=Autocollants', label_key: 'cards',  cat: 'Autocollants' },
+  { to: '/products?category=Paper',        label_key: 'paper',  cat: 'Paper' },
+  { to: '/about',                          label_key: 'about',  cat: null },
+]
 
-  // passive:true → ne bloque plus le thread principal pendant le scroll
+function Navbar() {
+  const { itemCount }               = useCart()
+  const { t, lang, setLang, isRTL } = useLang()
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [scrolled, setScrolled]     = useState(false)
+  const [hiddenCats, setHiddenCats] = useState([])
+
+  /* Scroll listener */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Ferme le menu si on clique sur un lien
+  /* Récupère les catégories cachées par l'admin */
+  useEffect(() => {
+    api.get('/settings/hidden-categories')
+      .then(res => setHiddenCats(res.data || []))
+      .catch(() => {})   // silencieux
+  }, [])
+
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
-  const NAV_LINKS = [
-    { to: '/products?category=Board',        label: t('boxes') },
-    { to: '/products?category=Bags',         label: t('bags') },
-    { to: '/products?category=Autocollants', label: t('cards') },
-    { to: '/products?category=Paper',        label: t('paper') },
-    { to: '/about',                          label: t('about') },
-  ]
+  /* Filtre les liens dont la catégorie est cachée */
+  const NAV_LINKS = ALL_NAV_LINKS
+    .filter(l => l.cat === null || !hiddenCats.includes(l.cat))
+    .map(l => ({ ...l, label: t(l.label_key) }))
 
   const fontCls = lang === 'ar' ? 'font-arabic' : ''
 
