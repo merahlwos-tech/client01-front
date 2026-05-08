@@ -139,6 +139,113 @@ function HiddenCategoriesSection() {
 }
 
 /* ══════════════════════════════════════════════
+   SECTION : Photos de couverture des catégories
+══════════════════════════════════════════════ */
+const COVER_CATS = [
+  { key: 'Board',        label: 'Boites' },
+  { key: 'Bags',         label: 'Sacs' },
+  { key: 'Autocollants', label: 'Cartes & Autocollants' },
+  { key: 'Paper',        label: 'Papier' },
+]
+
+function CategoryCoversSection() {
+  const [covers, setCovers]       = useState({})
+  const [uploading, setUploading] = useState(null) // key de la cat en cours
+  const fileRefs                  = useRef({})
+
+  useEffect(() => {
+    api.get('/settings/category-covers')
+      .then(res => setCovers(res.data || {}))
+      .catch(() => {})
+  }, [])
+
+  const handleFile = (cat, e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return toast.error('Images uniquement')
+    if (file.size > 5 * 1024 * 1024) return toast.error('Max 5 Mo')
+
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      setUploading(cat)
+      try {
+        const res = await api.put('/settings/category-covers', {
+          category: cat,
+          imageBase64: ev.target.result,
+        })
+        setCovers(prev => ({ ...prev, [cat]: res.data.url }))
+        toast.success(`Couverture "${cat}" mise à jour ✓`)
+      } catch (err) {
+        toast.error(err?.response?.data?.message || 'Erreur upload')
+      } finally {
+        setUploading(null)
+        if (fileRefs.current[cat]) fileRefs.current[cat].value = ''
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(124,58,237,0.1)' }}>
+          <ImagePlus size={17} style={{ color: PURPLE }} />
+        </div>
+        <div>
+          <p className="font-black text-sm" style={{ color: NAVY }}>Photos de couverture</p>
+          <p className="text-xs text-gray-400 mt-0.5">Image affichée sur la carte de chaque catégorie</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {COVER_CATS.map(cat => (
+          <div key={cat.key} className="rounded-xl overflow-hidden border-2"
+            style={{ borderColor: 'rgba(124,58,237,0.2)' }}>
+
+            {/* Aperçu */}
+            <div className="relative" style={{ aspectRatio: '3/2', background: '#f5f3ff' }}>
+              {covers[cat.key]
+                ? <img src={covers[cat.key]} alt={cat.label}
+                    className="w-full h-full object-cover" loading="lazy" />
+                : <div className="w-full h-full flex items-center justify-center">
+                    <ImagePlus size={24} style={{ color: 'rgba(124,58,237,0.3)' }} />
+                  </div>
+              }
+              {uploading === cat.key && (
+                <div className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: 'rgba(124,58,237,0.6)' }}>
+                  <Loader2 size={20} className="animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Label + bouton */}
+            <div className="p-2">
+              <p className="text-xs font-bold mb-1.5" style={{ color: NAVY }}>{cat.label}</p>
+              <input
+                ref={el => fileRefs.current[cat.key] = el}
+                type="file" accept="image/*"
+                onChange={e => handleFile(cat.key, e)}
+                className="hidden"
+                id={`cover-input-${cat.key}`}
+              />
+              <label htmlFor={`cover-input-${cat.key}`}
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg
+                           text-xs font-bold cursor-pointer transition-all hover:opacity-80"
+                style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+                <ImagePlus size={12} />
+                {covers[cat.key] ? 'Changer' : 'Ajouter'}
+              </label>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
    SECTION : Avis clients (photos GitHub)
 ══════════════════════════════════════════════ */
 const REVIEW_CATEGORIES = [
@@ -540,8 +647,11 @@ function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Sections : Avis + Cacher + Signaler ── */}
-      <ReviewsSection />
+      {/* ── Covers + Avis ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CategoryCoversSection />
+        <ReviewsSection />
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HiddenCategoriesSection />
         <SignalerSection />
