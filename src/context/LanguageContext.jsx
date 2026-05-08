@@ -85,7 +85,7 @@ export const T = {
   ar: {
     // Nav
     home: 'الرئيسية', products: 'المنتجات', about: 'من نحن', cart: 'السلة',
-    boxes: 'صناديق', bags: 'أكياس', cards: 'بطاقات', paper: 'ورق', all: 'الكل',
+    boxes: 'علب كرتونية', bags: 'أكياس', cards: 'بطاقات', paper: 'ورق', all: 'الكل',
     // Product
     availableSizes: 'المقاسات المتاحة', availableColors: 'الألوان المتاحة',
     numberOfColors: 'عدد الألوان في تصميمك', numberOfColorsPlaceholder: 'مثال: 2',
@@ -142,7 +142,7 @@ export const T = {
     back: 'رجوع', included: 'مشمول', switchLang: 'FR',
     // HomePage
     heroBadge: 'تغليف مخصص', heroTitle: 'أعطِ علامتك التجارية هويّتها',
-    heroSubtitle: 'صناديق وأكياس وبطاقات وورق مطبوع بشعارك. توصيل لكل الجزائر.',
+    heroSubtitle: 'علب كرتونية وأكياس وبطاقات وورق مطبوع بشعارك. توصيل لكل الجزائر.',
     heroBtn1: 'اكتشف منتجاتنا', heroBtn2: 'اطلب عبر واتساب',
     stat1val: '+500', stat1label: 'عميل راضٍ',
     stat2val: '69', stat2label: 'ولاية يشملها التوصيل',
@@ -157,7 +157,7 @@ export const T = {
     reviewTitle: 'يثقون بنا', reviewSubtitle: 'آراء عملائنا',
     ctaTitle: 'هل أنت مستعد لتخصيص تغليفك؟', ctaSubtitle: 'توصيل 69 ولاية · الدفع عند الاستلام',
     ctaBtn: 'اطلب الآن',
-    r1name: 'كريم ب.', r1text: 'جودة طباعة ممتازة، الصناديق بالضبط كما طلبت. أنصح بشدة!',
+    r1name: 'كريم ب.', r1text: 'جودة طباعة ممتازة، العلب كرتونية بالضبط كما طلبت. أنصح بشدة!',
     r2name: 'سارة م.', r2text: 'خدمة سريعة واحترافية. شعاري مطبوع بشكل مثالي على الأكياس.',
     r3name: 'ياسين ل.', r3text: 'أفضل نسبة جودة-سعر للتغليف المخصص في الجزائر.',
   },
