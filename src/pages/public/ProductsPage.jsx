@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import api from '../../utils/api'
 import ProductGrid from '../../Components/public/ProductGrid'
 import { useSEO } from '../../utils/UseSEO'
+import ReviewCarousel from '../../Components/public/ReviewCarousel'
 
 const CAT_TITLES = {
   Board:        'Boites d\'emballage personnalisées',
@@ -23,6 +24,7 @@ function ProductsPage() {
   const [searchParams]          = useSearchParams()
   const [products, setProducts] = useState([])
   const [loading, setLoading]   = useState(true)
+  const [reviews, setReviews]   = useState([])
   const activeCategory = searchParams.get('category') || 'Tous'
 
   useSEO({
@@ -39,6 +41,16 @@ function ProductsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  /* Récupère les avis filtrés par catégorie (ou tous si "Tous") */
+  useEffect(() => {
+    const url = activeCategory !== 'Tous'
+      ? `/reviews?category=${activeCategory}`
+      : '/reviews'
+    api.get(url)
+      .then(res => setReviews(res.data || []))
+      .catch(() => setReviews([]))
+  }, [activeCategory])
+
   const filtered = useMemo(() => products.filter(p =>
     activeCategory === 'Tous' || p.category === activeCategory
   ), [products, activeCategory])
@@ -50,6 +62,9 @@ function ProductsPage() {
         <ProductGrid products={filtered} loading={loading}
           emptyMessage="Aucun produit dans cette catégorie." />
       </div>
+
+      {/* Avis clients de cette catégorie */}
+      <ReviewCarousel reviews={reviews} />
     </div>
   )
 }
