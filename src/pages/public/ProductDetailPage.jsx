@@ -202,7 +202,8 @@ function ProductDetailPage() {
   const basePrice     = sizeObj?.price ?? 0
   const extraDouble   = (doubleSided && product.doubleSided) ? (product.doubleSidedPrice ?? 0) : 0
   const nbColors      = numberOfColors !== '' ? Math.max(1, Number(numberOfColors)) : 1
-  const extraColors   = (product.colorDesignEnabled && nbColors > 0) ? nbColors * (product.colorDesignPricePerColor ?? 0) : 0
+  // La 1ère couleur est incluse dans le prix de base → on facture uniquement les couleurs supplémentaires
+  const extraColors   = (product.colorDesignEnabled && nbColors > 1) ? (nbColors - 1) * (product.colorDesignPricePerColor ?? 0) : 0
   const extraPrice    = extraDouble + extraColors
   const unitPrice     = basePrice + extraPrice
   const totalPrice    = unitPrice * quantity
@@ -300,11 +301,11 @@ function ProductDetailPage() {
                     {lang === 'ar' ? `يشمل +${extraDouble.toLocaleString('fr-DZ')} دج (وجهان)` : `Inclut +${extraDouble.toLocaleString('fr-DZ')} DA (recto-verso)`}
                   </p>
                 )}
-                {product.colorDesignEnabled && nbColors > 0 && extraColors > 0 && (
+                {product.colorDesignEnabled && nbColors > 1 && extraColors > 0 && (
                   <p className="text-xs mt-1" style={{ color: PURPLE }}>
                     {lang === 'ar'
-                      ? `+${extraColors.toLocaleString('fr-DZ')} دج (${nbColors} × ${(product.colorDesignPricePerColor).toLocaleString('fr-DZ')} دج/لون)`
-                      : `+${extraColors.toLocaleString('fr-DZ')} DA (${nbColors} × ${(product.colorDesignPricePerColor).toLocaleString('fr-DZ')} DA/couleur)`}
+                      ? `+${extraColors.toLocaleString('fr-DZ')} دج (${nbColors - 1} × ${(product.colorDesignPricePerColor).toLocaleString('fr-DZ')} دج/لون إضافي)`
+                      : `+${extraColors.toLocaleString('fr-DZ')} DA (${nbColors - 1} × ${(product.colorDesignPricePerColor).toLocaleString('fr-DZ')} DA/couleur suppl.)`}
                   </p>
                 )}
               </div>
