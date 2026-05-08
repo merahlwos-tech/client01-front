@@ -4,6 +4,7 @@ import { ChevronRight, Package } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
 import { useSEO } from '../../utils/UseSEO'
 import api from '../../utils/api'
+import ReviewCarousel from '../../Components/public/ReviewCarousel'
 
 const NAVY         = '#1e1b4b'
 const PURPLE       = '#7c3aed'
@@ -126,12 +127,20 @@ function HomePage() {
   const { lang, isRTL }         = useLang()
   const produitsSectionRef      = useRef(null)
   const [hiddenCats, setHiddenCats] = useState([])
+  const [reviews, setReviews]       = useState([])
 
   /* Récupère les catégories cachées par l'admin */
   useEffect(() => {
     api.get('/settings/hidden-categories')
       .then(res => setHiddenCats(res.data || []))
-      .catch(() => {})   // silencieux — en cas d'erreur on affiche tout
+      .catch(() => {})
+  }, [])
+
+  /* Récupère tous les avis clients */
+  useEffect(() => {
+    api.get('/reviews')
+      .then(res => setReviews(res.data || []))
+      .catch(() => {})
   }, [])
 
   /* Filtre les catégories cachées */
@@ -322,6 +331,9 @@ function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── AVIS CLIENTS ── */}
+      <ReviewCarousel reviews={reviews} />
 
       {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-4 py-16">
