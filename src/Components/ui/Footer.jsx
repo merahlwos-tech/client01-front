@@ -76,7 +76,7 @@ function Footer() {
             <p className="text-sm leading-relaxed max-w-xs mb-6"
               style={{ color: 'rgba(255,255,255,0.85)' }}>
               {lang === 'ar'
-                ? 'تغليف احترافي مخصص لعملك — صناديق، أكياس، بطاقات، ورق.'
+                ? 'تغليف احترافي مخصص لعملك — علب كرتونية، أكياس، بطاقات، ورق.'
                 : 'Emballages personnalisés pour votre business — boites, sacs, cartes, papier.'}
             </p>
           </div>
