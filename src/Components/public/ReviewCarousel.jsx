@@ -28,6 +28,7 @@ export default function ReviewCarousel({ reviews = [], title }) {
   const [paused, setPaused] = useState(false)
   const visibleCount         = useVisibleCount()
   const timerRef             = useRef(null)
+  const touchStartX          = useRef(null)
 
   const total = reviews.length
   const maxIndex = Math.max(0, total - visibleCount)
@@ -40,7 +41,20 @@ export default function ReviewCarousel({ reviews = [], title }) {
     setIndex(i => (i <= 0 ? maxIndex : i - 1))
   }, [maxIndex])
 
-  /* Auto-play toutes les 3s */
+  /* Swipe tactile */
+  const onTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    setPaused(true)
+  }
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 40) {
+      diff > 0 ? next() : prev()
+    }
+    touchStartX.current = null
+    setPaused(false)
+  }
   useEffect(() => {
     if (paused || total <= visibleCount) return
     timerRef.current = setInterval(next, 3000)
@@ -73,6 +87,8 @@ export default function ReviewCarousel({ reviews = [], title }) {
           className="relative"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
           {/* Bouton précédent */}
           {total > visibleCount && (
