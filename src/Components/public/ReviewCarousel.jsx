@@ -37,7 +37,7 @@ export default function ReviewCarousel({ reviews = [], title }) {
     return slideW + GAP
   }, [visibleCount])
 
-  const scrollTo = useCallback((idx) => {
+  const goTo = useCallback((idx) => {
     const el = scrollRef.current
     if (!el) return
     const clamped = Math.min(Math.max(idx, 0), maxIndex)
@@ -45,18 +45,20 @@ export default function ReviewCarousel({ reviews = [], title }) {
     setIndex(clamped)
   }, [getStep, maxIndex])
 
-  const prev = () => scrollTo(index - 1)
-  const next = () => scrollTo(index + 1)
-
+  /* Sync index avec le scroll réel (swipe natif) */
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    let timer
     const onScroll = () => {
-      const step = getStep()
-      if (step > 0) setIndex(Math.round(el.scrollLeft / step))
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const step = getStep()
+        if (step > 0) setIndex(Math.round(el.scrollLeft / step))
+      }, 50)
     }
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
+    return () => { el.removeEventListener('scroll', onScroll); clearTimeout(timer) }
   }, [getStep])
 
   useEffect(() => {
@@ -71,8 +73,10 @@ export default function ReviewCarousel({ reviews = [], title }) {
 
   return (
     <section className="py-14 px-4">
+      <style>{`.rev-scroll::-webkit-scrollbar{display:none}`}</style>
       <div className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
 
+        {/* Titre */}
         <div className={`flex items-center gap-4 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className="h-px flex-1" style={{ background: PURPLE_XSOFT }} />
           <h2 className="text-2xl md:text-3xl font-black italic whitespace-nowrap"
@@ -84,32 +88,32 @@ export default function ReviewCarousel({ reviews = [], title }) {
 
         <div className="relative">
 
+          {/* Flèche gauche */}
           {index > 0 && (
-            <button
-              onClick={prev}
+            <button onClick={() => goTo(index - 1)}
               className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10
                          rounded-full shadow-lg flex items-center justify-center
                          transition-all hover:scale-110 active:scale-95"
-              style={{ background: 'white', border: `2px solid ${PURPLE_XSOFT}`, color: PURPLE }}
-            >
+              style={{ background: 'white', border: `2px solid ${PURPLE_XSOFT}`, color: PURPLE }}>
               <ChevronLeft size={20} />
             </button>
           )}
 
+          {/* Flèche droite */}
           {index < maxIndex && (
-            <button
-              onClick={next}
+            <button onClick={() => goTo(index + 1)}
               className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10
                          rounded-full shadow-lg flex items-center justify-center
                          transition-all hover:scale-110 active:scale-95"
-              style={{ background: 'white', border: `2px solid ${PURPLE_XSOFT}`, color: PURPLE }}
-            >
+              style={{ background: 'white', border: `2px solid ${PURPLE_XSOFT}`, color: PURPLE }}>
               <ChevronRight size={20} />
             </button>
           )}
 
+          {/* Scroll natif avec snap */}
           <div
             ref={scrollRef}
+            className="rev-scroll"
             style={{
               display:                 'flex',
               gap:                     GAP,
@@ -121,8 +125,6 @@ export default function ReviewCarousel({ reviews = [], title }) {
               borderRadius:            16,
             }}
           >
-            <style>{`.review-scroll::-webkit-scrollbar{display:none}`}</style>
-
             {reviews.map((review) => (
               <div
                 key={review._id}
@@ -149,17 +151,22 @@ export default function ReviewCarousel({ reviews = [], title }) {
           </div>
         </div>
 
+        {/* Dots */}
         {total > visibleCount && (
           <div className="flex justify-center gap-2 mt-5">
             {Array.from({ length: maxIndex + 1 }).map((_, i) => (
               <button
                 key={i}
-                onClick={() => scrollTo(i)}
-                className="rounded-full transition-all duration-300"
+                onClick={() => goTo(i)}
                 style={{
-                  width:      i === index ? 24 : 8,
-                  height:     8,
-                  background: i === index ? PURPLE : PURPLE_XSOFT,
+                  width:        i === index ? 24 : 8,
+                  height:       8,
+                  borderRadius: 9999,
+                  background:   i === index ? PURPLE : PURPLE_XSOFT,
+                  border:       'none',
+                  cursor:       'pointer',
+                  transition:   'all 0.3s',
+                  padding:      0,
                 }}
               />
             ))}
