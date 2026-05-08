@@ -249,7 +249,12 @@ function HomePage() {
           évite que le CSS Grid inverse l'ordre visuel en mode arabe (RTL).
           Boites reste toujours en haut à gauche quelle que soit la langue.
         */}
-        <div dir="ltr" className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div dir="ltr" className={`grid gap-4 md:gap-6 ${
+          visibleCats.length === 1 ? 'grid-cols-1 max-w-xs mx-auto'
+          : visibleCats.length === 2 ? 'grid-cols-2 max-w-sm mx-auto'
+          : visibleCats.length === 3 ? 'grid-cols-3 max-w-2xl mx-auto'
+          : 'grid-cols-2 lg:grid-cols-4'
+        }`}>
           {visibleCats.map(({ label_fr, label_ar, cat, image }) => {
             const label = lang === 'ar' ? label_ar : label_fr
             return (
