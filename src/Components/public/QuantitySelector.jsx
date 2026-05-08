@@ -6,11 +6,10 @@ const PURPLE = '#7c3aed'
 
 const QTY_OPTIONS = [100,200,300,400,500,600,700,800,900,1000,2000,3000]
 
-function QuantitySelector({ value, onChange }) {
+function QuantitySelector({ value, onChange, unitPrice }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  // Ferme en cliquant dehors
   useEffect(() => {
     const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', handler)
@@ -31,8 +30,16 @@ function QuantitySelector({ value, onChange }) {
           boxShadow: open ? '0 0 0 3px rgba(124,58,237,0.1)' : 'none',
         }}>
         <span>{value.toLocaleString('fr-DZ')} unités</span>
-        <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`}
-          style={{ color: PURPLE }} />
+        <div className="flex items-center gap-2">
+          {unitPrice > 0 && (
+            <span className="text-xs font-black px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+              {(value * unitPrice).toLocaleString('fr-DZ')} DA
+            </span>
+          )}
+          <ChevronDown size={16} className={`transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}
+            style={{ color: PURPLE }} />
+        </div>
       </button>
 
       {/* Dropdown */}
@@ -42,8 +49,9 @@ function QuantitySelector({ value, onChange }) {
             background: 'white',
             border: `2px solid rgba(124,58,237,0.2)`,
             boxShadow: '0 8px 32px rgba(124,58,237,0.15)',
+            minWidth: 220,
           }}>
-          <div className="max-h-52 overflow-y-auto py-1">
+          <div className="max-h-64 overflow-y-auto py-1">
             {QTY_OPTIONS.map(q => (
               <button key={q} type="button" onClick={() => select(q)}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm
@@ -55,7 +63,15 @@ function QuantitySelector({ value, onChange }) {
                 onMouseEnter={e => { if (value !== q) e.currentTarget.style.background = 'rgba(124,58,237,0.04)' }}
                 onMouseLeave={e => { if (value !== q) e.currentTarget.style.background = 'transparent' }}>
                 <span>{q.toLocaleString('fr-DZ')} unités</span>
-                {value === q && <Check size={14} style={{ color: PURPLE }} />}
+                <div className="flex items-center gap-2">
+                  {unitPrice > 0 && (
+                    <span className="text-xs font-bold"
+                      style={{ color: value === q ? PURPLE : '#9ca3af' }}>
+                      {(q * unitPrice).toLocaleString('fr-DZ')} DA
+                    </span>
+                  )}
+                  {value === q && <Check size={14} style={{ color: PURPLE }} />}
+                </div>
               </button>
             ))}
           </div>
