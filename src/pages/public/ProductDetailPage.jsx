@@ -397,7 +397,7 @@ function ProductDetailPage() {
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>
                   {t('quantity')}
                 </p>
-                <QuantitySelector value={quantity} onChange={setQuantity} />
+                <QuantitySelector value={quantity} onChange={setQuantity} unitPrice={unitPrice} />
               </div>
 
               {/* Total */}
@@ -567,7 +567,7 @@ function ProductDetailPage() {
           {/* Quantité */}
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>{t('quantity')}</p>
-            <QuantitySelector value={quantity} onChange={setQuantity} />
+            <QuantitySelector value={quantity} onChange={setQuantity} unitPrice={unitPrice} />
           </div>
 
           {/* Total */}
