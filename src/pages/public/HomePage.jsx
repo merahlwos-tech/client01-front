@@ -129,7 +129,14 @@ function HomePage() {
   const [hiddenCats, setHiddenCats] = useState([])
   const [reviews, setReviews]       = useState([])
 
-  /* Récupère les catégories cachées par l'admin */
+  const [coverImages, setCoverImages] = useState({})
+
+  /* Récupère les photos de couverture depuis l'admin */
+  useEffect(() => {
+    api.get('/settings/category-covers')
+      .then(res => setCoverImages(res.data || {}))
+      .catch(() => {})
+  }, [])
   useEffect(() => {
     api.get('/settings/hidden-categories')
       .then(res => setHiddenCats(res.data || []))
@@ -256,6 +263,7 @@ function HomePage() {
           : 'grid-cols-2 lg:grid-cols-4'
         }`}>
           {visibleCats.map(({ label_fr, label_ar, cat, image }) => {
+            const coverSrc = coverImages[cat] || image
             const label = lang === 'ar' ? label_ar : label_fr
             return (
               <Link key={cat} to={`/products?category=${cat}`} className="group cursor-pointer block">
@@ -275,7 +283,7 @@ function HomePage() {
                       boxShadow: '0 4px 24px rgba(124,58,237,0.1)',
                       background: cat === 'Board' ? '#f5e8e4' : 'transparent',
                     }}>
-                    <img src={image} alt={label}
+                    <img src={coverSrc} alt={label}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy" width="300" height="400" />
                     <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
