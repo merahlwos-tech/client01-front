@@ -142,7 +142,6 @@ function HiddenCategoriesSection() {
    SECTION : Avis clients (photos GitHub)
 ══════════════════════════════════════════════ */
 const REVIEW_CATEGORIES = [
-  { key: 'general',      label: 'Général (toutes pages)' },
   { key: 'Board',        label: 'Boites' },
   { key: 'Bags',         label: 'Sacs' },
   { key: 'Autocollants', label: 'Cartes & Autocollants' },
@@ -153,7 +152,7 @@ function ReviewsSection() {
   const [reviews, setReviews]       = useState([])
   const [loading, setLoading]       = useState(true)
   const [uploading, setUploading]   = useState(false)
-  const [selectedCat, setSelectedCat] = useState('general')
+  const [selectedCat, setSelectedCat] = useState('Board')
   const [preview, setPreview]       = useState(null)
   const [imageB64, setImageB64]     = useState(null)
   const [filterCat, setFilterCat]   = useState('all')
