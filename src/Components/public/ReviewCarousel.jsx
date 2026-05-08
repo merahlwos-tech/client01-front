@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+
 import { useLang } from '../../context/LanguageContext'
 
 const PURPLE       = '#7c3aed'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.25)'
+const GAP          = 16   // px — correspond à gap-4
 
-/* Nombre de slides visibles selon largeur écran */
 function useVisibleCount() {
   const [count, setCount] = useState(3)
   useEffect(() => {
@@ -27,71 +28,79 @@ export default function ReviewCarousel({ reviews = [], title }) {
   const maxIndex        = Math.max(0, total - visibleCount)
 
   const [index, setIndex]           = useState(0)
-  const [dragging, setDragging]     = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
 
-  const trackRef    = useRef(null)
-  const startX      = useRef(0)
-  const startIndex  = useRef(0)
+  // useRef pour ne pas déclencher de re-render pendant le drag
+  const isDragging   = useRef(false)
+  const startX       = useRef(0)
+  const startIndex   = useRef(0)
+  const containerRef = useRef(null)   // ← ref sur le div overflow-hidden
 
-  const slideWidth = () => {
-    if (!trackRef.current) return 0
-    return trackRef.current.offsetWidth / visibleCount
-  }
+  /* Largeur d'un "pas" = largeur d'une slide + son gap */
+  const getSlideStep = useCallback(() => {
+    if (!containerRef.current) return 0
+    const containerW = containerRef.current.offsetWidth
+    // (containerW - total des gaps) / nb slides + 1 gap
+    return (containerW - GAP * (visibleCount - 1)) / visibleCount + GAP
+  }, [visibleCount])
 
-  const baseTranslate  = -index * slideWidth()
-  const totalTranslate = baseTranslate + dragOffset
+  /* Translation du track en px */
+  const getTranslate = useCallback((idx, offset = 0) => {
+    return -idx * getSlideStep() + offset
+  }, [getSlideStep])
 
-  /* ── TOUCH ── */
+  /* Snap au slide le plus proche au relâchement */
+  const snap = useCallback(() => {
+    const step   = getSlideStep()
+    const steps  = step > 0 ? Math.round(-dragOffset / step) : 0
+    const newIdx = Math.min(Math.max(startIndex.current + steps, 0), maxIndex)
+    setIndex(newIdx)
+    setDragOffset(0)
+    isDragging.current = false
+  }, [dragOffset, getSlideStep, maxIndex])
+
+  /* ── TOUCH (mobile) ── */
   const onTouchStart = (e) => {
     startX.current     = e.touches[0].clientX
     startIndex.current = index
-    setDragging(true)
+    isDragging.current = true
     setDragOffset(0)
   }
-
   const onTouchMove = (e) => {
-    if (!dragging) return
-    const diff = e.touches[0].clientX - startX.current
-    setDragOffset(diff)
+    if (!isDragging.current) return
+    e.preventDefault()   // bloque le scroll vertical pendant le swipe horizontal
+    setDragOffset(e.touches[0].clientX - startX.current)
   }
-
   const onTouchEnd = () => snap()
 
   /* ── MOUSE (desktop) ── */
   const onMouseDown = (e) => {
     startX.current     = e.clientX
     startIndex.current = index
-    setDragging(true)
+    isDragging.current = true
     setDragOffset(0)
   }
-
-  const onMouseMove  = (e) => { if (dragging) setDragOffset(e.clientX - startX.current) }
-  const onMouseUp    = () => snap()
-  const onMouseLeave = () => { if (dragging) snap() }
-
-  /* ── Snap vers slide le plus proche ── */
-  const snap = () => {
-    const sw      = slideWidth()
-    const moved   = -dragOffset
-    const steps   = sw > 0 ? Math.round(moved / sw) : 0
-    const newIdx  = Math.min(Math.max(startIndex.current + steps, 0), maxIndex)
-    setIndex(newIdx)
-    setDragging(false)
-    setDragOffset(0)
+  const onMouseMove = (e) => {
+    if (!isDragging.current) return
+    setDragOffset(e.clientX - startX.current)
   }
+  const onMouseUp    = () => { if (isDragging.current) snap() }
+  const onMouseLeave = () => { if (isDragging.current) snap() }
 
+  /* Reset si les reviews changent */
   useEffect(() => { setIndex(0) }, [total])
 
   if (total === 0) return null
 
   const defaultTitle = lang === 'ar' ? 'آراء عملائنا' : 'Ce que disent nos clients'
+  const isActive     = isDragging.current && dragOffset !== 0
+  const slideW       = `calc(${100 / visibleCount}% - ${GAP * (visibleCount - 1) / visibleCount}px)`
 
   return (
     <section className="py-14 px-4">
       <div className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
 
-        {/* Titre */}
+        {/* ── Titre ── */}
         <div className={`flex items-center gap-4 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className="h-px flex-1" style={{ background: PURPLE_XSOFT }} />
           <h2 className="text-2xl md:text-3xl font-black italic whitespace-nowrap"
@@ -101,10 +110,15 @@ export default function ReviewCarousel({ reviews = [], title }) {
           <div className="h-px flex-1" style={{ background: PURPLE_XSOFT }} />
         </div>
 
-        {/* Fenêtre carrousel */}
+        {/* ── Container (overflow hidden) ── */}
         <div
+          ref={containerRef}
           className="overflow-hidden rounded-2xl"
-          style={{ cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none' }}
+          style={{
+            cursor:      isActive ? 'grabbing' : 'grab',
+            userSelect:  'none',
+            touchAction: 'none',   // désactive le scroll natif pendant le swipe
+          }}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
@@ -113,12 +127,13 @@ export default function ReviewCarousel({ reviews = [], title }) {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
+          {/* ── Track (défilant) ── */}
           <div
-            ref={trackRef}
-            className="flex gap-4"
+            className="flex"
             style={{
-              transform:  `translateX(${totalTranslate}px)`,
-              transition: dragging ? 'none' : 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)',
+              gap:        GAP,
+              transform:  `translateX(${getTranslate(index, dragOffset)}px)`,
+              transition: isActive ? 'none' : 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)',
               willChange: 'transform',
             }}
           >
@@ -127,11 +142,11 @@ export default function ReviewCarousel({ reviews = [], title }) {
                 key={review._id}
                 className="flex-shrink-0 rounded-2xl overflow-hidden shadow-md"
                 style={{
-                  width:         `calc(${100 / visibleCount}% - ${(visibleCount - 1) * 16 / visibleCount}px)`,
+                  width:         slideW,
                   aspectRatio:   '4/5',
                   border:        `1px solid ${PURPLE_XSOFT}`,
                   background:    '#f5f3ff',
-                  pointerEvents: 'none',
+                  pointerEvents: 'none',   // empêche le drag natif des images
                 }}
               >
                 <img
@@ -146,7 +161,7 @@ export default function ReviewCarousel({ reviews = [], title }) {
           </div>
         </div>
 
-        {/* Dots */}
+        {/* ── Dots ── */}
         {total > visibleCount && (
           <div className="flex justify-center gap-2 mt-5">
             {Array.from({ length: maxIndex + 1 }).map((_, i) => (
