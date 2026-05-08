@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   TrendingUp, Package, RefreshCcw, ShoppingBag,
   AlertTriangle, Loader2, EyeOff, Eye, Send, Phone,
+  ImagePlus, Trash2, Star,
 } from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
@@ -133,6 +134,231 @@ function HiddenCategoriesSection() {
           </button>
         </>
       )}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   SECTION : Avis clients (photos GitHub)
+══════════════════════════════════════════════ */
+const REVIEW_CATEGORIES = [
+  { key: 'general',      label: 'Général (toutes pages)' },
+  { key: 'Board',        label: 'Boites' },
+  { key: 'Bags',         label: 'Sacs' },
+  { key: 'Autocollants', label: 'Cartes & Autocollants' },
+  { key: 'Paper',        label: 'Papier' },
+]
+
+function ReviewsSection() {
+  const [reviews, setReviews]       = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [uploading, setUploading]   = useState(false)
+  const [selectedCat, setSelectedCat] = useState('general')
+  const [preview, setPreview]       = useState(null)
+  const [imageB64, setImageB64]     = useState(null)
+  const [filterCat, setFilterCat]   = useState('all')
+  const fileInputRef                = useRef(null)
+
+  const fetchReviews = () => {
+    setLoading(true)
+    api.get('/reviews')
+      .then(res => setReviews(res.data || []))
+      .catch(() => toast.error('Erreur chargement avis'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { fetchReviews() }, [])
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Fichier non supporté (images uniquement)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop lourde (max 5 Mo)')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setPreview(ev.target.result)
+      setImageB64(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleUpload = async () => {
+    if (!imageB64) return toast.error('Sélectionnez une image')
+    setUploading(true)
+    try {
+      await api.post('/reviews', { imageBase64: imageB64, category: selectedCat })
+      toast.success('Avis ajouté ✓')
+      setPreview(null)
+      setImageB64(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      fetchReviews()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erreur upload')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Supprimer cet avis ?')) return
+    try {
+      await api.delete(`/reviews/${id}`)
+      toast.success('Avis supprimé')
+      setReviews(prev => prev.filter(r => r._id !== id))
+    } catch {
+      toast.error('Erreur suppression')
+    }
+  }
+
+  const displayed = filterCat === 'all'
+    ? reviews
+    : reviews.filter(r => r.category === filterCat)
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(124,58,237,0.1)' }}>
+          <Star size={17} style={{ color: PURPLE }} />
+        </div>
+        <div>
+          <p className="font-black text-sm" style={{ color: NAVY }}>Avis clients</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Photos uploadées sur GitHub — apparaissent dans le carrousel du site
+          </p>
+        </div>
+      </div>
+
+      {/* ── Upload ── */}
+      <div className="rounded-xl border-2 border-dashed p-4 mb-5"
+        style={{ borderColor: 'rgba(124,58,237,0.25)', background: '#faf9ff' }}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
+          Ajouter une photo d'avis
+        </p>
+
+        {/* Sélection catégorie */}
+        <select
+          value={selectedCat}
+          onChange={e => setSelectedCat(e.target.value)}
+          className="w-full mb-3 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm
+                     font-medium outline-none focus:border-purple-400 transition-colors"
+          style={{ color: NAVY }}>
+          {REVIEW_CATEGORIES.map(c => (
+            <option key={c.key} value={c.key}>{c.label}</option>
+          ))}
+        </select>
+
+        {/* Input fichier */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFile}
+          className="hidden"
+          id="review-file-input"
+        />
+
+        {preview ? (
+          <div className="flex gap-3 items-start">
+            <img src={preview} alt="Aperçu"
+              className="w-24 h-24 object-cover rounded-xl border-2"
+              style={{ borderColor: 'rgba(124,58,237,0.3)' }} />
+            <div className="flex flex-col gap-2 flex-1">
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="flex items-center justify-center gap-2 w-full py-2 rounded-xl
+                           text-white text-sm font-bold transition-all hover:opacity-90"
+                style={{ background: PURPLE }}>
+                {uploading
+                  ? <><Loader2 size={13} className="animate-spin" /> Upload en cours…</>
+                  : <><ImagePlus size={13} /> Envoyer sur GitHub</>
+                }
+              </button>
+              <button
+                onClick={() => { setPreview(null); setImageB64(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                className="w-full py-2 rounded-xl border-2 border-gray-200 text-gray-500
+                           text-xs font-semibold hover:bg-gray-50 transition-all">
+                Annuler
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label htmlFor="review-file-input"
+            className="flex flex-col items-center justify-center gap-2 py-6 cursor-pointer
+                       rounded-xl transition-all hover:opacity-80"
+            style={{ background: 'rgba(124,58,237,0.04)' }}>
+            <ImagePlus size={24} style={{ color: PURPLE }} />
+            <span className="text-sm font-semibold" style={{ color: NAVY }}>
+              Cliquer pour choisir une image
+            </span>
+            <span className="text-xs text-gray-400">JPG, PNG, WEBP — max 5 Mo</span>
+          </label>
+        )}
+      </div>
+
+      {/* ── Filtre catégorie ── */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {[{ key: 'all', label: 'Tous' }, ...REVIEW_CATEGORIES].map(c => (
+          <button
+            key={c.key}
+            onClick={() => setFilterCat(c.key)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+            style={{
+              background: filterCat === c.key ? PURPLE : '#f3f4f6',
+              color:      filterCat === c.key ? 'white'  : '#6b7280',
+            }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Grille des avis ── */}
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-400 py-4">
+          <Loader2 size={14} className="animate-spin" /> Chargement…
+        </div>
+      ) : displayed.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">Aucun avis dans cette catégorie</p>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {displayed.map(review => (
+            <div key={review._id} className="relative group rounded-xl overflow-hidden"
+              style={{ aspectRatio: '4/5' }}>
+              <img
+                src={review.imageUrl}
+                alt="Avis"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              {/* Badge catégorie */}
+              <span className="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5
+                               rounded-full text-white"
+                style={{ background: 'rgba(124,58,237,0.85)' }}>
+                {REVIEW_CATEGORIES.find(c => c.key === review.category)?.label?.split(' ')[0] || review.category}
+              </span>
+              {/* Bouton supprimer */}
+              <button
+                onClick={() => handleDelete(review._id)}
+                className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center
+                           opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                style={{ background: '#ef4444' }}>
+                <Trash2 size={11} color="white" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        {reviews.length} photo{reviews.length !== 1 ? 's' : ''} au total
+      </p>
     </div>
   )
 }
@@ -315,7 +541,8 @@ function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Nouvelles sections : Cacher + Signaler ── */}
+      {/* ── Sections : Avis + Cacher + Signaler ── */}
+      <ReviewsSection />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HiddenCategoriesSection />
         <SignalerSection />
