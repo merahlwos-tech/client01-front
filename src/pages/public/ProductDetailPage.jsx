@@ -4,7 +4,7 @@ import { ShoppingBag, ArrowLeft, ChevronLeft, ChevronRight, Zap, ChevronDown, Ch
 import api from '../../utils/api'
 import { useCart } from '../../context/CartContext'
 import SizeSelector from '../../Components/public/SizeSelector'
-import QuantitySelector from '../../Components/public/QuantitySelector'
+import QuantitySelector, { getPriceForQty } from '../../Components/public/QuantitySelector'
 import { useLang } from '../../context/LanguageContext'
 import { trackViewContent, trackAddToCart, trackHighQualityVisitor, trackScrollToForm } from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
@@ -199,7 +199,10 @@ function ProductDetailPage() {
   const catLabels     = lang === 'ar' ? CAT_LABELS_AR : CAT_LABELS_FR
   const catLabel      = catLabels[product.category] || product.category
   const sizeObj       = product.sizes?.find(s => s.size === selectedSize)
-  const basePrice     = sizeObj?.price ?? 0
+  const sizeBasePrice = sizeObj?.price ?? 0
+  const priceTiers    = sizeObj?.priceTiers ?? []
+  // Le prix de la taille peut varier selon la quantité (paliers)
+  const basePrice     = getPriceForQty(quantity, sizeBasePrice, sizeBasePrice, priceTiers)
   const extraDouble   = (doubleSided && product.doubleSided) ? (product.doubleSidedPrice ?? 0) : 0
   const nbColors      = numberOfColors !== '' ? Math.max(1, Number(numberOfColors)) : 1
   // La 1ère couleur est incluse dans le prix de base → on facture uniquement les couleurs supplémentaires
@@ -397,7 +400,7 @@ function ProductDetailPage() {
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>
                   {t('quantity')}
                 </p>
-                <QuantitySelector value={quantity} onChange={setQuantity} unitPrice={unitPrice} />
+                <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={unitPrice} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
               </div>
 
               {/* Total */}
@@ -567,7 +570,7 @@ function ProductDetailPage() {
           {/* Quantité */}
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>{t('quantity')}</p>
-            <QuantitySelector value={quantity} onChange={setQuantity} unitPrice={unitPrice} />
+            <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={unitPrice} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
           </div>
 
           {/* Total */}
