@@ -96,6 +96,8 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
   const addTier    = (si) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: [...(s.priceTiers||[]), { qty: '', price: '' }] } : s) }))
   const removeTier = (si, ti) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: s.priceTiers.filter((_,i) => i !== ti) } : s) }))
   const updateTier = (si, ti, field, val) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: s.priceTiers.map((t, i) => i === ti ? { ...t, [field]: val } : t) } : s) }))
+
+  const toggleColor = (hex) => setForm(p => ({
     ...p,
     colors: p.colors.includes(hex) ? p.colors.filter(c => c !== hex) : [...p.colors, hex],
   }))
