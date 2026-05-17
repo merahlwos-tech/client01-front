@@ -37,9 +37,11 @@ const PRESET_COLORS = [
   { hex: '#8B5CF6', fr: 'Lavande',     ar: 'لافندر' },
 ]
 
+const QTY_OPTIONS = [100,200,300,400,500,600,700,800,900,1000,2000,3000]
+
 const EMPTY = {
   name: '', category: 'Board',
-  sizes: [{ size: '', price: '' }],
+  sizes: [{ size: '', price: '', priceTiers: [] }],
   colors: [],
   colorDesignEnabled: false, colorDesignPricePerColor: '', colorDesignMaxColors: '',
   doubleSided: false, doubleSidedPrice: '', images: [],
@@ -60,8 +62,12 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
       name: initialData.name || '',
       category: initialData.category || 'Board',
       sizes: initialData.sizes?.length > 0
-        ? initialData.sizes.map(s => ({ size: String(s.size), price: String(s.price ?? '') }))
-        : [{ size: '', price: '' }],
+        ? initialData.sizes.map(s => ({
+            size: String(s.size),
+            price: String(s.price ?? ''),
+            priceTiers: (s.priceTiers || []).map(t => ({ qty: String(t.qty), price: String(t.price) }))
+          }))
+        : [{ size: '', price: '', priceTiers: [] }],
       colors: initialData.colors || [],
       colorDesignEnabled: initialData.colorDesignEnabled ?? false,
       colorDesignPricePerColor: initialData.colorDesignPricePerColor != null ? String(initialData.colorDesignPricePerColor) : '',
@@ -83,11 +89,13 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
 
   const set = (key, val) => { setForm(p => ({ ...p, [key]: val })); if (errors[key]) setErrors(p => ({ ...p, [key]: '' })) }
 
-  const addSize    = () => setForm(p => ({ ...p, sizes: [...p.sizes, { size: '', price: '' }] }))
+  const addSize    = () => setForm(p => ({ ...p, sizes: [...p.sizes, { size: '', price: '', priceTiers: [] }] }))
   const removeSize = i  => setForm(p => ({ ...p, sizes: p.sizes.filter((_, idx) => idx !== i) }))
   const updateSize = (i, field, val) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === i ? { ...s, [field]: val } : s) }))
 
-  const toggleColor = (hex) => setForm(p => ({
+  const addTier    = (si) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: [...(s.priceTiers||[]), { qty: '', price: '' }] } : s) }))
+  const removeTier = (si, ti) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: s.priceTiers.filter((_,i) => i !== ti) } : s) }))
+  const updateTier = (si, ti, field, val) => setForm(p => ({ ...p, sizes: p.sizes.map((s, idx) => idx === si ? { ...s, priceTiers: s.priceTiers.map((t, i) => i === ti ? { ...t, [field]: val } : t) } : s) }))
     ...p,
     colors: p.colors.includes(hex) ? p.colors.filter(c => c !== hex) : [...p.colors, hex],
   }))
@@ -143,7 +151,14 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
     try {
       const payload = {
         ...form,
-        sizes: form.sizes.filter(s => s.size.trim()).map(s => ({ size: s.size, price: Number(s.price) })),
+        sizes: form.sizes.filter(s => s.size.trim()).map(s => ({
+            size:  s.size,
+            price: Number(s.price),
+            priceTiers: (s.priceTiers || [])
+              .filter(t => t.qty !== '' && t.price !== '')
+              .map(t => ({ qty: Number(t.qty), price: Number(t.price) }))
+              .sort((a, b) => a.qty - b.qty),
+          })),
         colorDesignEnabled: form.colorDesignEnabled,
         colorDesignPricePerColor: form.colorDesignEnabled && form.colorDesignPricePerColor !== '' ? Number(form.colorDesignPricePerColor) : 0,
         colorDesignMaxColors: form.colorDesignEnabled && form.colorDesignMaxColors !== '' ? Number(form.colorDesignMaxColors) : null,
@@ -179,37 +194,96 @@ function AdminProductForm({ initialData, onSuccess, onCancel }) {
         </select>
       </div>
 
-      {/* Tailles + Prix */}
+      {/* Tailles + Prix + Paliers */}
       <div ref={el => { if (el) fieldRefs.current['sizes'] = el }}>
         <div className="flex items-center justify-between mb-3">
-          <label className={labelCls} style={{ color: NAVY }}>Tailles & Prix *</label>
+          <label className={labelCls} style={{ color: NAVY }}>Tailles, Prix & Paliers *</label>
           <button type="button" onClick={addSize}
             className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg text-white"
             style={{ background: PURPLE }}>
-            <Plus size={13} /> Ajouter
+            <Plus size={13} /> Ajouter taille
           </button>
         </div>
-        <div className="space-y-2">
-          {form.sizes.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 sm:gap-3 bg-gray-50 px-3 sm:px-4 py-3 rounded-xl border border-gray-200">
-              <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Taille</p>
-                <input value={s.size} onChange={e => updateSize(i, 'size', e.target.value)}
-                  placeholder="Ex: A4, 30×20..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
-                             outline-none focus:border-purple-400 transition-all" />
+        <div className="space-y-4">
+          {form.sizes.map((s, si) => (
+            <div key={si} className="rounded-2xl border-2 overflow-hidden"
+              style={{ borderColor: 'rgba(124,58,237,0.2)' }}>
+              {/* Ligne taille + prix de base */}
+              <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-gray-50">
+                <div className="flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Taille</p>
+                  <input value={s.size} onChange={e => updateSize(si, 'size', e.target.value)}
+                    placeholder="Ex: A4, 30×20…"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
+                               outline-none focus:border-purple-400 transition-all" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Prix de base (DA)</p>
+                  <input type="number" min="0" value={s.price} onChange={e => updateSize(si, 'price', e.target.value)}
+                    placeholder="1500"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
+                               outline-none focus:border-purple-400 transition-all" />
+                </div>
+                <button type="button" onClick={() => removeSize(si)}
+                  className="mt-5 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex-shrink-0">
+                  <Trash2 size={16} />
+                </button>
               </div>
-              <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Prix (DA)</p>
-                <input type="number" min="0" value={s.price} onChange={e => updateSize(i, 'price', e.target.value)}
-                  placeholder="1500"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm
-                             outline-none focus:border-purple-400 transition-all" />
+
+              {/* Paliers de quantité */}
+              <div className="px-3 sm:px-4 py-3" style={{ borderTop: '1px dashed rgba(124,58,237,0.2)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: PURPLE }}>
+                    Paliers de quantité
+                    <span className="ml-1 text-gray-400 font-normal normal-case">(optionnel — laisser vide = prix de base partout)</span>
+                  </p>
+                  <button type="button" onClick={() => addTier(si)}
+                    className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg"
+                    style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+                    <Plus size={10} /> Palier
+                  </button>
+                </div>
+
+                {(s.priceTiers || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Aucun palier — le prix de base s'applique à toutes les quantités</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(s.priceTiers || []).map((t, ti) => (
+                      <div key={ti} className="flex items-center gap-2 bg-purple-50 rounded-xl px-3 py-2">
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-purple-400 mb-0.5">À partir de (unités)</p>
+                          <select value={t.qty} onChange={e => updateTier(si, ti, 'qty', e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg border border-purple-200 bg-white text-xs font-bold outline-none focus:border-purple-400">
+                            <option value="">-- Qté --</option>
+                            {QTY_OPTIONS.map(q => <option key={q} value={q}>{q.toLocaleString('fr-DZ')} unités</option>)}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-purple-400 mb-0.5">Prix unitaire (DA)</p>
+                          <input type="number" min="0" value={t.price}
+                            onChange={e => updateTier(si, ti, 'price', e.target.value)}
+                            placeholder="ex: 12"
+                            className="w-full px-2 py-1.5 rounded-lg border border-purple-200 bg-white text-xs font-bold outline-none focus:border-purple-400" />
+                        </div>
+                        <button type="button" onClick={() => removeTier(si, ti)}
+                          className="mt-4 p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all flex-shrink-0">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                    {/* Aperçu rapide */}
+                    {s.price && (
+                      <div className="mt-2 text-[10px] text-gray-500 space-y-0.5">
+                        {[{ qty: 100, price: Number(s.price) },
+                          ...(s.priceTiers||[]).filter(t=>t.qty&&t.price).map(t=>({qty:Number(t.qty), price:Number(t.price)})).sort((a,b)=>a.qty-b.qty)
+                        ].map(tier => (
+                          <p key={tier.qty}>• {tier.qty.toLocaleString('fr-DZ')} unités → <strong>{tier.price} DA/u</strong> = {(tier.qty * tier.price).toLocaleString('fr-DZ')} DA total</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <button type="button" onClick={() => removeSize(i)}
-                className="mt-5 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                <Trash2 size={16} />
-              </button>
             </div>
           ))}
         </div>
