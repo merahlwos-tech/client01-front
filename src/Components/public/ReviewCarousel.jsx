@@ -4,7 +4,8 @@ import { useLang } from '../../context/LanguageContext'
 const PURPLE       = '#7c3aed'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.25)'
 const GAP          = 16
-const AUTOPLAY_MS  = 1000
+const AUTOPLAY_MS  = 1500   // intervalle autoplay
+const PAUSE_MS     = 4000   // pause après interaction manuelle
 
 function useVisibleCount() {
   const [count, setCount] = useState(3)
@@ -27,9 +28,11 @@ export default function ReviewCarousel({ reviews = [], title }) {
   const total           = reviews.length
   const maxIndex        = Math.max(0, total - visibleCount)
 
-  const indexRef  = useRef(0)   // ref pour accès dans setInterval sans re-créer
-  const scrollRef = useRef(null)
-  const timerRef  = useRef(null)
+  const scrollRef    = useRef(null)
+  const indexRef     = useRef(0)
+  const timerRef     = useRef(null)
+  const pauseRef     = useRef(null)
+  const isPaused     = useRef(false)
 
   const getStep = useCallback(() => {
     const el = scrollRef.current
@@ -37,33 +40,64 @@ export default function ReviewCarousel({ reviews = [], title }) {
     return (el.offsetWidth - GAP * (visibleCount - 1)) / visibleCount + GAP
   }, [visibleCount])
 
-  const scrollToIndex = useCallback((idx) => {
+  /* Déplace le scroll vers un index précis */
+  const scrollToIdx = useCallback((idx) => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollTo({ left: idx * getStep(), behavior: 'smooth' })
     indexRef.current = idx
+    el.scrollTo({ left: idx * getStep(), behavior: 'smooth' })
   }, [getStep])
 
-  /* Autoplay — tourne en boucle, repart de 0 quand max atteint */
+  /* Lance l'autoplay */
   const startAutoplay = useCallback(() => {
     clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
+      if (isPaused.current) return
       const next = indexRef.current >= maxIndex ? 0 : indexRef.current + 1
-      scrollToIndex(next)
+      scrollToIdx(next)
     }, AUTOPLAY_MS)
-  }, [maxIndex, scrollToIndex])
+  }, [maxIndex, scrollToIdx])
 
-  /* Démarre dès que le composant est monté et quand les reviews changent */
+  /* Pause temporaire après interaction (reprend après PAUSE_MS) */
+  const pauseTemporarily = useCallback(() => {
+    isPaused.current = true
+    clearTimeout(pauseRef.current)
+    pauseRef.current = setTimeout(() => {
+      isPaused.current = false
+    }, PAUSE_MS)
+  }, [])
+
+  /* Sync indexRef sur le scroll réel (swipe natif) */
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    let debounce
+    const onScroll = () => {
+      pauseTemporarily()
+      clearTimeout(debounce)
+      debounce = setTimeout(() => {
+        const step = getStep()
+        if (step > 0) indexRef.current = Math.round(el.scrollLeft / step)
+      }, 80)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => { el.removeEventListener('scroll', onScroll); clearTimeout(debounce) }
+  }, [getStep, pauseTemporarily])
+
+  /* Démarre l'autoplay */
   useEffect(() => {
     if (total <= visibleCount) return
     startAutoplay()
-    return () => clearInterval(timerRef.current)
+    return () => {
+      clearInterval(timerRef.current)
+      clearTimeout(pauseRef.current)
+    }
   }, [total, visibleCount, startAutoplay])
 
-  /* Reset au changement de reviews */
+  /* Reset quand les reviews changent */
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = 0
     indexRef.current = 0
+    if (scrollRef.current) scrollRef.current.scrollLeft = 0
   }, [total])
 
   if (total === 0) return null
@@ -74,10 +108,11 @@ export default function ReviewCarousel({ reviews = [], title }) {
   return (
     <section className="py-14 px-4">
       <style>{`.rev-scroll::-webkit-scrollbar{display:none}`}</style>
-      <div className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="max-w-5xl mx-auto">
 
-        {/* Titre */}
-        <div className={`flex items-center gap-4 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        {/* Titre — RTL uniquement pour le texte */}
+        <div className={`flex items-center gap-4 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}
+          dir={isRTL ? 'rtl' : 'ltr'}>
           <div className="h-px flex-1" style={{ background: PURPLE_XSOFT }} />
           <h2 className="text-2xl md:text-3xl font-black italic whitespace-nowrap"
             style={{ color: PURPLE }}>
@@ -86,10 +121,15 @@ export default function ReviewCarousel({ reviews = [], title }) {
           <div className="h-px flex-1" style={{ background: PURPLE_XSOFT }} />
         </div>
 
-        {/* Scroll natif snap — sans flèches ni dots */}
+        {/*
+          IMPORTANT : dir="ltr" TOUJOURS sur le scroll container.
+          En RTL le navigateur inverse scrollLeft → le carousel part de la fin.
+          On force LTR ici et on gère l'affichage du texte séparément.
+        */}
         <div
           ref={scrollRef}
           className="rev-scroll"
+          dir="ltr"
           style={{
             display:                 'flex',
             gap:                     GAP,
