@@ -108,6 +108,7 @@ function ProductDetailPage() {
   const navigate        = useNavigate()
   const { addToCart }   = useCart()
   const { t, lang, isRTL } = useLang()
+  const cur = lang === 'ar' ? 'دج' : 'DA'
 
   const [product, setProduct]           = useState(null)
   const [loading, setLoading]           = useState(true)
@@ -297,7 +298,7 @@ function ProductDetailPage() {
                 </h1>
                 <p className="font-black text-3xl" style={{ color: PURPLE }}>
                   {unitPrice.toLocaleString('fr-DZ')}
-                  <span className="text-base font-normal text-gray-400 ml-2">DA / {t('units').slice(0,-1) || 'unité'}</span>
+                  <span className="text-base font-normal text-gray-400 ml-2">{cur} / {t('units').slice(0,-1) || (lang === 'ar' ? 'وحدة' : 'unité')}</span>
                 </p>
                 {doubleSided && extraDouble > 0 && (
                   <p className="text-xs text-gray-400 mt-1">
@@ -381,7 +382,7 @@ function ProductDetailPage() {
                       <p className="text-sm font-bold" style={{ color: NAVY }}>{t('doubleSided')}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {product.doubleSidedPrice > 0
-                          ? `+${product.doubleSidedPrice.toLocaleString('fr-DZ')} DA / ${t('units')}`
+                          ? `+${product.doubleSidedPrice.toLocaleString('fr-DZ')}  / ${t('units')}`
                           : (t('included'))}
                       </p>
                     </div>
@@ -409,12 +410,12 @@ function ProductDetailPage() {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t('estimatedTotal')}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {quantity.toLocaleString()} × {unitPrice.toLocaleString('fr-DZ')} DA
+                    {quantity.toLocaleString()} × {unitPrice.toLocaleString('fr-DZ')} {cur}
                   </p>
                 </div>
                 <p className="font-black text-3xl" style={{ color: PURPLE }}>
                   {totalPrice.toLocaleString('fr-DZ')}
-                  <span className="text-sm font-normal text-gray-400 ml-1">DA</span>
+                  <span className="text-sm font-normal text-gray-400 ml-1">{cur}</span>
                 </p>
               </div>
 
@@ -487,7 +488,7 @@ function ProductDetailPage() {
             <h1 className="text-white font-black italic text-2xl drop-shadow mb-1">{product.name}</h1>
             <p className="text-white font-black text-lg drop-shadow">
               {unitPrice.toLocaleString('fr-DZ')}
-              <span className="text-xs opacity-70 ml-1">DA / {t('units')}</span>
+              <span className="text-xs opacity-70 ml-1">{cur} / {t('units')}</span>
             </p>
           </div>
         </div>
@@ -554,7 +555,7 @@ function ProductDetailPage() {
                 <div className="flex-1">
                   <p className="text-sm font-bold" style={{ color: NAVY }}>{t('doubleSided')}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {product.doubleSidedPrice > 0 ? `+${product.doubleSidedPrice.toLocaleString('fr-DZ')} DA` : (t('included'))}
+                    {product.doubleSidedPrice > 0 ? `+${product.doubleSidedPrice.toLocaleString('fr-DZ')} ${cur}` : (t('included'))}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -578,10 +579,10 @@ function ProductDetailPage() {
             style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t('estimatedTotal')}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{quantity.toLocaleString()} × {unitPrice.toLocaleString('fr-DZ')} DA</p>
+              <p className="text-xs text-gray-400 mt-0.5">{quantity.toLocaleString()} × {unitPrice.toLocaleString('fr-DZ')} {cur}</p>
             </div>
             <p className="font-black text-2xl" style={{ color: PURPLE }}>
-              {totalPrice.toLocaleString('fr-DZ')}<span className="text-sm font-normal text-gray-400 ml-1">DA</span>
+              {totalPrice.toLocaleString('fr-DZ')}<span className="text-sm font-normal text-gray-400 ml-1">{cur}</span>
             </p>
           </div>
 
