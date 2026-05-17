@@ -27,14 +27,15 @@ export default function ReviewCarousel({ reviews = [], title }) {
   const total           = reviews.length
   const maxIndex        = Math.max(0, total - visibleCount)
 
-  const [index, setIndex] = useState(0)
-  const scrollRef         = useRef(null)
+  const [index, setIndex]     = useState(0)
+  const [paused, setPaused]   = useState(false)
+  const scrollRef             = useRef(null)
+  const autoRef               = useRef(null)
 
   const getStep = useCallback(() => {
     const el = scrollRef.current
     if (!el) return 0
-    const slideW = (el.offsetWidth - GAP * (visibleCount - 1)) / visibleCount
-    return slideW + GAP
+    return (el.offsetWidth - GAP * (visibleCount - 1)) / visibleCount + GAP
   }, [visibleCount])
 
   const goTo = useCallback((idx) => {
@@ -45,12 +46,27 @@ export default function ReviewCarousel({ reviews = [], title }) {
     setIndex(clamped)
   }, [getStep, maxIndex])
 
-  /* Sync index avec le scroll réel (swipe natif) */
+  /* Autoplay 2s — s'arrête si l'utilisateur interagit */
+  useEffect(() => {
+    if (paused || total <= visibleCount) return
+    autoRef.current = setInterval(() => {
+      setIndex(prev => {
+        const next = prev >= maxIndex ? 0 : prev + 1
+        const el   = scrollRef.current
+        if (el) el.scrollTo({ left: next * getStep(), behavior: 'smooth' })
+        return next
+      })
+    }, 2000)
+    return () => clearInterval(autoRef.current)
+  }, [paused, total, visibleCount, maxIndex, getStep])
+
+  /* Sync index sur scroll natif (swipe) */
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     let timer
     const onScroll = () => {
+      setPaused(true)                    // stoppe l'autoplay dès qu'on touche
       clearTimeout(timer)
       timer = setTimeout(() => {
         const step = getStep()
@@ -87,10 +103,9 @@ export default function ReviewCarousel({ reviews = [], title }) {
         </div>
 
         <div className="relative">
-
           {/* Flèche gauche */}
           {index > 0 && (
-            <button onClick={() => goTo(index - 1)}
+            <button onClick={() => { setPaused(true); goTo(index - 1) }}
               className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10
                          rounded-full shadow-lg flex items-center justify-center
                          transition-all hover:scale-110 active:scale-95"
@@ -101,7 +116,7 @@ export default function ReviewCarousel({ reviews = [], title }) {
 
           {/* Flèche droite */}
           {index < maxIndex && (
-            <button onClick={() => goTo(index + 1)}
+            <button onClick={() => { setPaused(true); goTo(index + 1) }}
               className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10
                          rounded-full shadow-lg flex items-center justify-center
                          transition-all hover:scale-110 active:scale-95"
@@ -110,7 +125,7 @@ export default function ReviewCarousel({ reviews = [], title }) {
             </button>
           )}
 
-          {/* Scroll natif avec snap */}
+          {/* Scroll natif snap */}
           <div
             ref={scrollRef}
             className="rev-scroll"
@@ -150,28 +165,6 @@ export default function ReviewCarousel({ reviews = [], title }) {
             ))}
           </div>
         </div>
-
-        {/* Dots */}
-        {total > visibleCount && (
-          <div className="flex justify-center gap-2 mt-5">
-            {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                style={{
-                  width:        i === index ? 24 : 8,
-                  height:       8,
-                  borderRadius: 9999,
-                  background:   i === index ? PURPLE : PURPLE_XSOFT,
-                  border:       'none',
-                  cursor:       'pointer',
-                  transition:   'all 0.3s',
-                  padding:      0,
-                }}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   )
