@@ -15,6 +15,7 @@ function ProductCard({ product }) {
   const minPrice = product.sizes?.length ? Math.min(...product.sizes.map(s => s.price ?? 0)) : 0
   const catLabels = lang === 'ar' ? CAT_LABELS_AR : CAT_LABELS_FR
   const catLabel  = catLabels[product.category] || product.category
+  const cur       = lang === 'ar' ? 'دج' : 'DA'
 
   const goToProduct = () => navigate(`/products/${product._id}`)
 
@@ -34,23 +35,13 @@ function ProductCard({ product }) {
           loading="lazy"
         />
 
-        {/* Badge catégorie */}
+        {/* Badge catégorie uniquement */}
         <div className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'}`}>
           <span className="text-xs font-bold px-3 py-1 rounded-full text-white shadow"
             style={{ background: PURPLE }}>
             {catLabel}
           </span>
         </div>
-
-        {/* Badge recto-verso */}
-        {product.doubleSided && (
-          <div className={`absolute top-3 ${isRTL ? 'left-3' : 'right-3'}`}>
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full text-white"
-              style={{ background: NAVY }}>
-              {lang === 'ar' ? 'وجهان' : 'Recto-verso'}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ── Infos ── */}
@@ -68,7 +59,7 @@ function ProductCard({ product }) {
           </span>
           <span className="font-black text-xl" style={{ color: PURPLE }}>
             {minPrice.toLocaleString('fr-DZ')}
-            <span className="text-sm font-bold ml-0.5">DA</span>
+            <span className="text-sm font-bold ml-0.5">{cur}</span>
           </span>
           <span className="text-xs font-medium" style={{ color: '#9ca3af' }}>
             {t('perUnit')}
