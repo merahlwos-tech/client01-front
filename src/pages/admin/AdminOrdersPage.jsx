@@ -144,8 +144,6 @@ function AdminOrdersPage() {
           .toLowerCase().includes(search.toLowerCase())
       return matchStatus && matchTag && matchSearch
     })
-      return matchStatus && matchSearch
-    })
     .sort((a, b) => {
       const va = sortField === 'total' ? a.total : new Date(a.createdAt)
       const vb = sortField === 'total' ? b.total : new Date(b.createdAt)
