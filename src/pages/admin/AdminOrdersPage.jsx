@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2, ChevronDown, ChevronUp, Search, X, Trash2, AlertTriangle, Eye } from 'lucide-react'
+import { Loader2, ChevronDown, ChevronUp, Search, X, Trash2, AlertTriangle, Eye, Tag } from 'lucide-react'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 
@@ -8,12 +8,8 @@ const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
 const STATUS_FILTERS = ['Tous', 'en attente', 'confirmé', 'annulé']
-const STATUS_LABELS  = {
-  'en attente': 'En attente', confirmé: 'Confirmé', annulé: 'Annulé',
-}
-const STATUS_COLORS  = {
-  'en attente': '#9ca3af', confirmé: '#10b981', annulé: '#ef4444',
-}
+const STATUS_LABELS  = { 'en attente': 'En attente', confirmé: 'Confirmé', annulé: 'Annulé' }
+const STATUS_COLORS  = { 'en attente': '#9ca3af', confirmé: '#10b981', annulé: '#ef4444' }
 const STATUS_OPTIONS = [
   { value: 'en attente', label: 'En attente', color: '#9ca3af' },
   { value: 'confirmé',   label: 'Confirmé',   color: '#10b981' },
@@ -71,6 +67,18 @@ function OrderCard({ order, selected, onToggle, onDetail }) {
         </p>
       )}
 
+      {/* Tags */}
+      {order.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {order.tags.map(tag => (
+            <span key={tag} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+              # {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Ligne 3 : statut + total */}
       <div
         className="flex items-center justify-between mt-3 pt-3"
@@ -96,6 +104,8 @@ function AdminOrdersPage() {
   const [loading, setLoading]             = useState(true)
   const [search, setSearch]               = useState('')
   const [statusFilter, setStatusFilter]   = useState('Tous')
+  const [tagFilter, setTagFilter]         = useState('Tous')
+  const [allTags, setAllTags]             = useState([])
   const [sortField, setSortField]         = useState('createdAt')
   const [sortDir, setSortDir]             = useState('desc')
   const [selected, setSelected]           = useState(new Set())
@@ -105,10 +115,14 @@ function AdminOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/orders')
-      setOrders(res.data || [])
+      const [ordersRes, tagsRes] = await Promise.all([
+        api.get('/orders'),
+        api.get('/admin/tags'),
+      ])
+      setOrders(ordersRes.data || [])
+      setAllTags(tagsRes.data || [])
     } catch {
-      toast.error('Erreur chargement commandes')
+      toast.error('Erreur chargement')
     } finally {
       setLoading(false)
     }
@@ -124,10 +138,12 @@ function AdminOrdersPage() {
   const filtered = orders
     .filter(o => {
       const matchStatus = statusFilter === 'Tous' || o.status === statusFilter
-      const matchSearch = !search ||
-        `${o.customerInfo.firstName} ${o.customerInfo.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-        o.customerInfo.phone.includes(search) ||
-        o.customerInfo.wilaya.toLowerCase().includes(search.toLowerCase())
+      const matchTag    = tagFilter === 'Tous' || (o.tags || []).includes(tagFilter)
+      const matchSearch = !search.trim() ||
+        `${o.customerInfo.firstName} ${o.customerInfo.lastName} ${o.customerInfo.phone} ${o.customerInfo.wilaya}`
+          .toLowerCase().includes(search.toLowerCase())
+      return matchStatus && matchTag && matchSearch
+    })
       return matchStatus && matchSearch
     })
     .sort((a, b) => {
@@ -213,6 +229,28 @@ function AdminOrdersPage() {
           </button>
         ))}
       </div>
+
+      {/* ── Filtre par tag ── */}
+      {allTags.length > 0 && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+          {['Tous', ...allTags].map(tag => (
+            <button
+              key={tag}
+              onClick={() => setTagFilter(tag)}
+              className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold rounded-xl border-2 transition-all flex-shrink-0 whitespace-nowrap"
+              style={{
+                background:  tagFilter === tag ? PURPLE : 'white',
+                borderColor: tagFilter === tag ? PURPLE : '#e5e7eb',
+                color:       tagFilter === tag ? 'white' : NAVY,
+              }}>
+              {tag !== 'Tous' && <Tag size={9} />}
+              {tag === 'Tous' ? 'Tous les tags' : tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Recherche ── */}
       <div className="relative">
@@ -361,6 +399,16 @@ function AdminOrdersPage() {
                             style={{ background: `${cs?.color}15`, color: cs?.color }}>
                             {STATUS_LABELS[order.status] || order.status}
                           </span>
+                          {order.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {order.tags.map(tag => (
+                                <span key={tag} className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                                  style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="px-3 lg:px-4 py-3">
                           <button
