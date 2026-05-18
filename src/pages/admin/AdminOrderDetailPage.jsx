@@ -42,7 +42,11 @@ export default function AdminOrderDetailPage() {
   const [order, setOrder]       = useState(null)
   const [loading, setLoading]   = useState(true)
   const [saving, setSaving]     = useState(false)
-  const [sendingEco, setSendingEco] = useState(false)  // envoi Ecotrack manuel
+  const [sendingEco, setSendingEco] = useState(false)
+  const [tags, setTags]             = useState([])
+  const [allTags, setAllTags]       = useState([])
+  const [newTag, setNewTag]         = useState('')
+  const [savingTags, setSavingTags] = useState(false)
 
   // Edit mode
   const [editClient, setEditClient] = useState(false)
@@ -71,6 +75,9 @@ export default function AdminOrderDetailPage() {
         setOrder(res.data)
         setStatus(res.data.status)
         setItems(res.data.items)
+        setTags(res.data.tags || [])
+        // Charge aussi tous les tags existants pour suggestions
+        api.get('/admin/tags').then(r => setAllTags(r.data || [])).catch(() => {})
         setClientForm({
           firstName: res.data.customerInfo.firstName,
           lastName:  res.data.customerInfo.lastName,
@@ -125,6 +132,30 @@ export default function AdminOrderDetailPage() {
     const feeAmount = fee ? Number(method === 'Stop Desk' ? fee.tarif_stopdesk : fee.tarif) : null
     setClientForm(p => ({ ...p, deliveryMethod: method, deliveryFee: feeAmount }))
     setDirty(true)
+  }
+
+  /* ── Tags helpers ── */
+  const addTag = async (tag) => {
+    const clean = tag.trim().toLowerCase()
+    if (!clean || tags.includes(clean)) return
+    const next = [...tags, clean]
+    setTags(next)
+    setNewTag('')
+    setSavingTags(true)
+    try {
+      await api.patch(`/admin/orders/${id}/tags`, { tags: next })
+      setAllTags(prev => [...new Set([...prev, clean])].sort())
+    } catch { toast.error('Erreur sauvegarde tag') }
+    finally { setSavingTags(false) }
+  }
+
+  const removeTag = async (tag) => {
+    const next = tags.filter(t => t !== tag)
+    setTags(next)
+    setSavingTags(true)
+    try { await api.patch(`/admin/orders/${id}/tags`, { tags: next }) }
+    catch { toast.error('Erreur suppression tag') }
+    finally { setSavingTags(false) }
   }
 
   const handleSave = async () => {
@@ -665,6 +696,69 @@ export default function AdminOrderDetailPage() {
                 </button>
               ))}
             </div>
+          </section>
+
+          {/* Tags */}
+          <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ background: 'rgba(124,58,237,0.08)' }}>
+                <Tag size={14} style={{ color: PURPLE }} />
+              </div>
+              <h2 className="font-black text-sm uppercase tracking-widest" style={{ color: PURPLE }}>Tags</h2>
+              {savingTags && <Loader2 size={12} className="animate-spin ml-auto text-gray-400" />}
+            </div>
+
+            {/* Tags actuels */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {tags.length === 0 && <p className="text-xs text-gray-400 italic">Aucun tag</p>}
+              {tags.map(tag => (
+                <span key={tag}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+                  style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+                  #{tag}
+                  <button onClick={() => removeTag(tag)}
+                    className="hover:text-red-500 transition-colors ml-0.5">✕</button>
+                </span>
+              ))}
+            </div>
+
+            {/* Ajouter un tag */}
+            <div className="flex gap-2">
+              <input
+                value={newTag}
+                onChange={e => setNewTag(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(newTag) } }}
+                placeholder="Nouveau tag..."
+                list="tag-suggestions"
+                className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm font-medium
+                           outline-none focus:border-purple-400 transition-colors"
+              />
+              <datalist id="tag-suggestions">
+                {allTags.filter(t => !tags.includes(t)).map(t => <option key={t} value={t} />)}
+              </datalist>
+              <button
+                onClick={() => addTag(newTag)}
+                disabled={!newTag.trim()}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-40"
+                style={{ background: PURPLE }}>
+                + Ajouter
+              </button>
+            </div>
+
+            {/* Suggestions tags existants */}
+            {allTags.filter(t => !tags.includes(t)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest w-full mb-0.5">Tags existants :</span>
+                {allTags.filter(t => !tags.includes(t)).map(t => (
+                  <button key={t} onClick={() => addTag(t)}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all hover:opacity-80"
+                    style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE, background: 'white' }}>
+                    + #{t}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Ecotrack */}
