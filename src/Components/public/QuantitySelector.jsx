@@ -63,7 +63,7 @@ export default function QuantitySelector({ value, onChange, baseUnitPrice = 0, s
           style={{ background: 'white', border: '2px solid rgba(124,58,237,0.2)', boxShadow: '0 8px 32px rgba(124,58,237,0.15)', minWidth: 240 }}>
 
           {hasTiers && (
-            <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border-b"
+            <div className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest border-b"
               style={{ color: PURPLE, borderColor: 'rgba(124,58,237,0.1)', background: 'rgba(124,58,237,0.03)' }}>
               {lang === 'ar' ? 'كلما اشتريت أكثر، كلما كان السعر أقل' : 'Plus vous commandez, moins c\'est cher'}
             </div>
