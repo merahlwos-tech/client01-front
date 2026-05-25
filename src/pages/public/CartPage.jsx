@@ -7,7 +7,7 @@ import CheckoutForm from '../../Components/public/CheckoutForm'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
-import { trackInitiateCheckout, trackPurchase, trackAddPaymentInfo } from '../../utils/metaPixel'
+import { trackInitiateCheckout, trackPurchase, trackAddPaymentInfo, getMetaCookies } from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
 
 const NAVY   = '#1e1b4b'
@@ -113,6 +113,7 @@ function CartPage() {
     setSubmitting(true)
     trackAddPaymentInfo(items, totalWithDelivery)
     const metaEventId = trackPurchase(items, totalWithDelivery)
+    const { fbp, fbc } = getMetaCookies()
     try {
       await api.post('/orders', {
         customerInfo,
@@ -128,6 +129,8 @@ function CartPage() {
         })),
         total: totalWithDelivery,
         metaEventId,
+        ...(fbp && { metaFbp: fbp }),
+        ...(fbc && { metaFbc: fbc }),
       })
       clearCart()
       navigate('/confirmation', { replace: true })
