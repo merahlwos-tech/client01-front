@@ -202,14 +202,11 @@ function ProductDetailPage() {
   const sizeObj       = product.sizes?.find(s => s.size === selectedSize)
   const sizeBasePrice = sizeObj?.price ?? 0
   const priceTiers    = sizeObj?.priceTiers ?? []
-  // Le prix de la taille peut varier selon la quantité (paliers)
-  const basePrice     = getPriceForQty(quantity, sizeBasePrice, sizeBasePrice, priceTiers)
+  const tierPrice     = getPriceForQty(quantity, sizeBasePrice, sizeBasePrice, priceTiers)
   const extraDouble   = (doubleSided && product.doubleSided) ? (product.doubleSidedPrice ?? 0) : 0
   const nbColors      = numberOfColors !== '' ? Math.max(1, Number(numberOfColors)) : 1
-  // La 1ère couleur est incluse dans le prix de base → on facture uniquement les couleurs supplémentaires
   const extraColors   = (product.colorDesignEnabled && nbColors > 1) ? (nbColors - 1) * (product.colorDesignPricePerColor ?? 0) : 0
-  const extraPrice    = extraDouble + extraColors
-  const unitPrice     = basePrice + extraPrice
+  const unitPrice     = tierPrice + extraDouble + extraColors
   const totalPrice    = unitPrice * quantity
   const images        = product.images?.length > 0 ? product.images : ['/placeholder.jpg']
 
@@ -401,7 +398,7 @@ function ProductDetailPage() {
                 <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>
                   {t('quantity')}
                 </p>
-                <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={unitPrice} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
+                <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={sizeBasePrice + extraDouble + extraColors} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
               </div>
 
               {/* Total */}
@@ -571,7 +568,7 @@ function ProductDetailPage() {
           {/* Quantité */}
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: NAVY }}>{t('quantity')}</p>
-            <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={unitPrice} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
+            <QuantitySelector value={quantity} onChange={setQuantity} baseUnitPrice={sizeBasePrice + extraDouble + extraColors} sizePrice={sizeBasePrice} priceTiers={priceTiers} />
           </div>
 
           {/* Total */}
