@@ -4,7 +4,7 @@ import { useLang } from '../../context/LanguageContext'
 const PURPLE       = '#7c3aed'
 const PURPLE_XSOFT = 'rgba(124,58,237,0.25)'
 const GAP          = 16
-const AUTOPLAY_MS  = 3000   // intervalle autoplay
+const AUTOPLAY_MS  = 4500   // intervalle autoplay
 const PAUSE_MS     = 4000   // pause après interaction manuelle
 
 function useVisibleCount() {
