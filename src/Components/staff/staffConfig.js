@@ -1,6 +1,17 @@
 // src/Components/staff/staffConfig.js
 // Configuration partagée de la plateforme interne : rôles, étapes, permissions.
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⚠️  ACCÈS LIBRE À L'ATELIER — SÉCURITÉ DÉSACTIVÉE
+   ───────────────────────────────────────────────────────────────────────────
+   Quand OPEN_ACCESS vaut true, /staff est accessible SANS connexion et tous
+   les panels sont visibles par n'importe qui.
+
+   👉 POUR RÉACTIVER LA SÉCURITÉ : mettre `false` ci-dessous
+      ET côté back : STAFF_OPEN_ACCESS=false (voir back/middleware/auth.js)
+   ═══════════════════════════════════════════════════════════════════════════ */
+export const OPEN_ACCESS = true
+
 export const NAVY   = '#1e1b4b'
 export const PURPLE = '#7c3aed'
 

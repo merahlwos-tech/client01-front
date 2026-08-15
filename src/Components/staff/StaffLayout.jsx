@@ -6,7 +6,7 @@ import {
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { NAVY, PURPLE, ROLE_LABELS, isSuperadmin } from './staffConfig'
+import { NAVY, PURPLE, ROLE_LABELS, isSuperadmin, OPEN_ACCESS } from './staffConfig'
 
 // Chaque lien déclare les rôles qui le voient. Le superadmin voit tout.
 const NAV_ITEMS = [
@@ -66,8 +66,13 @@ function SidebarContent({ role, username, onClose, onLogout }) {
         ))}
       </nav>
 
-      {/* Déconnexion */}
+      {/* Déconnexion — masquée en accès libre (aucune session à fermer) */}
       <div className="px-3 py-4" style={{ borderTop: '1px solid rgba(124,58,237,0.15)' }}>
+        {OPEN_ACCESS ? (
+          <p className="px-4 text-[11px] leading-relaxed" style={{ color: 'rgba(251,191,36,0.75)' }}>
+            ⚠️ Accès libre activé — aucune connexion requise.
+          </p>
+        ) : (
         <button
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all"
@@ -76,6 +81,7 @@ function SidebarContent({ role, username, onClose, onLogout }) {
           onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.background = 'transparent' }}>
           <LogOut size={16} /> Déconnexion
         </button>
+        )}
       </div>
     </div>
   )

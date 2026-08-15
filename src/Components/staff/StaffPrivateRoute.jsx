@@ -1,7 +1,7 @@
 // src/Components/staff/StaffPrivateRoute.jsx
 import { Navigate, useLocation } from 'react-router-dom'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { isSuperadmin } from './staffConfig'
+import { isSuperadmin, OPEN_ACCESS } from './staffConfig'
 import { NAVY } from './staffConfig'
 
 function Spinner() {
@@ -17,6 +17,7 @@ export function StaffPrivateRoute({ children }) {
   const { isAuthenticated, loading } = useStaffAuth()
   const location = useLocation()
 
+  if (OPEN_ACCESS) return children   // accès libre : pas de connexion requise
   if (loading) return <Spinner />
   if (!isAuthenticated) {
     return <Navigate to="/staff/login" state={{ from: location }} replace />
@@ -28,6 +29,7 @@ export function StaffPrivateRoute({ children }) {
 // Le superadmin (et le compte .env) passe toujours.
 export function RoleRoute({ allow = [], children }) {
   const { role, loading } = useStaffAuth()
+  if (OPEN_ACCESS) return children   // accès libre : tous les panels visibles
   if (loading) return <Spinner />
   if (isSuperadmin(role) || allow.includes(role)) return children
   return <Navigate to="/staff" replace />

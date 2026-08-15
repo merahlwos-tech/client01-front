@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { NAVY, PURPLE } from '../../Components/staff/staffConfig'
+import { NAVY, PURPLE, OPEN_ACCESS } from '../../Components/staff/staffConfig'
 
 function StaffLoginPage() {
   const { login } = useStaffAuth()
@@ -14,6 +14,10 @@ function StaffLoginPage() {
   const [form, setForm]         = useState({ username: '', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
+
+  // Accès libre : la page de connexion n'a plus lieu d'être
+  // (placé après les hooks pour respecter les règles de React)
+  if (OPEN_ACCESS) return <Navigate to="/staff" replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
