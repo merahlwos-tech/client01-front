@@ -1,14 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useEffect, lazy, Suspense } from 'react'
 import { CartProvider }     from './context/CartContext'
 import { AuthProvider }     from './context/AuthContext'
+import { StaffAuthProvider } from './context/StaffAuthContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { trackPageView }    from './utils/metaPixel'
 import Navbar        from './Components/ui/Navbar'
 import Footer        from './Components/ui/Footer'
 import PrivateRoute  from './Components/ui/PrivateRoute'
 import AdminLayout   from './Components/admin/AdminLayout'
+import { StaffPrivateRoute, RoleRoute } from './Components/staff/StaffPrivateRoute'
 
 // ── Lazy loading de toutes les pages ──────────────────────────────────────
 // Chaque page devient un chunk séparé chargé uniquement quand on y navigue.
@@ -25,6 +27,18 @@ const AdminDashboardPage= lazy(() => import('./pages/admin/AdminDashboardPage'))
 const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage'))
 const AdminOrdersPage   = lazy(() => import('./pages/admin/AdminOrdersPage'))
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage'))
+
+// ── Plateforme interne (atelier) — chunks séparés, chargés à la demande ──────
+const StaffLoginPage    = lazy(() => import('./pages/staff/StaffLoginPage'))
+const StaffLayout       = lazy(() => import('./Components/staff/StaffLayout'))
+const StaffHomePage     = lazy(() => import('./pages/staff/StaffHomePage'))
+const ConfirmatricePage = lazy(() => import('./pages/staff/ConfirmatricePage'))
+const DesignerPage      = lazy(() => import('./pages/staff/DesignerPage'))
+const ProductionPage    = lazy(() => import('./pages/staff/ProductionPage'))
+const EmballagePage     = lazy(() => import('./pages/staff/EmballagePage'))
+const LivraisonPage     = lazy(() => import('./pages/staff/LivraisonPage'))
+const StockPage         = lazy(() => import('./pages/staff/StockPage'))
+const UsersPage         = lazy(() => import('./pages/staff/UsersPage'))
 
 // ── Spinner minimal pendant le chargement d'un chunk ─────────────────────
 function PageLoader() {
@@ -113,6 +127,22 @@ function App() {
                   <Route path="orders"      element={<AdminOrdersPage />} />
                   <Route path="orders/:id"  element={<AdminOrderDetailPage />} />
                 </Route>
+
+                {/* ── Plateforme interne (atelier) — auth & rôles séparés ── */}
+                <Route path="/staff" element={<StaffAuthProvider><Outlet /></StaffAuthProvider>}>
+                  <Route path="login" element={<StaffLoginPage />} />
+                  <Route element={<StaffPrivateRoute><StaffLayout /></StaffPrivateRoute>}>
+                    <Route index               element={<StaffHomePage />} />
+                    <Route path="confirmation" element={<RoleRoute allow={['confirmatrice', 'chef_production']}><ConfirmatricePage /></RoleRoute>} />
+                    <Route path="design"       element={<RoleRoute allow={['designer', 'chef_production']}><DesignerPage /></RoleRoute>} />
+                    <Route path="production"   element={<RoleRoute allow={['production', 'chef_production']}><ProductionPage /></RoleRoute>} />
+                    <Route path="emballage"    element={<RoleRoute allow={['emballage', 'chef_production']}><EmballagePage /></RoleRoute>} />
+                    <Route path="livraison"    element={<RoleRoute allow={['chef_production']}><LivraisonPage /></RoleRoute>} />
+                    <Route path="stock"        element={<RoleRoute allow={['production', 'chef_production']}><StockPage /></RoleRoute>} />
+                    <Route path="users"        element={<RoleRoute allow={[]}><UsersPage /></RoleRoute>} />
+                  </Route>
+                </Route>
+
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
