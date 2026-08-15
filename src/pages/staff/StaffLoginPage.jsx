@@ -35,8 +35,10 @@ function StaffLoginPage() {
      text-white placeholder-white/20 border-white/10
      focus:border-purple-500 focus:bg-white/8 ${extra}`
 
+  /* L'atelier est toujours en français/LTR, même si le site public est en arabe
+     (la page de login est hors du StaffLayout, elle hérite sinon du dir=rtl) */
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
+    <div dir="ltr" className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
       style={{ background: NAVY }}>
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20"
