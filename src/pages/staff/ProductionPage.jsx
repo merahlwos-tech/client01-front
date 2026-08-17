@@ -6,7 +6,7 @@ import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import { canAct, PURPLE, NAVY } from '../../Components/staff/staffConfig'
 
-function ProductionActions({ order, materials, onDone }) {
+function ProductionActions({ order, removeOne, materials, onStockChanged }) {
   const [rows, setRows]   = useState([{ material: '', quantity: '' }])
   const [notes, setNotes] = useState('')
   const [sending, setSending] = useState(false)
@@ -31,7 +31,8 @@ function ProductionActions({ order, materials, onDone }) {
         materialsUsed: validRows, notes,
       })
       toast.success('Fabrication terminée → emballage')
-      onDone()
+      removeOne(order._id)
+      onStockChanged?.()          // rafraîchit le stock après consommation
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
     } finally {
@@ -117,13 +118,8 @@ function ProductionPage() {
       emptyText="Aucune commande en production."
       summaryOpts={{ showDesign: true, showHistory: true }}
       readOnly={readOnly}
-      renderActions={(order, { removeOne }) => (
-        <ProductionActions
-          order={order}
-          materials={materials}
-          onDone={() => { removeOne(order._id); fetchMaterials() }}
-        />
-      )}
+      actions={ProductionActions}
+      actionProps={{ materials, onStockChanged: fetchMaterials }}
     />
   )
 }

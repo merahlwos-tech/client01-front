@@ -9,7 +9,7 @@ import { canAct, PURPLE } from '../../Components/staff/staffConfig'
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
-function DesignActions(order, { removeOne }) {
+function DesignActions({ order, removeOne }) {
   const [files, setFiles]         = useState([])   // URLs uploadées
   const [notes, setNotes]         = useState('')
   const [uploading, setUploading] = useState(false)
@@ -107,7 +107,7 @@ function DesignerPage() {
       emptyText="Aucune commande en attente de design."
       summaryOpts={{ showHistory: true }}
       readOnly={!canAct(role, 'design')}
-      renderActions={DesignActions}
+      actions={DesignActions}
     />
   )
 }

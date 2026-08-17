@@ -6,7 +6,7 @@ import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import { canAct } from '../../Components/staff/staffConfig'
 
-function LivraisonActions(order, { removeOne }) {
+function LivraisonActions({ order, removeOne }) {
   const [busy, setBusy] = useState(null) // 'send' | 'manual'
 
   const deliver = async (mode) => {
@@ -57,7 +57,7 @@ function LivraisonPage() {
       emptyText="Aucune commande prête à expédier."
       summaryOpts={{ showDesign: true, showMaterials: true, showHistory: true }}
       readOnly={!canAct(role, 'livraison')}
-      renderActions={LivraisonActions}
+      actions={LivraisonActions}
     />
   )
 }

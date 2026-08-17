@@ -6,7 +6,7 @@ import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import { canAct } from '../../Components/staff/staffConfig'
 
-function EmballageActions(order, { removeOne }) {
+function EmballageActions({ order, removeOne }) {
   const [notes, setNotes]     = useState('')
   const [sending, setSending] = useState(false)
 
@@ -48,7 +48,7 @@ function EmballagePage() {
       emptyText="Aucune commande à emballer."
       summaryOpts={{ showDesign: true, showMaterials: true, showHistory: true }}
       readOnly={!canAct(role, 'emballage')}
-      renderActions={EmballageActions}
+      actions={EmballageActions}
     />
   )
 }

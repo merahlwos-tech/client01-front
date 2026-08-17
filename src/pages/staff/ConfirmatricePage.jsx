@@ -6,7 +6,7 @@ import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import { canAct } from '../../Components/staff/staffConfig'
 
-function ConfirmActions(order, { removeOne }) {
+function ConfirmActions({ order, removeOne }) {
   const [busy, setBusy] = useState(null) // 'confirm' | 'cancel'
 
   const act = async (type) => {
@@ -50,7 +50,7 @@ function ConfirmatricePage() {
       emptyText="Aucune nouvelle commande à confirmer."
       summaryOpts={{ showHistory: true }}
       readOnly={!canAct(role, 'confirmation')}
-      renderActions={ConfirmActions}
+      actions={ConfirmActions}
     />
   )
 }

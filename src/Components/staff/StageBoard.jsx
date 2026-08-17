@@ -26,7 +26,7 @@ export function PageHeader({ eyebrow, title, count }) {
 
 function StageBoard({
   stage, eyebrow, title, emptyText = 'Aucune commande à cette étape.',
-  summaryOpts = {}, renderActions, readOnly = false,
+  summaryOpts = {}, actions: Actions, actionProps = {}, readOnly = false,
 }) {
   const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -74,9 +74,12 @@ function StageBoard({
           {orders.map(order => (
             <div key={order._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <OrderSummary order={order} {...summaryOpts} />
-              {!readOnly && renderActions && (
+              {/* Rendu comme COMPOSANT (<Actions />) et non appelé comme une
+                  fonction : les actions utilisent des hooks, les appeler dans
+                  ce .map() violerait les règles des hooks (React #310). */}
+              {!readOnly && Actions && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  {renderActions(order, { refresh, removeOne })}
+                  <Actions order={order} refresh={refresh} removeOne={removeOne} {...actionProps} />
                 </div>
               )}
             </div>

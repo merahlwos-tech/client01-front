@@ -61,8 +61,10 @@ const WA_NUMBER = '213554767444'
 
 function WhatsAppButton() {
   const location = useLocation()
-  const isAdmin  = location.pathname.startsWith('/admin')
-  if (isAdmin) return null
+  // Masqué dans les espaces internes (admin e-commerce + atelier)
+  const isInternal = location.pathname.startsWith('/admin') ||
+                     location.pathname.startsWith('/staff')
+  if (isInternal) return null
   return (
     <a
       href={`https://wa.me/${WA_NUMBER}`}
