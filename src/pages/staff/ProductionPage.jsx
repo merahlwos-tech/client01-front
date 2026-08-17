@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen } from 'lucide-react'
+import {
+  Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
+  CalendarCheck, History,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { canAct, PURPLE, NAVY } from '../../Components/staff/staffConfig'
+import {
+  canAct, PURPLE, NAVY, todayStr, formatDayLabel,
+} from '../../Components/staff/staffConfig'
 
 function ProductionActions({ order, removeOne, materials, onStockChanged }) {
   const [rows, setRows]   = useState([{ material: '', quantity: '' }])
@@ -100,6 +105,11 @@ function ProductionPage() {
   const { role } = useStaffAuth()
   const readOnly = !canAct(role, 'production')
   const [materials, setMaterials] = useState([])
+  const [view, setView]     = useState('today')   // today | late
+  const [counts, setCounts] = useState(null)
+
+  // Date locale de l'atelier (recalculée à chaque rendu de la page)
+  const today = todayStr()
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -110,16 +120,54 @@ function ProductionPage() {
 
   useEffect(() => { fetchMaterials() }, [fetchMaterials])
 
+  /* Compteurs du jour / en retard */
+  const refreshCounts = useCallback(() => {
+    staffApi.get('/workflow/orders/counters', { params: { date: today } })
+      .then(r => setCounts(r.data))
+      .catch(() => {})
+  }, [today])
+
+  useEffect(() => { refreshCounts() }, [refreshCounts])
+
+  const isLate = view === 'late'
+
+  /* La production ne voit que les commandes planifiées pour aujourd'hui.
+     Un second onglet rattrape celles dont le jour est passé, pour qu'aucune
+     commande ne reste invisible. */
+  const tabs = (
+    <div className="flex flex-wrap gap-2 items-center">
+      <button onClick={() => setView('today')}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+        style={{ background: !isLate ? PURPLE : '#f3f4f6', color: !isLate ? 'white' : '#6b7280' }}>
+        <CalendarCheck size={15} />
+        Aujourd'hui{counts?.duJour != null ? ` (${counts.duJour})` : ''}
+      </button>
+      {(counts?.enRetard ?? 0) > 0 && (
+        <button onClick={() => setView('late')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+          style={{ background: isLate ? '#ef4444' : '#fef2f2', color: isLate ? 'white' : '#ef4444' }}>
+          <History size={15} /> En retard ({counts.enRetard})
+        </button>
+      )}
+      <span className="text-xs text-gray-400 ml-1">{formatDayLabel(today)}</span>
+    </div>
+  )
+
   return (
     <StageBoard
+      key={view}
       stage="production"
       eyebrow="Service production"
-      title="Commandes à fabriquer"
-      emptyText="Aucune commande en production."
+      title={isLate ? 'Commandes en retard' : 'À fabriquer aujourd\'hui'}
+      emptyText={isLate
+        ? 'Aucune commande en retard.'
+        : 'Aucune commande à fabriquer aujourd\'hui.'}
       summaryOpts={{ showDesign: true, showHistory: true }}
       readOnly={readOnly}
       actions={ProductionActions}
-      actionProps={{ materials, onStockChanged: fetchMaterials }}
+      actionProps={{ materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
+      extraParams={isLate ? { overdueBefore: today } : { date: today }}
+      headerExtra={tabs}
     />
   )
 }

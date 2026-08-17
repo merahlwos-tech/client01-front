@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
-  Package, History, ChevronDown, Palette, Timer, Clock,
+  Package, History, ChevronDown, Palette, Timer, Clock, CalendarDays,
 } from 'lucide-react'
 import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS,
-  getCountdown, shortRef,
+  getCountdown, formatDayLabel, shortRef,
 } from './staffConfig'
 
 /* Compte à rebours de l'atelier — se met à jour tout seul chaque minute */
@@ -100,6 +100,20 @@ function OrderSummary({ order, showDesign = false, showMaterials = false, showHi
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: designerCfg.bg, color: designerCfg.color }}>
               {designerCfg.label}
+            </span>
+          )}
+          {/* Design validé par le designer */}
+          {order.pipeline?.designValidated && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: '#ecfdf5', color: '#10b981' }}>
+              Validé
+            </span>
+          )}
+          {/* Jour de fabrication planifié */}
+          {order.pipeline?.productionDate && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: '#eff6ff', color: '#2563eb' }}>
+              <CalendarDays size={11} /> {formatDayLabel(order.pipeline.productionDate)}
             </span>
           )}
           {/* Compte à rebours démarré à la confirmation */}

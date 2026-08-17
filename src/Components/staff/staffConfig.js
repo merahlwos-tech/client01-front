@@ -86,6 +86,47 @@ export function getCountdown(deadlineAt) {
   return { days, hours, expired, label, color, bg }
 }
 
+/* ── Planification de la fabrication ────────────────────────────────────────
+   Les dates sont manipulées en LOCAL (fuseau de l'atelier) et transmises au
+   serveur sous forme « YYYY-MM-DD », ce qui évite tout décalage de jour.   */
+
+// 0 = dimanche … 6 = samedi (convention JS getDay)
+export const WEEKDAYS = [
+  { day: 0, label: 'Dimanche', short: 'Dim' },
+  { day: 1, label: 'Lundi',    short: 'Lun' },
+  { day: 2, label: 'Mardi',    short: 'Mar' },
+  { day: 3, label: 'Mercredi', short: 'Mer' },
+  { day: 4, label: 'Jeudi',    short: 'Jeu' },
+  { day: 5, label: 'Vendredi', short: 'Ven' },
+  { day: 6, label: 'Samedi',   short: 'Sam' },
+]
+
+// Date locale au format YYYY-MM-DD (sans passer par UTC)
+export function toDateStr(d) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+export const todayStr = () => toDateStr(new Date())
+
+// Prochaine occurrence d'un jour de la semaine (aujourd'hui compte)
+export function nextDateForWeekday(weekday) {
+  const now = new Date()
+  const diff = (weekday - now.getDay() + 7) % 7
+  const target = new Date(now)
+  target.setDate(now.getDate() + diff)
+  return toDateStr(target)
+}
+
+// « Lundi 24 août » — libellé lisible d'une date YYYY-MM-DD
+export function formatDayLabel(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const label = WEEKDAYS[date.getDay()]?.label || ''
+  return `${label} ${d}/${String(m).padStart(2, '0')}`
+}
+
 // Qui AGIT sur chaque étape
 export const STAGE_ACTOR = {
   confirmation: 'confirmatrice',
