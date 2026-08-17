@@ -14,7 +14,7 @@ function EmballageActions({ order, removeOne }) {
     setSending(true)
     try {
       await staffApi.post(`/workflow/orders/${order._id}/package`, { notes })
-      toast.success('Emballage terminé → livraison')
+      toast.success('Emballage terminé — commande clôturée')
       removeOne(order._id)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')

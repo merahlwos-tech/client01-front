@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  CheckCircle2, Palette, Hammer, Package, Truck, CheckCheck, XCircle, Loader2, ArrowRight,
+  CheckCircle2, Palette, Hammer, Package, CheckCheck, XCircle, Loader2, ArrowRight,
 } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import { useStaffAuth } from '../../context/StaffAuthContext'
@@ -12,7 +12,6 @@ const STAGE_META = [
   { key: 'design',       to: '/staff/design',       icon: Palette },
   { key: 'production',   to: '/staff/production',    icon: Hammer },
   { key: 'emballage',    to: '/staff/emballage',     icon: Package },
-  { key: 'livraison',    to: '/staff/livraison',     icon: Truck },
   { key: 'termine',      to: null,                   icon: CheckCheck },
   { key: 'annulee',      to: null,                   icon: XCircle },
 ]

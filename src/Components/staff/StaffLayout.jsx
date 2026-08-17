@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, CheckCircle2, Palette, Hammer, Package,
-  Truck, Boxes, Users, LogOut, Menu, X, ChevronRight,
+  Boxes, Users, LogOut, Menu, X, ChevronRight,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -15,7 +15,6 @@ const NAV_ITEMS = [
   { to: '/staff/design',       label: 'Design',       icon: Palette,      roles: ['designer', 'chef_production'] },
   { to: '/staff/production',   label: 'Production',   icon: Hammer,       roles: ['production', 'chef_production'] },
   { to: '/staff/emballage',    label: 'Emballage',    icon: Package,      roles: ['emballage', 'chef_production'] },
-  { to: '/staff/livraison',    label: 'Livraison',    icon: Truck,        roles: ['chef_production'] },
   { to: '/staff/stock',        label: 'Stock',        icon: Boxes,        roles: ['production', 'chef_production'] },
   { to: '/staff/users',        label: 'Comptes',      icon: Users,        roles: [] }, // superadmin only
 ]
