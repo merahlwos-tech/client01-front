@@ -1,11 +1,35 @@
 // src/Components/staff/OrderSummary.jsx
 // Bloc de détail d'une commande, réutilisé par tous les panels de l'atelier.
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
-  Package, History, ChevronDown, Palette,
+  Package, History, ChevronDown, Palette, Timer, Clock,
 } from 'lucide-react'
-import { NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, shortRef } from './staffConfig'
+import {
+  NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS,
+  getCountdown, shortRef,
+} from './staffConfig'
+
+/* Compte à rebours de l'atelier — se met à jour tout seul chaque minute */
+function Countdown({ deadlineAt }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick(t => t + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
+
+  const cd = getCountdown(deadlineAt)
+  if (!cd) return null
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full"
+      style={{ background: cd.bg, color: cd.color }}
+      title={`Échéance : ${new Date(deadlineAt).toLocaleString('fr-DZ')}`}>
+      {cd.expired ? <Clock size={11} /> : <Timer size={11} />}
+      {cd.label}
+    </span>
+  )
+}
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
@@ -41,8 +65,9 @@ function OrderSummary({ order, showDesign = false, showMaterials = false, showHi
   const [openHistory, setOpenHistory] = useState(false)
   const c = order.customerInfo || {}
   const stage      = STAGES[order.pipeline?.stage] || {}
-  const urgencyCfg = URGENCY[order.pipeline?.urgency]
-  const statusCfg  = ORDER_STATUS[order.status]
+  const urgencyCfg  = URGENCY[order.pipeline?.urgency]
+  const statusCfg   = ORDER_STATUS[order.status]
+  const designerCfg = DESIGNER_TAGS[order.pipeline?.designerTag]
   const logos = c.logoUrls || []
   const design = order.pipeline?.design
   const materials = order.pipeline?.materialsUsed || []
@@ -70,6 +95,15 @@ function OrderSummary({ order, showDesign = false, showMaterials = false, showHi
               {statusCfg.label}
             </span>
           )}
+          {/* Étiquette du designer (ex. client lent à répondre) */}
+          {designerCfg && order.pipeline?.designerTag !== 'aucun' && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: designerCfg.bg, color: designerCfg.color }}>
+              {designerCfg.label}
+            </span>
+          )}
+          {/* Compte à rebours démarré à la confirmation */}
+          <Countdown deadlineAt={order.pipeline?.deadlineAt} />
         </div>
         <div className="text-right">
           <p className="font-black text-sm" style={{ color: PURPLE }}>
@@ -124,16 +158,25 @@ function OrderSummary({ order, showDesign = false, showMaterials = false, showHi
         </div>
       )}
 
-      {/* Design du designer */}
-      {showDesign && design?.files?.length > 0 && (
+      {/* Passage du designer (le designer n'envoie pas de fichier :
+          on affiche sa note et la date, plus d'éventuels fichiers hérités) */}
+      {showDesign && (design?.submittedAt || design?.files?.length > 0 || design?.notes) && (
         <div>
           <p className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: PURPLE }}>
-            <Palette size={13} /> Design finalisé
+            <Palette size={13} /> Design terminé
+            {design.submittedAt && (
+              <span className="font-medium normal-case tracking-normal text-gray-400">
+                — {new Date(design.submittedAt).toLocaleDateString('fr-DZ', { day: '2-digit', month: 'short' })}
+                {design.by ? ` par ${design.by}` : ''}
+              </span>
+            )}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {design.files.map((url, i) => <FileThumb key={i} url={url} />)}
-          </div>
-          {design.notes && <p className="text-xs text-gray-500 mt-2 italic">« {design.notes} »</p>}
+          {design.files?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {design.files.map((url, i) => <FileThumb key={i} url={url} />)}
+            </div>
+          )}
+          {design.notes && <p className="text-xs text-gray-500 mt-1 italic">« {design.notes} »</p>}
         </div>
       )}
 

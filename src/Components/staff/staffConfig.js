@@ -53,6 +53,39 @@ export const URGENCY = {
 }
 export const URGENCY_KEYS = Object.keys(URGENCY)
 
+// Étiquette posée par le designer
+export const DESIGNER_TAGS = {
+  aucun:           { label: 'Aucune',         color: '#6b7280', bg: '#f3f4f6' },
+  reponses_lentes: { label: 'Réponses lentes', color: '#0ea5e9', bg: '#f0f9ff' },
+}
+export const DESIGNER_TAG_KEYS = Object.keys(DESIGNER_TAGS)
+
+// Délai accordé à l'atelier après confirmation (doit rester aligné
+// avec DEADLINE_DAYS côté back)
+export const DEADLINE_DAYS = 6
+
+/* Reste à courir avant l'échéance.
+   → { days, hours, expired, label, color, bg } ou null si pas de compte à rebours */
+export function getCountdown(deadlineAt) {
+  if (!deadlineAt) return null
+  const ms = new Date(deadlineAt).getTime() - Date.now()
+  const expired = ms <= 0
+  const abs   = Math.abs(ms)
+  const days  = Math.floor(abs / 86400000)
+  const hours = Math.floor((abs % 86400000) / 3600000)
+
+  let color = '#10b981', bg = '#ecfdf5'          // large
+  if (expired)        { color = '#ef4444'; bg = '#fef2f2' }
+  else if (days < 1)  { color = '#ef4444'; bg = '#fef2f2' }  // moins d'un jour
+  else if (days < 3)  { color = '#f59e0b'; bg = '#fffbeb' }  // ça se resserre
+
+  const label = expired
+    ? (days > 0 ? `Retard ${days}j` : `Retard ${hours}h`)
+    : (days > 0 ? `${days}j ${hours}h` : `${hours}h`)
+
+  return { days, hours, expired, label, color, bg }
+}
+
 // Qui AGIT sur chaque étape
 export const STAGE_ACTOR = {
   confirmation: 'confirmatrice',

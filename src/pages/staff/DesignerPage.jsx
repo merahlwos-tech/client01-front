@@ -1,45 +1,71 @@
-import { useState, useRef } from 'react'
-import { Upload, Loader2, Send, X, FileText } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Loader2, Send, Clock3, Timer, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import { uploadMultipleToCloudinary } from '../../utils/uploadCloudinary'
 import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { canAct, PURPLE } from '../../Components/staff/staffConfig'
+import {
+  canAct, PURPLE, NAVY, URGENCY, DESIGNER_TAGS, getCountdown,
+} from '../../Components/staff/staffConfig'
 
-const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
+/* Rappel du délai restant, mis en avant en haut de la carte */
+function DeadlineBanner({ deadlineAt }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick(t => t + 1), 60000)
+    return () => clearInterval(id)
+  }, [])
 
-function DesignActions({ order, removeOne }) {
-  const [files, setFiles]         = useState([])   // URLs uploadées
-  const [notes, setNotes]         = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [sending, setSending]     = useState(false)
-  const inputRef = useRef(null)
+  const cd = getCountdown(deadlineAt)
+  if (!cd) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+        style={{ background: '#f3f4f6', color: '#6b7280' }}>
+        <Clock3 size={14} /> Pas encore confirmée — compte à rebours non démarré
+      </div>
+    )
+  }
 
-  const handleUpload = async (e) => {
-    const selected = Array.from(e.target.files || [])
-    if (selected.length === 0) return
-    setUploading(true)
+  return (
+    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-black"
+      style={{ background: cd.bg, color: cd.color }}>
+      {cd.expired ? <AlertTriangle size={16} /> : <Timer size={16} />}
+      {cd.expired
+        ? <span>Délai dépassé de {cd.label.replace('Retard ', '')}</span>
+        : <span>Temps restant : {cd.label}</span>}
+    </div>
+  )
+}
+
+function DesignActions({ order, removeOne, updateOne }) {
+  const [notes, setNotes]   = useState('')
+  const [sending, setSending] = useState(false)
+  const [tagging, setTagging] = useState(false)
+
+  const tag = order.pipeline?.designerTag || 'aucun'
+  const isSlow = tag === 'reponses_lentes'
+
+  /* Étiquette « réponses lentes » — bascule on/off */
+  const toggleTag = async () => {
+    setTagging(true)
+    const next = isSlow ? 'aucun' : 'reponses_lentes'
     try {
-      const urls = await uploadMultipleToCloudinary(selected)
-      setFiles(prev => [...prev, ...urls])
-      toast.success(`${urls.length} fichier(s) ajouté(s)`)
+      const res = await staffApi.patch(`/workflow/orders/${order._id}/designer-tag`, { designerTag: next })
+      toast.success(next === 'aucun' ? 'Étiquette retirée' : 'Client signalé « réponses lentes »')
+      updateOne?.(res.data)
     } catch (err) {
-      toast.error(err.message || 'Erreur upload')
+      toast.error(err.response?.data?.message || 'Erreur')
     } finally {
-      setUploading(false)
-      if (inputRef.current) inputRef.current.value = ''
+      setTagging(false)
     }
   }
 
-  const removeFile = (url) => setFiles(prev => prev.filter(f => f !== url))
-
+  /* Travail terminé → production (aucun fichier n'est envoyé) */
   const submit = async () => {
-    if (files.length === 0) return toast.error('Ajoutez au moins un fichier de design')
     setSending(true)
     try {
-      await staffApi.post(`/workflow/orders/${order._id}/design`, { files, notes })
-      toast.success('Design envoyé en production')
+      await staffApi.post(`/workflow/orders/${order._id}/design`, { notes })
+      toast.success('Commande envoyée en production')
       removeOne(order._id)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
@@ -48,50 +74,39 @@ function DesignActions({ order, removeOne }) {
     }
   }
 
+  const slowCfg = DESIGNER_TAGS.reponses_lentes
+
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PURPLE }}>Mon design</p>
+      <DeadlineBanner deadlineAt={order.pipeline?.deadlineAt} />
 
-      {/* Fichiers uploadés */}
-      {files.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {files.map((url, i) => (
-            <div key={i} className="relative">
-              {isPdf(url) ? (
-                <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2 text-[10px] font-bold"
-                  style={{ borderColor: 'rgba(124,58,237,0.25)', background: '#faf9ff', color: PURPLE }}>
-                  <FileText size={18} /> PDF
-                </div>
-              ) : (
-                <img src={url} alt="design" className="w-16 h-16 rounded-xl object-cover border-2" style={{ borderColor: 'rgba(124,58,237,0.25)' }} />
-              )}
-              <button onClick={() => removeFile(url)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" style={{ background: '#ef4444' }}>
-                <X size={11} color="white" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Étiquette designer */}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+          Mon étiquette
+        </p>
+        <button onClick={toggleTag} disabled={tagging}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50"
+          style={{
+            borderColor: isSlow ? slowCfg.color : '#e5e7eb',
+            background:  isSlow ? slowCfg.color : 'white',
+            color:       isSlow ? 'white'       : '#6b7280',
+          }}>
+          {tagging ? <Loader2 size={14} className="animate-spin" /> : <Clock3 size={14} />}
+          {isSlow ? 'Client « réponses lentes » — retirer' : 'Signaler « réponses lentes »'}
+        </button>
+      </div>
 
-      {/* Input upload */}
-      <input ref={inputRef} type="file" accept="image/*,application/pdf" multiple onChange={handleUpload} className="hidden" id={`design-${order._id}`} />
-      <label htmlFor={`design-${order._id}`}
-        className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all hover:opacity-80"
-        style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
-        {uploading ? <><Loader2 size={15} className="animate-spin" /> Upload…</> : <><Upload size={15} /> Ajouter le design (image/PDF)</>}
-      </label>
-
-      {/* Notes */}
+      {/* Note facultative pour la production */}
       <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-        placeholder="Notes pour la production (optionnel)"
+        placeholder="Note pour la production (facultatif)"
         className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
 
-      <button onClick={submit} disabled={sending || uploading || files.length === 0}
+      <button onClick={submit} disabled={sending}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
         style={{ background: PURPLE }}>
         {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-        Envoyer en production
+        Travail terminé — envoyer en production
       </button>
     </div>
   )

@@ -47,6 +47,10 @@ function StageBoard({
   // Retire une commande de la liste (après action) sans refetch complet
   const removeOne = (id) => setOrders(prev => prev.filter(o => o._id !== id))
 
+  // Remplace une commande modifiée sur place (étiquette, urgence…)
+  const updateOne = (updated) =>
+    setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader eyebrow={eyebrow} title={title} count={loading ? null : orders.length} />
@@ -79,7 +83,8 @@ function StageBoard({
                   ce .map() violerait les règles des hooks (React #310). */}
               {!readOnly && Actions && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <Actions order={order} refresh={refresh} removeOne={removeOne} {...actionProps} />
+                  <Actions order={order} refresh={refresh} removeOne={removeOne}
+                    updateOne={updateOne} {...actionProps} />
                 </div>
               )}
             </div>
