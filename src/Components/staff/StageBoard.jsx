@@ -27,20 +27,26 @@ export function PageHeader({ eyebrow, title, count }) {
 function StageBoard({
   stage, eyebrow, title, emptyText = 'Aucune commande à cette étape.',
   summaryOpts = {}, actions: Actions, actionProps = {}, readOnly = false,
+  extraParams = {}, headerExtra = null,
 }) {
   const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Sérialisé pour servir de dépendance stable au useCallback
+  const paramsKey = JSON.stringify(extraParams)
+
   const refresh = useCallback(async () => {
     try {
-      const res = await staffApi.get('/workflow/orders', { params: { stage } })
+      const res = await staffApi.get('/workflow/orders', {
+        params: { stage, ...JSON.parse(paramsKey) },
+      })
       setOrders(res.data || [])
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur de chargement')
     } finally {
       setLoading(false)
     }
-  }, [stage])
+  }, [stage, paramsKey])
 
   useEffect(() => { setLoading(true); refresh() }, [refresh])
 
@@ -54,6 +60,8 @@ function StageBoard({
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader eyebrow={eyebrow} title={title} count={loading ? null : orders.length} />
+
+      {headerExtra}
 
       {readOnly && (
         <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl w-fit"
