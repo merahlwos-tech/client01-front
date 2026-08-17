@@ -11,6 +11,7 @@ import Footer        from './Components/ui/Footer'
 import PrivateRoute  from './Components/ui/PrivateRoute'
 import AdminLayout   from './Components/admin/AdminLayout'
 import { StaffPrivateRoute, RoleRoute } from './Components/staff/StaffPrivateRoute'
+import StandaloneLayout from './Components/staff/StandaloneLayout'
 
 // ── Lazy loading de toutes les pages ──────────────────────────────────────
 // Chaque page devient un chunk séparé chargé uniquement quand on y navigue.
@@ -59,11 +60,17 @@ function PageViewTracker() {
 
 const WA_NUMBER = '213554767444'
 
+/* Espaces internes : admin e-commerce, hub atelier, et les pages de service
+   autonomes. Le bouton WhatsApp flottant n'y apparaît jamais. */
+const INTERNAL_PATHS = [
+  '/admin', '/staff',
+  '/confirmatrice', '/designer', '/production',
+  '/emballage', '/livraison', '/stock', '/superadmin',
+]
+
 function WhatsAppButton() {
   const location = useLocation()
-  // Masqué dans les espaces internes (admin e-commerce + atelier)
-  const isInternal = location.pathname.startsWith('/admin') ||
-                     location.pathname.startsWith('/staff')
+  const isInternal = INTERNAL_PATHS.some(p => location.pathname.startsWith(p))
   if (isInternal) return null
   return (
     <a
@@ -77,6 +84,19 @@ function WhatsAppButton() {
         <path d="M16.003 2C8.28 2 2 8.28 2 16c0 2.47.65 4.79 1.78 6.8L2 30l7.38-1.75A14 14 0 0 0 16.003 30C23.72 30 30 23.72 30 16S23.72 2 16.003 2zm0 2.5A11.5 11.5 0 0 1 27.5 16c0 6.35-5.15 11.5-11.497 11.5a11.47 11.47 0 0 1-5.88-1.62l-.42-.25-4.38 1.04 1.07-4.25-.27-.43A11.47 11.47 0 0 1 4.5 16 11.5 11.5 0 0 1 16.003 4.5zm-3.19 5.36c-.27-.62-.55-.63-.81-.64l-.69-.01c-.24 0-.62.09-.95.44s-1.24 1.21-1.24 2.95 1.27 3.42 1.45 3.66c.18.24 2.46 3.9 6.06 5.3 3 1.18 3.6.94 4.25.88.65-.06 2.1-.86 2.4-1.69.3-.83.3-1.54.21-1.69-.09-.15-.33-.24-.69-.42s-2.1-1.04-2.43-1.16c-.33-.12-.57-.18-.81.18s-.93 1.16-1.14 1.4c-.21.24-.42.27-.78.09s-1.52-.56-2.9-1.79c-1.07-.95-1.8-2.13-2.01-2.49s-.02-.55.16-.73c.16-.16.36-.42.54-.63.18-.21.24-.36.36-.6.12-.24.06-.45-.03-.63-.09-.18-.79-1.95-1.1-2.67z"/>
       </svg>
     </a>
+  )
+}
+
+/* Assemble une page de service autonome : contexte d'auth atelier +
+   en-tête minimal + la page du service. Renvoie un élément React (pas un
+   nouveau type de composant), donc aucun remontage entre les rendus. */
+function standalone(label, Page) {
+  return (
+    <StaffAuthProvider>
+      <StandaloneLayout label={label}>
+        <Page />
+      </StandaloneLayout>
+    </StaffAuthProvider>
   )
 }
 
@@ -129,6 +149,19 @@ function App() {
                   <Route path="orders"      element={<AdminOrdersPage />} />
                   <Route path="orders/:id"  element={<AdminOrderDetailPage />} />
                 </Route>
+
+                {/* ── Pages de service AUTONOMES ──────────────────────────
+                    Une URL par métier, sans menu ni lien vers les autres
+                    services : chaque employé n'accède qu'à son poste.
+                    (/confirmation est déjà pris par la page publique de
+                     confirmation de commande → /confirmatrice)          */}
+                <Route path="/confirmatrice" element={standalone('Confirmation', ConfirmatricePage)} />
+                <Route path="/designer"      element={standalone('Design',       DesignerPage)} />
+                <Route path="/production"    element={standalone('Production',   ProductionPage)} />
+                <Route path="/emballage"     element={standalone('Emballage',    EmballagePage)} />
+                <Route path="/livraison"     element={standalone('Livraison',    LivraisonPage)} />
+                <Route path="/stock"         element={standalone('Stock',        StockPage)} />
+                <Route path="/superadmin"    element={standalone('Comptes',      UsersPage)} />
 
                 {/* ── Plateforme interne (atelier) — auth & rôles séparés ── */}
                 <Route path="/staff" element={<StaffAuthProvider><Outlet /></StaffAuthProvider>}>
