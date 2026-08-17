@@ -37,6 +37,22 @@ export const STAGES = {
   annulee:      { label: 'Annulée',      color: '#ef4444', bg: '#fef2f2' },
 }
 
+// Statut public d'une commande (géré par la confirmatrice)
+export const ORDER_STATUS = {
+  'en attente': { label: 'En attente', color: '#f59e0b', bg: '#fffbeb' },
+  'confirmé':   { label: 'Confirmé',   color: '#10b981', bg: '#ecfdf5' },
+  'annulé':     { label: 'Annulé',     color: '#ef4444', bg: '#fef2f2' },
+}
+export const STATUS_KEYS = Object.keys(ORDER_STATUS)
+
+// Étiquette d'urgence posée par la confirmatrice
+export const URGENCY = {
+  normal:      { label: 'Normal',       short: 'Normal', color: '#6b7280', bg: '#f3f4f6' },
+  urgent:      { label: 'Urgent',       short: 'Urgent', color: '#f59e0b', bg: '#fffbeb' },
+  tres_urgent: { label: 'Super urgent', short: 'Super',  color: '#ef4444', bg: '#fef2f2' },
+}
+export const URGENCY_KEYS = Object.keys(URGENCY)
+
 // Qui AGIT sur chaque étape
 export const STAGE_ACTOR = {
   confirmation: 'confirmatrice',

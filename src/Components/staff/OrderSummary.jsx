@@ -5,7 +5,7 @@ import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
   Package, History, ChevronDown, Palette,
 } from 'lucide-react'
-import { NAVY, PURPLE, STAGES, shortRef } from './staffConfig'
+import { NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, shortRef } from './staffConfig'
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
@@ -40,21 +40,36 @@ function Row({ icon: Icon, children }) {
 function OrderSummary({ order, showDesign = false, showMaterials = false, showHistory = false }) {
   const [openHistory, setOpenHistory] = useState(false)
   const c = order.customerInfo || {}
-  const stage = STAGES[order.pipeline?.stage] || {}
+  const stage      = STAGES[order.pipeline?.stage] || {}
+  const urgencyCfg = URGENCY[order.pipeline?.urgency]
+  const statusCfg  = ORDER_STATUS[order.status]
   const logos = c.logoUrls || []
   const design = order.pipeline?.design
   const materials = order.pipeline?.materialsUsed || []
 
   return (
     <div className="space-y-4">
-      {/* En-tête : réf + étape + total */}
+      {/* En-tête : réf + étape + urgence + statut + total */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-black text-sm" style={{ color: NAVY }}>#{shortRef(order._id)}</span>
           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
             style={{ background: stage.bg, color: stage.color }}>
             {stage.label || order.pipeline?.stage}
           </span>
+          {/* Étiquette d'urgence posée par la confirmatrice */}
+          {urgencyCfg && order.pipeline?.urgency !== 'normal' && (
+            <span className="text-[11px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider"
+              style={{ background: urgencyCfg.color, color: 'white' }}>
+              {urgencyCfg.label}
+            </span>
+          )}
+          {statusCfg && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: statusCfg.bg, color: statusCfg.color }}>
+              {statusCfg.label}
+            </span>
+          )}
         </div>
         <div className="text-right">
           <p className="font-black text-sm" style={{ color: PURPLE }}>
