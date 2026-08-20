@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
   Package, History, ChevronDown, Palette, Timer, Clock, CalendarDays,
+  MessageSquare,
 } from 'lucide-react'
 import {
-  NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS,
+  NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
   getCountdown, formatDayLabel, shortRef,
 } from './staffConfig'
 
@@ -61,7 +62,10 @@ function Row({ icon: Icon, children }) {
   )
 }
 
-function OrderSummary({ order, showDesign = false, showMaterials = false, showHistory = false }) {
+function OrderSummary({
+  order, showDesign = false, showMaterials = false, showHistory = false,
+  showNotes = false,
+}) {
   const [openHistory, setOpenHistory] = useState(false)
   const c = order.customerInfo || {}
   const stage      = STAGES[order.pipeline?.stage] || {}
@@ -205,6 +209,25 @@ function OrderSummary({ order, showDesign = false, showMaterials = false, showHi
               <span key={i} className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ background: '#eff6ff', color: '#2563eb' }}>
                 {m.name} ×{m.quantity}
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notes de l'équipe (lecture seule — l'ajout se fait dans le détail) */}
+      {showNotes && order.pipeline?.notes?.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: '#9ca3af' }}>
+            <MessageSquare size={13} /> Notes de l'équipe
+          </p>
+          <div className="space-y-1.5">
+            {order.pipeline.notes.map(n => (
+              <div key={n._id} className="p-2 rounded-lg text-xs" style={{ background: '#f9fafb' }}>
+                <p className="whitespace-pre-wrap break-words" style={{ color: NAVY }}>{n.text}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {ROLE_LABELS[n.role] || n.role}{n.by ? ` · ${n.by}` : ''}
+                </p>
+              </div>
             ))}
           </div>
         </div>

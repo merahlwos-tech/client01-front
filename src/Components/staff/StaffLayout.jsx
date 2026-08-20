@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, CheckCircle2, Palette, Hammer, Package,
+  LayoutDashboard, CheckCircle2, Palette, Hammer, Package, Sun,
   Boxes, Users, LogOut, Menu, X, ChevronRight,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/staff',              label: 'Accueil',      icon: LayoutDashboard, end: true, roles: 'all' },
   { to: '/staff/confirmation', label: 'Confirmation', icon: CheckCircle2, roles: ['confirmatrice', 'chef_production'] },
   { to: '/staff/design',       label: 'Design',       icon: Palette,      roles: ['designer', 'chef_production'] },
+  { to: '/staff/insolation',   label: 'Insolation',   icon: Sun,          roles: ['insolation', 'chef_production'] },
   { to: '/staff/production',   label: 'Production',   icon: Hammer,       roles: ['production', 'chef_production'] },
   { to: '/staff/emballage',    label: 'Emballage',    icon: Package,      roles: ['emballage', 'chef_production'] },
   { to: '/staff/stock',        label: 'Stock',        icon: Boxes,        roles: ['production', 'chef_production'] },

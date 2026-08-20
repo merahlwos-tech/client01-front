@@ -3,10 +3,11 @@ import { Loader2, PackageCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import StageBoard from '../../Components/staff/StageBoard'
+import NotesThread from '../../Components/staff/NotesThread'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import { canAct } from '../../Components/staff/staffConfig'
 
-function EmballageActions({ order, removeOne }) {
+function EmballageActions({ order, removeOne, updateOne }) {
   const [notes, setNotes]     = useState('')
   const [sending, setSending] = useState(false)
 
@@ -24,7 +25,10 @@ function EmballageActions({ order, removeOne }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Notes partagées — visibles par tous les services */}
+      <NotesThread order={order} onChanged={updateOne} />
+
       <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
         placeholder="Notes d'emballage (optionnel)"
         className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
@@ -47,6 +51,7 @@ function EmballagePage() {
       title="Commandes à emballer"
       emptyText="Aucune commande à emballer."
       summaryOpts={{ showDesign: true, showMaterials: true, showHistory: true }}
+      layout="cards"
       readOnly={!canAct(role, 'emballage')}
       actions={EmballageActions}
     />

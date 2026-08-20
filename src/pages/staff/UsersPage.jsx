@@ -8,7 +8,7 @@ import { ROLE_LABELS, NAVY, PURPLE } from '../../Components/staff/staffConfig'
 import { PageHeader } from '../../Components/staff/StageBoard'
 
 // Rôles créables (on exclut 'admin' qui est le compte .env legacy)
-const CREATABLE_ROLES = ['superadmin', 'chef_production', 'confirmatrice', 'designer', 'production', 'emballage']
+const CREATABLE_ROLES = ['superadmin', 'chef_production', 'confirmatrice', 'designer', 'insolation', 'production', 'emballage']
 
 function AddUserForm({ onAdded }) {
   const [form, setForm] = useState({ username: '', password: '', role: 'confirmatrice', fullName: '' })

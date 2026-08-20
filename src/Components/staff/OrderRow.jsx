@@ -4,7 +4,7 @@
 
 import { ImageIcon, ChevronRight, FileText } from 'lucide-react'
 import {
-  NAVY, PURPLE, URGENCY, ORDER_STATUS, DESIGNER_TAGS,
+  NAVY, PURPLE, URGENCY, ORDER_STATUS, DESIGNER_TAGS, INSOLATION_STATUS,
   getCountdown, formatDayLabel, shortRef,
 } from './staffConfig'
 
@@ -82,6 +82,14 @@ function OrderRow({ order, onOpen }) {
             <Pill color={slow.color} bg={slow.bg}>Lent</Pill>}
           {order.pipeline?.productionDate &&
             <Pill color="#2563eb" bg="#eff6ff">{formatDayLabel(order.pipeline.productionDate)}</Pill>}
+          {order.pipeline?.insolation?.status === 'confirme' && (
+            <Pill color={INSOLATION_STATUS.confirme.color} bg={INSOLATION_STATUS.confirme.bg}>
+              Insolé
+            </Pill>
+          )}
+          {(order.pipeline?.notes?.length > 0) && (
+            <Pill color="#6b7280" bg="#f3f4f6">{order.pipeline.notes.length} note{order.pipeline.notes.length > 1 ? 's' : ''}</Pill>
+          )}
           {cd && <Pill color={cd.color} bg={cd.bg}>{cd.label}</Pill>}
           {custom.map(t => (
             <Pill key={t._id} color={t.color} bg={t.color + '1a'}>{t.name}</Pill>

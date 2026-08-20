@@ -21,6 +21,7 @@ export const ROLE_LABELS = {
   chef_production: 'Chef de production',
   confirmatrice:   'Confirmatrice',
   designer:        'Designer',
+  insolation:      'Insolation',
   production:      'Production',
   emballage:       'Emballage',
   admin:           'Propriétaire',   // compte .env legacy = superadmin
@@ -52,6 +53,12 @@ export const URGENCY = {
   tres_urgent: { label: 'Super urgent', short: 'Super',  color: '#ef4444', bg: '#fef2f2' },
 }
 export const URGENCY_KEYS = Object.keys(URGENCY)
+
+// Statuts du service insolation
+export const INSOLATION_STATUS = {
+  en_attente: { label: 'En attente', color: '#f59e0b', bg: '#fffbeb' },
+  confirme:   { label: 'Confirmé',   color: '#10b981', bg: '#ecfdf5' },
+}
 
 // Étiquette posée par le designer
 export const DESIGNER_TAGS = {

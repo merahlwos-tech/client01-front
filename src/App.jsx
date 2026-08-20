@@ -35,6 +35,7 @@ const StaffLayout       = lazy(() => import('./Components/staff/StaffLayout'))
 const StaffHomePage     = lazy(() => import('./pages/staff/StaffHomePage'))
 const ConfirmatricePage = lazy(() => import('./pages/staff/ConfirmatricePage'))
 const DesignerPage      = lazy(() => import('./pages/staff/DesignerPage'))
+const InsolationPage    = lazy(() => import('./pages/staff/InsolationPage'))
 const ProductionPage    = lazy(() => import('./pages/staff/ProductionPage'))
 const EmballagePage     = lazy(() => import('./pages/staff/EmballagePage'))
 const StockPage         = lazy(() => import('./pages/staff/StockPage'))
@@ -63,7 +64,7 @@ const WA_NUMBER = '213554767444'
    autonomes. Le bouton WhatsApp flottant n'y apparaît jamais. */
 const INTERNAL_PATHS = [
   '/admin', '/staff',
-  '/confirmatrice', '/designer', '/production',
+  '/confirmatrice', '/designer', '/insolation', '/production',
   '/emballage', '/stock', '/superadmin',
 ]
 
@@ -156,6 +157,7 @@ function App() {
                      confirmation de commande → /confirmatrice)          */}
                 <Route path="/confirmatrice" element={standalone('Confirmation', ConfirmatricePage)} />
                 <Route path="/designer"      element={standalone('Design',       DesignerPage)} />
+                <Route path="/insolation"    element={standalone('Insolation',   InsolationPage)} />
                 <Route path="/production"    element={standalone('Production',   ProductionPage)} />
                 <Route path="/emballage"     element={standalone('Emballage',    EmballagePage)} />
                 <Route path="/stock"         element={standalone('Stock',        StockPage)} />
@@ -168,6 +170,7 @@ function App() {
                     <Route index               element={<StaffHomePage />} />
                     <Route path="confirmation" element={<RoleRoute allow={['confirmatrice', 'chef_production']}><ConfirmatricePage /></RoleRoute>} />
                     <Route path="design"       element={<RoleRoute allow={['designer', 'chef_production']}><DesignerPage /></RoleRoute>} />
+                    <Route path="insolation"   element={<RoleRoute allow={['insolation', 'chef_production']}><InsolationPage /></RoleRoute>} />
                     <Route path="production"   element={<RoleRoute allow={['production', 'chef_production']}><ProductionPage /></RoleRoute>} />
                     <Route path="emballage"    element={<RoleRoute allow={['emballage', 'chef_production']}><EmballagePage /></RoleRoute>} />
                     <Route path="stock"        element={<RoleRoute allow={['production', 'chef_production']}><StockPage /></RoleRoute>} />

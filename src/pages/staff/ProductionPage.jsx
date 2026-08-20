@@ -7,9 +7,62 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
+import NotesThread from '../../Components/staff/NotesThread'
 import {
   canAct, PURPLE, NAVY, todayStr, formatDayLabel,
+  WEEKDAYS, nextDateForWeekday, isSuperadmin,
 } from '../../Components/staff/staffConfig'
+
+/* Le chef de production peut corriger le jour choisi par le designer */
+function ChefRescheduleActions({ order, updateOne }) {
+  const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
+  const [busy, setBusy] = useState(false)
+
+  const save = async () => {
+    if (day == null) return
+    setBusy(true)
+    try {
+      const res = await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
+        productionDate: nextDateForWeekday(day),
+        productionDay:  day,
+      })
+      toast.success(`Replanifiée — ${formatDayLabel(nextDateForWeekday(day))}`)
+      updateOne?.(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="space-y-3">
+      <NotesThread order={order} onChanged={updateOne} />
+
+      <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+          Affectation du designer — modifiable
+        </p>
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
+          {WEEKDAYS.map(w => {
+            const active = day === w.day
+            return (
+              <button key={w.day} type="button" onClick={() => setDay(w.day)}
+                className="py-2 rounded-lg text-[11px] font-bold transition-all"
+                style={{ background: active ? PURPLE : '#f3f4f6', color: active ? 'white' : '#6b7280' }}>
+                {w.short}
+              </button>
+            )
+          })}
+        </div>
+        <button onClick={save} disabled={busy || day == null || day === order.pipeline?.productionDay}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40"
+          style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <CalendarCheck size={13} />}
+          Changer le jour de fabrication
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function ProductionActions({ order, removeOne, materials, onStockChanged }) {
   const [rows, setRows]   = useState([{ material: '', quantity: '' }])
@@ -103,7 +156,9 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
 
 function ProductionPage() {
   const { role } = useStaffAuth()
-  const readOnly = !canAct(role, 'production')
+  // Le chef de production ne fabrique pas, mais peut replanifier les commandes
+  const isChef   = role === 'chef_production'
+  const readOnly = !canAct(role, 'production') && !isChef
   const [materials, setMaterials] = useState([])
   const [view, setView]     = useState('today')   // today | late
   const [counts, setCounts] = useState(null)
@@ -162,10 +217,10 @@ function ProductionPage() {
       emptyText={isLate
         ? 'Aucune commande en retard.'
         : 'Aucune commande à fabriquer aujourd\'hui.'}
-      summaryOpts={{ showDesign: true, showHistory: true }}
+      summaryOpts={{ showDesign: true, showHistory: true, showNotes: true }}
       readOnly={readOnly}
-      actions={ProductionActions}
-      actionProps={{ materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
+      actions={isChef ? ChefRescheduleActions : ProductionActions}
+      actionProps={isChef ? {} : { materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
       extraParams={isLate ? { overdueBefore: today } : { date: today }}
       headerExtra={tabs}
     />

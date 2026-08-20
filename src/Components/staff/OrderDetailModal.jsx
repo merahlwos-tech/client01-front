@@ -5,9 +5,13 @@
 import { X } from 'lucide-react'
 import OrderSummary from './OrderSummary'
 import TagPicker from './TagPicker'
+import NotesThread from './NotesThread'
 import { NAVY, shortRef } from './staffConfig'
 
-function OrderDetailModal({ order, onClose, summaryOpts = {}, tagScope, onTagsChanged, children }) {
+function OrderDetailModal({
+  order, onClose, summaryOpts = {}, tagScope, onTagsChanged,
+  showNotes = true, notesReadOnly = false, children,
+}) {
   if (!order) return null
 
   return (
@@ -33,6 +37,13 @@ function OrderDetailModal({ order, onClose, summaryOpts = {}, tagScope, onTagsCh
 
         <div className="p-5 space-y-5">
           <OrderSummary order={order} {...summaryOpts} />
+
+          {/* Notes partagées entre tous les services */}
+          {showNotes && (
+            <div className="pt-4 border-t border-gray-100">
+              <NotesThread order={order} onChanged={onTagsChanged} readOnly={notesReadOnly} />
+            </div>
+          )}
 
           {/* Étiquettes personnalisées du service */}
           {tagScope && (
