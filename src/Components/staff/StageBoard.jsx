@@ -6,6 +6,8 @@ import { Loader2, Inbox, Lock } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import toast from 'react-hot-toast'
 import OrderSummary from './OrderSummary'
+import OrderRow from './OrderRow'
+import OrderDetailModal from './OrderDetailModal'
 import { NAVY, PURPLE } from './staffConfig'
 
 export function PageHeader({ eyebrow, title, count }) {
@@ -28,6 +30,8 @@ function StageBoard({
   stage, eyebrow, title, emptyText = 'Aucune commande à cette étape.',
   summaryOpts = {}, actions: Actions, actionProps = {}, readOnly = false,
   extraParams = {}, headerExtra = null,
+  layout = 'cards',          // 'cards' | 'list' (liste + détail au clic)
+  tagScope = null,           // active les étiquettes personnalisées
 }) {
   const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +61,19 @@ function StageBoard({
   const updateOne = (updated) =>
     setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
 
+  /* ── Mode liste : la commande sélectionnée s'ouvre en détail ── */
+  const [selectedId, setSelectedId] = useState(null)
+  const selected = orders.find(o => o._id === selectedId) || null
+
+  const closeDetail = () => setSelectedId(null)
+
+  // Après une action dans le détail : on ferme si la commande a quitté la liste
+  const removeOneAndClose = (id) => { removeOne(id); closeDetail() }
+  const updateOneKeepOpen = (updated) => {
+    if (!updated) { refresh(); return }
+    updateOne(updated)
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader eyebrow={eyebrow} title={title} count={loading ? null : orders.length} />
@@ -81,6 +98,13 @@ function StageBoard({
           </div>
           <p className="text-sm text-gray-400">{emptyText}</p>
         </div>
+      ) : layout === 'list' ? (
+        /* ── Liste compacte : on clique une ligne pour voir le détail ── */
+        <div className="space-y-2">
+          {orders.map(order => (
+            <OrderRow key={order._id} order={order} onOpen={o => setSelectedId(o._id)} />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {orders.map(order => (
@@ -98,6 +122,22 @@ function StageBoard({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Détail de la commande sélectionnée (mode liste) */}
+      {selected && (
+        <OrderDetailModal
+          order={selected}
+          onClose={closeDetail}
+          summaryOpts={summaryOpts}
+          tagScope={readOnly ? null : tagScope}
+          onTagsChanged={updateOneKeepOpen}>
+          {!readOnly && Actions && (
+            <Actions order={selected} refresh={refresh}
+              removeOne={removeOneAndClose} updateOne={updateOneKeepOpen}
+              {...actionProps} />
+          )}
+        </OrderDetailModal>
       )}
     </div>
   )

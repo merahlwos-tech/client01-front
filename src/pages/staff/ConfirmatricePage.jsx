@@ -4,7 +4,8 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import OrderSummary from '../../Components/staff/OrderSummary'
+import OrderRow from '../../Components/staff/OrderRow'
+import OrderDetailModal from '../../Components/staff/OrderDetailModal'
 import OrderForm from '../../Components/staff/OrderForm'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
@@ -20,7 +21,7 @@ const LOCKED_STAGES = ['production', 'emballage', 'livraison', 'termine']
 /* ══════════════════════════════════════════════
    Carte d'une commande
 ══════════════════════════════════════════════ */
-function OrderCard({ order, onChanged, onEdit, readOnly }) {
+function OrderActions({ order, onChanged, onEdit }) {
   const [busy, setBusy] = useState(false)
 
   const status  = order.status || 'en attente'
@@ -43,30 +44,16 @@ function OrderCard({ order, onChanged, onEdit, readOnly }) {
   const changeStatus  = (s) => patch('status',  { status: s },   `Statut → ${ORDER_STATUS[s].label}`)
   const changeUrgency = (u) => patch('urgency', { urgency: u },  `Urgence → ${URGENCY[u].label}`)
 
-  const uCfg = URGENCY[urgency]
-
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border-2 relative"
-      style={{ borderColor: urgency === 'normal' ? '#f0f0f4' : uCfg.color + '55' }}>
-
-      {/* Bandeau urgence */}
-      {urgency !== 'normal' && (
-        <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider"
-          style={{ background: uCfg.color, color: 'white' }}>
-          {uCfg.label}
-        </div>
-      )}
-
-      <OrderSummary order={order} showHistory />
-
+    <>
       {order.pipeline?.manual && (
-        <p className="mt-2 text-[11px] font-semibold" style={{ color: PURPLE }}>
+        <p className="mb-3 text-[11px] font-semibold" style={{ color: PURPLE }}>
           ✎ Commande saisie manuellement
         </p>
       )}
 
-      {!readOnly && (
-        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+      {(
+        <div className="space-y-3">
 
           {locked ? (
             <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl"
@@ -130,7 +117,7 @@ function OrderCard({ order, onChanged, onEdit, readOnly }) {
           )}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
@@ -149,6 +136,9 @@ function ConfirmatricePage() {
   const [query, setQuery]     = useState('')        // recherche appliquée (débouncée)
   const [formOpen, setFormOpen]     = useState(false)
   const [editing, setEditing]       = useState(null)
+  const [selectedId, setSelectedId] = useState(null)   // commande ouverte en détail
+
+  const selected = orders.find(o => o._id === selectedId) || null
 
   /* Débounce de la recherche (évite une requête par frappe) */
   useEffect(() => {
@@ -178,8 +168,10 @@ function ConfirmatricePage() {
 
   useEffect(() => { load() }, [load])
 
-  /* Remplace une commande dans la liste après modification */
+  /* Remplace une commande dans la liste après modification.
+     Sans argument (ex. suppression d'une étiquette) → rechargement complet. */
   const handleChanged = (updated) => {
+    if (!updated?._id) { load(); return }
     setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
     // Le compteur par statut change → on le rafraîchit discrètement
     staffApi.get('/workflow/confirmation/counts')
@@ -265,12 +257,26 @@ function ConfirmatricePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-2">
           {orders.map(order => (
-            <OrderCard key={order._id} order={order} readOnly={readOnly}
-              onChanged={handleChanged} onEdit={openEdit} />
+            <OrderRow key={order._id} order={order} onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
+      )}
+
+      {/* Détail de la commande sélectionnée */}
+      {selected && (
+        <OrderDetailModal
+          order={selected}
+          onClose={() => setSelectedId(null)}
+          summaryOpts={{ showHistory: true }}
+          tagScope={readOnly ? null : 'confirmatrice'}
+          onTagsChanged={handleChanged}>
+          {!readOnly && (
+            <OrderActions order={selected} onChanged={handleChanged}
+              onEdit={(o) => { setSelectedId(null); openEdit(o) }} />
+          )}
+        </OrderDetailModal>
       )}
 
       {/* Formulaire création / modification */}

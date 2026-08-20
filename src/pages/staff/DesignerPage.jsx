@@ -327,6 +327,8 @@ function DesignerPage() {
       actionProps={{ onCountsChanged: refreshCounts }}
       extraParams={cfg.params}
       headerExtra={tabs}
+      layout="list"
+      tagScope="designer"
     />
   )
 }
