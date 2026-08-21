@@ -143,7 +143,7 @@ function TagPicker({ order, scope, onChanged }) {
         </form>
       ) : (
         <button onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 text-xs font-bold transition-colors hover:opacity-70"
+          className="flex items-center gap-1.5 text-xs font-bold py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70"
           style={{ color: PURPLE }}>
           <Plus size={13} /> Créer une étiquette
         </button>

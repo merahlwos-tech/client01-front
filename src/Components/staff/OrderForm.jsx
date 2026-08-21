@@ -286,7 +286,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
               })}
             </div>
             <button type="button" onClick={addItem}
-              className="mt-3 flex items-center gap-1.5 text-xs font-bold transition-colors hover:opacity-70" style={{ color: PURPLE }}>
+              className="mt-3 flex items-center gap-1.5 text-xs font-bold py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70" style={{ color: PURPLE }}>
               <Plus size={14} /> Ajouter un article
             </button>
           </div>

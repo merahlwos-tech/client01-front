@@ -29,8 +29,8 @@ function OrderDetailModal({
             </p>
             <p className="text-[11px] text-gray-400 font-mono">#{shortRef(order._id)}</p>
           </div>
-          <button onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors flex-shrink-0">
+          <button onClick={onClose} title="Fermer"
+            className="p-2.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors flex-shrink-0">
             <X size={18} />
           </button>
         </div>

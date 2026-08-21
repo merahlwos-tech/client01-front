@@ -250,7 +250,7 @@ function OrderSummary({
       {showHistory && order.pipeline?.history?.length > 0 && (
         <div>
           <button onClick={() => setOpenHistory(o => !o)}
-            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-70"
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70"
             style={{ color: '#9ca3af' }}>
             <History size={13} /> Historique ({order.pipeline.history.length})
             <ChevronDown size={13} className="transition-transform" style={{ transform: openHistory ? 'rotate(180deg)' : 'none' }} />

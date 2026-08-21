@@ -214,7 +214,7 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
               </div>
             )
           })}
-          <button onClick={addRow} className="flex items-center gap-1.5 text-xs font-bold transition-colors hover:opacity-70" style={{ color: PURPLE }}>
+          <button onClick={addRow} className="flex items-center gap-1.5 text-xs font-bold py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70" style={{ color: PURPLE }}>
             <Plus size={14} /> Ajouter une matière
           </button>
         </div>

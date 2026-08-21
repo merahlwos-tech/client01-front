@@ -236,7 +236,7 @@ function ConfirmatricePage() {
             className="w-full pl-9 pr-9 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors"
             style={{ color: NAVY }} />
           <button onClick={load} title="Rafraîchir"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-purple-600 transition-colors">
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-50 transition-colors">
             <RefreshCcw size={14} />
           </button>
         </div>
