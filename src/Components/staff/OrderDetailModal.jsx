@@ -15,10 +15,14 @@ function OrderDetailModal({
   if (!order) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+    /* C'est la CARTE qui défile, pas l'arrière-plan : sinon l'en-tête collant
+       se fige sous le bord de l'écran et le contenu défile visiblement
+       au-dessus de lui. `overflow-hidden` garantit que rien ne dépasse des
+       coins arrondis. */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
       style={{ background: 'rgba(30,27,75,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
       onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-4"
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-full overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}>
 
         {/* En-tête collant */}

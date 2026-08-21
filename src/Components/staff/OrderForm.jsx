@@ -161,10 +161,12 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const selectedProduct = (idx) => productById(items[idx]?.product)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+    /* La carte défile elle-même : un arrière-plan défilant ferait coller
+       l'en-tête sous le bord de l'écran, avec le contenu visible au-dessus. */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
       style={{ background: 'rgba(30,27,75,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
       onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl my-4"
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl max-h-full overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}>
 
         {/* En-tête */}
