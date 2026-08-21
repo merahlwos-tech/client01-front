@@ -24,7 +24,9 @@ const emptyItem = () => ({
 const field = 'w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors'
 const label = 'block text-xs font-bold uppercase tracking-widest mb-1.5 text-gray-400'
 
-function OrderForm({ order, onClose, onSaved }) {
+// `asChef` : marque l'intention du chef de production, seule façon de modifier
+// une commande déjà en fabrication (voir canForce côté serveur).
+function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const isEdit = !!order
 
   const [customer, setCustomer] = useState(emptyCustomer)
@@ -141,7 +143,7 @@ function OrderForm({ order, onClose, onSaved }) {
     setSaving(true)
     try {
       if (isEdit) {
-        await staffApi.put(`/workflow/orders/${order._id}`, payload)
+        await staffApi.put(`/workflow/orders/${order._id}`, { ...payload, asChef })
         toast.success('Commande modifiée')
       } else {
         await staffApi.post('/workflow/confirmation', { ...payload, status, urgency })

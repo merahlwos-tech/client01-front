@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
-  CalendarCheck, History, ShieldCheck, Undo2,
+  CalendarCheck, History, ShieldCheck, Undo2, Pencil,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -9,16 +9,38 @@ import staffApi from '../../utils/staffApi'
 import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import NotesThread from '../../Components/staff/NotesThread'
+import OrderForm from '../../Components/staff/OrderForm'
 import {
   canAct, PURPLE, NAVY, todayStr, formatDayLabel,
-  WEEKDAYS, nextDateForWeekday, isSuperadmin,
+  WEEKDAYS, nextDateForWeekday, STAGES,
 } from '../../Components/staff/staffConfig'
+
+// Étapes vers lesquelles le chef peut déplacer une commande
+const FORCEABLE_STAGES = ['confirmation', 'design', 'production', 'emballage', 'livraison', 'termine']
 
 /* Le chef de production peut corriger le jour choisi par le designer,
    et retirer la commande de la production comme le designer. */
-function ChefRescheduleActions({ order, updateOne, removeOne }) {
+function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
   const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
-  const [busy, setBusy] = useState(null)   // 'day' | 'pull'
+  const [busy, setBusy] = useState(null)   // 'day' | 'pull' | 'stage'
+
+  /* Déplace la commande à l'étape voulue, sans passer par les intermédiaires */
+  const forceStage = async (stage) => {
+    const label = STAGES[stage]?.label || stage
+    if (!window.confirm(`Déplacer cette commande vers « ${label} » ?`)) return
+    setBusy('stage')
+    try {
+      const res = await staffApi.patch(`/workflow/orders/${order._id}/stage`, {
+        stage, asChef: true, note: 'Étape forcée par le chef de production',
+      })
+      toast.success(`Commande déplacée vers « ${label} »`)
+      // Elle quitte la vue production dès qu'elle change d'étape
+      if (stage !== 'production') removeOne?.(order._id)
+      else updateOne?.(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    } finally { setBusy(null) }
+  }
 
   const save = async () => {
     if (day == null) return
@@ -75,6 +97,40 @@ function ChefRescheduleActions({ order, updateOne, removeOne }) {
           {busy === 'day' ? <Loader2 size={13} className="animate-spin" /> : <CalendarCheck size={13} />}
           Changer le jour de fabrication
         </button>
+      </div>
+
+      {/* Modifier la commande, même déjà en fabrication */}
+      <button onClick={() => onEdit?.(order)} disabled={!!busy}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all hover:bg-purple-50 disabled:opacity-50"
+        style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+        <Pencil size={14} /> Modifier la commande
+      </button>
+
+      {/* Forcer une étape du circuit */}
+      <div className="p-3 rounded-xl space-y-2" style={{ background: '#fffbeb' }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#b45309' }}>
+          Forcer une étape
+        </p>
+        <div className="grid grid-cols-3 gap-1">
+          {FORCEABLE_STAGES.map(s => {
+            const cfg = STAGES[s]
+            const active = order.pipeline?.stage === s
+            return (
+              <button key={s} onClick={() => forceStage(s)} disabled={!!busy || active}
+                className="py-1.5 rounded-lg text-[11px] font-bold transition-all disabled:cursor-default"
+                style={{
+                  background: active ? cfg.color : cfg.bg,
+                  color:      active ? 'white'   : cfg.color,
+                  opacity:    busy && !active ? 0.5 : 1,
+                }}>
+                {cfg.label}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[10px]" style={{ color: '#b45309' }}>
+          Déplace la commande sans passer par les étapes intermédiaires.
+        </p>
       </div>
 
       {/* Retrait de la production — même prérogative que le designer */}
@@ -203,6 +259,8 @@ function ProductionPage() {
   const chefMode = role === 'chef_production' || searchParams.get('chef') === '1'
   const readOnly = !canAct(role, 'production') && !chefMode
   const [materials, setMaterials] = useState([])
+  const [editing, setEditing]     = useState(null)   // commande en cours d'édition (chef)
+  const [reloadKey, setReloadKey] = useState(0)      // force le rechargement après édition
   const [view, setView]     = useState('today')   // today | late
   const [counts, setCounts] = useState(null)
 
@@ -258,8 +316,9 @@ function ProductionPage() {
   )
 
   return (
+    <>
     <StageBoard
-      key={view}
+      key={`${view}-${reloadKey}`}
       stage="production"
       eyebrow="Service production"
       title={isLate ? 'Commandes en retard' : 'À fabriquer aujourd\'hui'}
@@ -269,10 +328,25 @@ function ProductionPage() {
       summaryOpts={{ showDesign: true, showHistory: true, showNotes: true }}
       readOnly={readOnly}
       actions={chefMode ? ChefProductionActions : ProductionActions}
-      actionProps={{ materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
+      actionProps={{
+        materials,
+        onStockChanged: () => { fetchMaterials(); refreshCounts() },
+        onEdit: setEditing,
+      }}
       extraParams={isLate ? { overdueBefore: today } : { date: today }}
       headerExtra={tabs}
     />
+
+    {/* Édition d'une commande, même déjà en fabrication (chef) */}
+    {editing && (
+      <OrderForm
+        order={editing}
+        asChef
+        onClose={() => setEditing(null)}
+        onSaved={() => { setReloadKey(k => k + 1); refreshCounts() }}
+      />
+    )}
+    </>
   )
 }
 
