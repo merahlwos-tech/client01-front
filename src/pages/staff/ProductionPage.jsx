@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
-  CalendarCheck, History,
+  CalendarCheck, History, ShieldCheck,
 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import StageBoard from '../../Components/staff/StageBoard'
@@ -154,11 +155,30 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
   )
 }
 
+/* Mode chef : il conserve toutes les actions de la production ET peut en plus
+   replanifier le jour de fabrication décidé par le designer. */
+function ChefProductionActions(props) {
+  return (
+    <div className="space-y-4">
+      <ChefRescheduleActions {...props} />
+      <div className="pt-4 border-t border-gray-100">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+          Actions de fabrication
+        </p>
+        <ProductionActions {...props} />
+      </div>
+    </div>
+  )
+}
+
 function ProductionPage() {
   const { role } = useStaffAuth()
-  // Le chef de production ne fabrique pas, mais peut replanifier les commandes
-  const isChef   = role === 'chef_production'
-  const readOnly = !canAct(role, 'production') && !isChef
+  const [searchParams] = useSearchParams()
+
+  /* Le chef arrive depuis sa page avec ?chef=1 : il garde ses prérogatives
+     même quand l'accès libre le fait passer pour un superadmin. */
+  const chefMode = role === 'chef_production' || searchParams.get('chef') === '1'
+  const readOnly = !canAct(role, 'production') && !chefMode
   const [materials, setMaterials] = useState([])
   const [view, setView]     = useState('today')   // today | late
   const [counts, setCounts] = useState(null)
@@ -205,6 +225,12 @@ function ProductionPage() {
         </button>
       )}
       <span className="text-xs text-gray-400 ml-1">{formatDayLabel(today)}</span>
+      {chefMode && (
+        <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ml-auto"
+          style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+          <ShieldCheck size={12} /> Mode chef — planning modifiable
+        </span>
+      )}
     </div>
   )
 
@@ -219,8 +245,8 @@ function ProductionPage() {
         : 'Aucune commande à fabriquer aujourd\'hui.'}
       summaryOpts={{ showDesign: true, showHistory: true, showNotes: true }}
       readOnly={readOnly}
-      actions={isChef ? ChefRescheduleActions : ProductionActions}
-      actionProps={isChef ? {} : { materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
+      actions={chefMode ? ChefProductionActions : ProductionActions}
+      actionProps={{ materials, onStockChanged: () => { fetchMaterials(); refreshCounts() } }}
       extraParams={isLate ? { overdueBefore: today } : { date: today }}
       headerExtra={tabs}
     />

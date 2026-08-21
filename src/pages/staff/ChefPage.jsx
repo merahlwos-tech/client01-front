@@ -10,12 +10,15 @@ import { STAGES, NAVY, PURPLE } from '../../Components/staff/staffConfig'
 
 /* Le chef supervise toutes les étapes ; il n'agit que sur le stock,
    la planification de fabrication et la livraison. */
+// `?chef=1` fait entrer le chef en mode étendu : il garde ses prérogatives
+// (modifier le planning de fabrication) même à l'intérieur d'un service.
 const SERVICES = [
-  { key: 'confirmation', to: '/confirmatrice', icon: CheckCircle2, label: 'Confirmation', access: 'voir' },
-  { key: 'design',       to: '/designer',      icon: Palette,      label: 'Design',       access: 'voir' },
-  { key: 'production',   to: '/production',    icon: Hammer,       label: 'Production',   access: 'planifier' },
-  { key: 'emballage',    to: '/emballage',     icon: Package,      label: 'Emballage',    access: 'voir' },
-  { key: 'livraison',    to: '/livraison',     icon: Truck,        label: 'Livraison',    access: 'gerer' },
+  { key: 'confirmation', to: '/confirmatrice?chef=1', icon: CheckCircle2, label: 'Confirmation', access: 'voir' },
+  { key: 'design',       to: '/designer?chef=1',      icon: Palette,      label: 'Design',       access: 'voir' },
+  { key: 'insolation',   to: '/insolation?chef=1',    icon: Sun,          label: 'Insolation',   access: 'voir' },
+  { key: 'production',   to: '/production?chef=1',    icon: Hammer,       label: 'Production',   access: 'planifier' },
+  { key: 'emballage',    to: '/emballage?chef=1',     icon: Package,      label: 'Emballage',    access: 'voir' },
+  { key: 'livraison',    to: '/livraison?chef=1',     icon: Truck,        label: 'Livraison',    access: 'gerer' },
 ]
 
 const ACCESS = {
