@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
-  CalendarCheck, History, ShieldCheck,
+  CalendarCheck, History, ShieldCheck, Undo2,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -14,14 +14,15 @@ import {
   WEEKDAYS, nextDateForWeekday, isSuperadmin,
 } from '../../Components/staff/staffConfig'
 
-/* Le chef de production peut corriger le jour choisi par le designer */
-function ChefRescheduleActions({ order, updateOne }) {
+/* Le chef de production peut corriger le jour choisi par le designer,
+   et retirer la commande de la production comme le designer. */
+function ChefRescheduleActions({ order, updateOne, removeOne }) {
   const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(null)   // 'day' | 'pull'
 
   const save = async () => {
     if (day == null) return
-    setBusy(true)
+    setBusy('day')
     try {
       const res = await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
         productionDate: nextDateForWeekday(day),
@@ -31,7 +32,21 @@ function ChefRescheduleActions({ order, updateOne }) {
       updateOne?.(res.data)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
-    } finally { setBusy(false) }
+    } finally { setBusy(null) }
+  }
+
+  /* Retire la commande de la production : elle repart chez le designer */
+  const pullBack = async () => {
+    if (!window.confirm('Retirer cette commande de la production ?\nElle repartira chez le designer.')) return
+    setBusy('pull')
+    try {
+      await staffApi.post(`/workflow/orders/${order._id}/pull-back`)
+      toast.success('Commande retirée de la production')
+      removeOne?.(order._id)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+      setBusy(null)
+    }
   }
 
   return (
@@ -54,13 +69,21 @@ function ChefRescheduleActions({ order, updateOne }) {
             )
           })}
         </div>
-        <button onClick={save} disabled={busy || day == null || day === order.pipeline?.productionDay}
+        <button onClick={save} disabled={!!busy || day == null || day === order.pipeline?.productionDay}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40"
           style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
-          {busy ? <Loader2 size={13} className="animate-spin" /> : <CalendarCheck size={13} />}
+          {busy === 'day' ? <Loader2 size={13} className="animate-spin" /> : <CalendarCheck size={13} />}
           Changer le jour de fabrication
         </button>
       </div>
+
+      {/* Retrait de la production — même prérogative que le designer */}
+      <button onClick={pullBack} disabled={!!busy}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all hover:bg-red-50 disabled:opacity-50"
+        style={{ borderColor: '#fecaca', color: '#ef4444' }}>
+        {busy === 'pull' ? <Loader2 size={14} className="animate-spin" /> : <Undo2 size={14} />}
+        Retirer de la production
+      </button>
     </div>
   )
 }
