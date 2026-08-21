@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
   Package, History, ChevronDown, Palette, Timer, Clock, CalendarDays,
-  MessageSquare,
+  MessageSquare, PackageCheck,
 } from 'lucide-react'
 import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
@@ -211,6 +211,19 @@ function OrderSummary({
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Note d'emballage — destinée au service de livraison */}
+      {order.pipeline?.packagingNotes?.trim() && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: '#06b6d4' }}>
+            <PackageCheck size={13} /> Note d'emballage
+          </p>
+          <p className="text-sm p-2.5 rounded-xl whitespace-pre-wrap break-words"
+            style={{ background: '#ecfeff', color: '#0e7490' }}>
+            {order.pipeline.packagingNotes}
+          </p>
         </div>
       )}
 

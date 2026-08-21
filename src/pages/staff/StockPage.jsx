@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Boxes, Loader2, Plus, ImagePlus, Trash2, PackagePlus,
-  TrendingDown, TrendingUp, AlertTriangle, X,
+  TrendingDown, TrendingUp, AlertTriangle, X, Eye,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
@@ -221,6 +221,13 @@ function StockPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader eyebrow="Gestion des matières premières" title="Stock" />
+
+      {!canWrite && (
+        <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl w-fit"
+          style={{ background: '#fffbeb', color: '#b45309' }}>
+          <Eye size={13} /> Consultation seule — seul le chef de production modifie le stock
+        </div>
+      )}
 
       {/* Statistiques */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -173,7 +173,7 @@ function App() {
                     <Route path="insolation"   element={<RoleRoute allow={['insolation', 'chef_production']}><InsolationPage /></RoleRoute>} />
                     <Route path="production"   element={<RoleRoute allow={['production', 'chef_production']}><ProductionPage /></RoleRoute>} />
                     <Route path="emballage"    element={<RoleRoute allow={['emballage', 'chef_production']}><EmballagePage /></RoleRoute>} />
-                    <Route path="stock"        element={<RoleRoute allow={['production', 'chef_production']}><StockPage /></RoleRoute>} />
+                    <Route path="stock"        element={<RoleRoute allow={['production', 'chef_production', 'designer']}><StockPage /></RoleRoute>} />
                     <Route path="users"        element={<RoleRoute allow={[]}><UsersPage /></RoleRoute>} />
                   </Route>
                 </Route>

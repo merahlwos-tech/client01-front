@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { to: '/staff/insolation',   label: 'Insolation',   icon: Sun,          roles: ['insolation', 'chef_production'] },
   { to: '/staff/production',   label: 'Production',   icon: Hammer,       roles: ['production', 'chef_production'] },
   { to: '/staff/emballage',    label: 'Emballage',    icon: Package,      roles: ['emballage', 'chef_production'] },
-  { to: '/staff/stock',        label: 'Stock',        icon: Boxes,        roles: ['production', 'chef_production'] },
+  { to: '/staff/stock',        label: 'Stock',        icon: Boxes,        roles: ['production', 'chef_production', 'designer'] },
   { to: '/staff/users',        label: 'Comptes',      icon: Users,        roles: [] }, // superadmin only
 ]
 
