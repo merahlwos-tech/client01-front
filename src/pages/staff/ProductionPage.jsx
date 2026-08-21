@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
-  CalendarCheck, History, ShieldCheck, Undo2, Pencil,
+  CalendarCheck, History, ShieldCheck, Undo2, Pencil, CalendarDays,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -261,7 +261,9 @@ function ProductionPage() {
   const [materials, setMaterials] = useState([])
   const [editing, setEditing]     = useState(null)   // commande en cours d'édition (chef)
   const [reloadKey, setReloadKey] = useState(0)      // force le rechargement après édition
-  const [view, setView]     = useState('today')   // today | late
+  /* Le chef gère le planning : il arrive donc sur la vue complète, alors que
+     la production travaille sur la seule journée en cours. */
+  const [view, setView]     = useState(chefMode ? 'all' : 'today')  // all | today | late
   const [counts, setCounts] = useState(null)
 
   // Date locale de l'atelier (recalculée à chaque rendu de la page)
@@ -292,9 +294,19 @@ function ProductionPage() {
      commande ne reste invisible. */
   const tabs = (
     <div className="flex flex-wrap gap-2 items-center">
+      {/* Vue planning complet — réservée au chef, qui doit voir les jours
+          à venir pour pouvoir les réorganiser */}
+      {chefMode && (
+        <button onClick={() => setView('all')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+          style={{ background: view === 'all' ? PURPLE : '#f3f4f6', color: view === 'all' ? 'white' : '#6b7280' }}>
+          <CalendarDays size={15} />
+          Tout le planning{counts?.enProduction != null ? ` (${counts.enProduction})` : ''}
+        </button>
+      )}
       <button onClick={() => setView('today')}
         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-        style={{ background: !isLate ? PURPLE : '#f3f4f6', color: !isLate ? 'white' : '#6b7280' }}>
+        style={{ background: view === 'today' ? PURPLE : '#f3f4f6', color: view === 'today' ? 'white' : '#6b7280' }}>
         <CalendarCheck size={15} />
         Aujourd'hui{counts?.duJour != null ? ` (${counts.duJour})` : ''}
       </button>
@@ -321,9 +333,12 @@ function ProductionPage() {
       key={`${view}-${reloadKey}`}
       stage="production"
       eyebrow="Service production"
-      title={isLate ? 'Commandes en retard' : 'À fabriquer aujourd\'hui'}
-      emptyText={isLate
-        ? 'Aucune commande en retard.'
+      title={view === 'all' ? 'Planning de fabrication'
+           : isLate ? 'Commandes en retard'
+           : 'À fabriquer aujourd\'hui'}
+      emptyText={view === 'all'
+        ? 'Aucune commande en production.'
+        : isLate ? 'Aucune commande en retard.'
         : 'Aucune commande à fabriquer aujourd\'hui.'}
       summaryOpts={{ showDesign: true, showHistory: true, showNotes: true }}
       readOnly={readOnly}
@@ -333,7 +348,9 @@ function ProductionPage() {
         onStockChanged: () => { fetchMaterials(); refreshCounts() },
         onEdit: setEditing,
       }}
-      extraParams={isLate ? { overdueBefore: today } : { date: today }}
+      extraParams={view === 'all' ? {}
+                 : isLate ? { overdueBefore: today }
+                 : { date: today }}
       headerExtra={tabs}
     />
 
