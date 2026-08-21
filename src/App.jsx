@@ -38,6 +38,8 @@ const DesignerPage      = lazy(() => import('./pages/staff/DesignerPage'))
 const InsolationPage    = lazy(() => import('./pages/staff/InsolationPage'))
 const ProductionPage    = lazy(() => import('./pages/staff/ProductionPage'))
 const EmballagePage     = lazy(() => import('./pages/staff/EmballagePage'))
+const LivraisonPage     = lazy(() => import('./pages/staff/LivraisonPage'))
+const ChefPage          = lazy(() => import('./pages/staff/ChefPage'))
 const StockPage         = lazy(() => import('./pages/staff/StockPage'))
 const UsersPage         = lazy(() => import('./pages/staff/UsersPage'))
 
@@ -65,7 +67,7 @@ const WA_NUMBER = '213554767444'
 const INTERNAL_PATHS = [
   '/admin', '/staff',
   '/confirmatrice', '/designer', '/insolation', '/production',
-  '/emballage', '/stock', '/superadmin',
+  '/emballage', '/livraison', '/chef', '/stock', '/superadmin',
 ]
 
 function WhatsAppButton() {
@@ -160,6 +162,8 @@ function App() {
                 <Route path="/insolation"    element={standalone('Insolation',   InsolationPage)} />
                 <Route path="/production"    element={standalone('Production',   ProductionPage)} />
                 <Route path="/emballage"     element={standalone('Emballage',    EmballagePage)} />
+                <Route path="/livraison"     element={standalone('Livraison',    LivraisonPage)} />
+                <Route path="/chef"          element={standalone('Chef de production', ChefPage)} />
                 <Route path="/stock"         element={standalone('Stock',        StockPage)} />
                 <Route path="/superadmin"    element={standalone('Comptes',      UsersPage)} />
 
@@ -173,6 +177,7 @@ function App() {
                     <Route path="insolation"   element={<RoleRoute allow={['insolation', 'chef_production']}><InsolationPage /></RoleRoute>} />
                     <Route path="production"   element={<RoleRoute allow={['production', 'chef_production']}><ProductionPage /></RoleRoute>} />
                     <Route path="emballage"    element={<RoleRoute allow={['emballage', 'chef_production']}><EmballagePage /></RoleRoute>} />
+                    <Route path="livraison"    element={<RoleRoute allow={['chef_production']}><LivraisonPage /></RoleRoute>} />
                     <Route path="stock"        element={<RoleRoute allow={['production', 'chef_production', 'designer']}><StockPage /></RoleRoute>} />
                     <Route path="users"        element={<RoleRoute allow={[]}><UsersPage /></RoleRoute>} />
                   </Route>
