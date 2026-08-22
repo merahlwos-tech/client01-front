@@ -93,7 +93,14 @@ function OrderSummary({
               {urgencyCfg.label}
             </span>
           )}
-          {statusCfg && (
+          {/* « En attente » est une décision de la confirmatrice : tant qu'elle
+              n'a pas tranché, la commande est simplement nouvelle. */}
+          {!order.pipeline?.statusSetAt ? (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
+              Nouveau
+            </span>
+          ) : statusCfg && (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: statusCfg.bg, color: statusCfg.color }}>
               {statusCfg.label}

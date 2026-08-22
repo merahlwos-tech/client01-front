@@ -49,6 +49,7 @@ function OrderRow({ order, onOpen }) {
   const cd       = getCountdown(order.pipeline?.deadlineAt)
   const custom   = order.pipeline?.customTags || []
   const isUrgent = order.pipeline?.urgency && order.pipeline.urgency !== 'normal'
+  const decided  = !!order.pipeline?.statusSetAt   // la confirmatrice a tranché
 
   return (
     <button onClick={() => onOpen(order)}
@@ -76,7 +77,11 @@ function OrderRow({ order, onOpen }) {
         {/* Pastilles d'état */}
         <div className="flex items-center gap-1 flex-wrap mt-1.5">
           {isUrgent && <Pill color={urgency.color} solid>{urgency.short}</Pill>}
-          {status   && <Pill color={status.color} bg={status.bg}>{status.label}</Pill>}
+          {/* Tant que la confirmatrice n'a rien décidé, la commande est
+              « nouvelle » : afficher « En attente » serait trompeur. */}
+          {!decided
+            ? <Pill color={PURPLE} bg="rgba(124,58,237,0.1)">Nouveau</Pill>
+            : status && <Pill color={status.color} bg={status.bg}>{status.label}</Pill>}
           {order.pipeline?.designValidated && <Pill color="#10b981" bg="#ecfdf5">Validé</Pill>}
           {order.pipeline?.designerTag === 'reponses_lentes' &&
             <Pill color={slow.color} bg={slow.bg}>Lent</Pill>}

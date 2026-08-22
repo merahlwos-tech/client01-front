@@ -27,6 +27,8 @@ function OrderActions({ order, onChanged, onEdit }) {
   const status  = order.status || 'en attente'
   const urgency = order.pipeline?.urgency || 'normal'
   const locked  = LOCKED_STAGES.includes(order.pipeline?.stage)
+  // Aucun statut n'est « choisi » tant qu'elle n'a pas tranché
+  const decided = !!order.pipeline?.statusSetAt
 
   const patch = async (path, body, successMsg) => {
     setBusy(true)
@@ -69,7 +71,7 @@ function OrderActions({ order, onChanged, onEdit }) {
                 <div className="grid grid-cols-3 gap-1.5">
                   {STATUS_KEYS.map(s => {
                     const cfg = ORDER_STATUS[s]
-                    const active = status === s
+                    const active = decided && status === s
                     return (
                       <button key={s} onClick={() => changeStatus(s)} disabled={busy || active}
                         className="py-2 rounded-xl text-xs font-bold transition-all disabled:cursor-default"
