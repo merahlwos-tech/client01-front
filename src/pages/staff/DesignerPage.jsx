@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Loader2, Send, Clock3, Timer, AlertTriangle, ListChecks, UserX,
-  CheckCircle2, Factory, Undo2, CalendarDays, RotateCcw,
+  CheckCircle2, Factory, Undo2, CalendarDays, RotateCcw, Boxes,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import StageBoard from '../../Components/staff/StageBoard'
+import StageBoard, { PageHeader } from '../../Components/staff/StageBoard'
+import ProductionPlanning from '../../Components/staff/ProductionPlanning'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, PURPLE, NAVY, DESIGNER_TAGS, getCountdown,
@@ -267,13 +269,14 @@ function DesignerPage() {
   useEffect(() => { refreshCounts() }, [refreshCounts])
 
   const TABS = [
-    { key: 'todo', label: 'À traiter',            icon: ListChecks, count: counts ? counts.aTraiter + counts.validees : null, color: PURPLE },
-    { key: 'sent', label: 'Envoyé à la production', icon: Factory,  count: counts?.enProduction, color: '#2563eb' },
-    { key: 'slow', label: 'Clients lents',         icon: UserX,     count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
+    { key: 'todo',     label: 'À traiter',             icon: ListChecks,   count: counts ? counts.aTraiter + counts.validees : null, color: PURPLE },
+    { key: 'sent',     label: 'Envoyé à la production', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
+    { key: 'planning', label: 'Planning production',    icon: CalendarDays, count: null, color: '#0ea5e9' },
+    { key: 'slow',     label: 'Clients lents',          icon: UserX,       count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
   ]
 
   const tabs = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 items-center">
       {TABS.map(t => {
         const active = view === t.key
         const Icon = t.icon
@@ -289,6 +292,13 @@ function DesignerPage() {
           </button>
         )
       })}
+
+      {/* Consultation du stock — le designer n'a pas les droits de modification */}
+      <Link to="/stock"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all hover:bg-purple-50 ml-auto"
+        style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+        <Boxes size={15} /> Voir le stock
+      </Link>
     </div>
   )
 
@@ -313,6 +323,18 @@ function DesignerPage() {
     },
   }
   const cfg = CONFIG[view]
+
+  /* Le planning a sa propre mise en page (semaine + jour sélectionné) :
+     il ne passe donc pas par StageBoard. */
+  if (view === 'planning') {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <PageHeader eyebrow="Service design" title="Planning de fabrication" />
+        {tabs}
+        <ProductionPlanning />
+      </div>
+    )
+  }
 
   return (
     <StageBoard
