@@ -131,7 +131,9 @@ function ConfirmatricePage() {
   const [orders, setOrders]   = useState([])
   const [counts, setCounts]   = useState(null)
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter]   = useState('all')     // all | en attente | confirmé | annulé
+  // 'nouveau' (non traitées) | un statut | 'tag:<id>'
+  const [filter, setFilter]   = useState('nouveau')
+  const [tags, setTags]       = useState([])
   const [search, setSearch]   = useState('')
   const [query, setQuery]     = useState('')        // recherche appliquée (débouncée)
   const [formOpen, setFormOpen]     = useState(false)
@@ -149,16 +151,20 @@ function ConfirmatricePage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = {}
-      if (filter !== 'all') params.status = filter
-      if (query.trim())     params.q = query.trim()
+      // `filter` vaut soit 'nouveau', soit un statut, soit 'tag:<id>'
+      const params = filter.startsWith('tag:')
+        ? { tag: filter.slice(4) }
+        : { status: filter }
+      if (query.trim()) params.q = query.trim()
 
-      const [list, cnt] = await Promise.all([
+      const [list, cnt, tg] = await Promise.all([
         staffApi.get('/workflow/confirmation', { params }),
         staffApi.get('/workflow/confirmation/counts'),
+        staffApi.get('/tags', { params: { scope: 'confirmatrice' } }),
       ])
       setOrders(list.data || [])
       setCounts(cnt.data || null)
+      setTags(tg.data || [])
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur de chargement')
     } finally {
@@ -173,21 +179,36 @@ function ConfirmatricePage() {
   const handleChanged = (updated) => {
     if (!updated?._id) { load(); return }
     setOrders(prev => prev.map(o => o._id === updated._id ? updated : o))
-    // Le compteur par statut change → on le rafraîchit discrètement
+
+    // Les compteurs changent → on les rafraîchit discrètement
     staffApi.get('/workflow/confirmation/counts')
       .then(r => setCounts(r.data)).catch(() => {})
-    // Si un filtre de statut est actif, la commande peut en sortir
-    if (filter !== 'all' && updated.status !== filter) {
+
+    /* La commande sort-elle de la vue courante ?
+       - onglet « Commandes » : dès qu'elle reçoit un statut
+       - onglet d'un statut    : si son statut a changé
+       - onglet d'une étiquette : si l'étiquette a été retirée   */
+    const sort =
+      filter === 'nouveau'        ? !!updated.pipeline?.statusSetAt
+    : filter.startsWith('tag:')   ? !(updated.pipeline?.customTags || [])
+                                      .some(t => String(t._id || t) === filter.slice(4))
+    :                               updated.status !== filter
+
+    if (sort) {
       setOrders(prev => prev.filter(o => o._id !== updated._id))
+      setSelectedId(null)
     }
   }
 
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit   = (order) => { setEditing(order); setFormOpen(true) }
 
+  // « Commandes » = celles qu'elle n'a pas encore traitées
   const TABS = [
-    { key: 'all',         label: 'Toutes',     count: counts?.total },
-    ...STATUS_KEYS.map(s => ({ key: s, label: ORDER_STATUS[s].label, count: counts?.[s] })),
+    { key: 'nouveau', label: 'Commandes', count: counts?.nouveau, color: PURPLE },
+    ...STATUS_KEYS.map(s => ({
+      key: s, label: ORDER_STATUS[s].label, count: counts?.[s], color: ORDER_STATUS[s].color,
+    })),
   ]
 
   return (
@@ -218,12 +239,30 @@ function ConfirmatricePage() {
             const active = filter === t.key
             return (
               <button key={t.key} onClick={() => setFilter(t.key)}
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                className="px-3 py-2 rounded-full text-xs font-bold transition-all"
                 style={{
-                  background: active ? PURPLE : '#f3f4f6',
+                  background: active ? t.color : '#f3f4f6',
                   color:      active ? 'white' : '#6b7280',
                 }}>
                 {t.label}{t.count != null ? ` (${t.count})` : ''}
+              </button>
+            )
+          })}
+
+          {/* Étiquettes : un clic filtre les commandes qui la portent */}
+          {tags.length > 0 && <span className="w-px self-stretch bg-gray-200 mx-1" />}
+          {tags.map(tag => {
+            const key    = `tag:${tag._id}`
+            const active = filter === key
+            const nb     = counts?.tags?.[tag._id]
+            return (
+              <button key={tag._id} onClick={() => setFilter(key)}
+                className="px-3 py-2 rounded-full text-xs font-bold transition-all"
+                style={{
+                  background: active ? tag.color : tag.color + '1a',
+                  color:      active ? 'white'   : tag.color,
+                }}>
+                {tag.name}{nb != null ? ` (${nb})` : ''}
               </button>
             )
           })}
