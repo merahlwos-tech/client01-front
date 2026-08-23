@@ -102,7 +102,8 @@ function StageBoard({
         /* ── Liste compacte : on clique une ligne pour voir le détail ── */
         <div className="space-y-2">
           {orders.map(order => (
-            <OrderRow key={order._id} order={order} onOpen={o => setSelectedId(o._id)} />
+            <OrderRow key={order._id} order={order} tagScope={tagScope}
+              onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
       ) : (

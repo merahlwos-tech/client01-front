@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Boxes, Loader2, Plus, ImagePlus, Trash2, PackagePlus,
-  TrendingDown, TrendingUp, AlertTriangle, X, Eye,
+  TrendingDown, TrendingUp, AlertTriangle, X, Eye, ArrowLeft,
 } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
@@ -196,9 +197,23 @@ function MaterialRow({ material, canWrite, onChanged }) {
   )
 }
 
+// Destinations autorisées pour le bouton retour (évite une redirection
+// arbitraire depuis l'URL)
+const RETOURS = {
+  designer:      '/designer',
+  confirmatrice: '/confirmatrice',
+  production:    '/production',
+  insolation:    '/insolation',
+  emballage:     '/emballage',
+  chef:          '/chef',
+  staff:         '/staff',
+}
+
 function StockPage() {
   const { role } = useStaffAuth()
   const canWrite = canWriteStock(role)
+  const [searchParams] = useSearchParams()
+  const backTo = RETOURS[searchParams.get('from')] || null
   const [materials, setMaterials] = useState([])
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
@@ -219,26 +234,44 @@ function StockPage() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <PageHeader eyebrow="Gestion des matières premières" title="Stock" />
+    <div className="max-w-4xl mx-auto space-y-5">
+
+      {/* Retour vers la page d'origine (ex. le designer arrive depuis la sienne) */}
+      {backTo && (
+        <Link to={backTo}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all hover:bg-purple-50"
+          style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+          <ArrowLeft size={15} /> Retour
+        </Link>
+      )}
+
+      <PageHeader eyebrow="Matières premières" title="Stock" />
 
       {!canWrite && (
         <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl w-fit"
           style={{ background: '#fffbeb', color: '#b45309' }}>
-          <Eye size={13} /> Consultation seule — seul le chef de production modifie le stock
+          <Eye size={13} /> Consultation seule
         </div>
       )}
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Boxes} label="Matières"        value={stats?.totalMaterials} />
-        <StatCard icon={TrendingUp} label="Unités en stock" value={stats?.totalUnits?.toLocaleString('fr-DZ')} color="#059669" />
-        <StatCard icon={AlertTriangle} label="Stock bas"  value={stats?.lowStockCount} color="#f59e0b" />
-        <StatCard icon={TrendingDown} label="Ruptures"    value={stats?.outOfStockCount} color="#ef4444" />
+      {/* Résumé compact : l'essentiel en une ligne */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: 'Matières',  value: stats?.totalMaterials ?? 0, color: NAVY },
+          { label: 'Unités',    value: (stats?.totalUnits ?? 0).toLocaleString('fr-DZ'), color: '#059669' },
+          { label: 'Stock bas', value: stats?.lowStockCount ?? 0, color: '#f59e0b' },
+          { label: 'Ruptures',  value: stats?.outOfStockCount ?? 0, color: '#ef4444' },
+        ].map(s => (
+          <div key={s.label} className="flex-1 min-w-[80px] bg-white rounded-xl px-3 py-2.5 border border-gray-100 text-center">
+            <p className="text-lg font-black leading-none" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">{s.label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Flux 30 jours + top consommé */}
-      {stats && (stats.consumedLast30 > 0 || stats.restockedLast30 > 0 || stats.topConsumed?.length > 0) && (
+      {/* Flux et consommation : utiles à qui gère le stock, superflus pour
+          les services qui viennent seulement le consulter */}
+      {canWrite && stats && (stats.consumedLast30 > 0 || stats.restockedLast30 > 0 || stats.topConsumed?.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PURPLE }}>Flux (30 derniers jours)</p>
@@ -273,8 +306,8 @@ function StockPage() {
       {canWrite && <AddMaterialForm onAdded={load} />}
 
       {/* Liste des matières */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: PURPLE }}>
+      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>
           Matières en stock {materials.length > 0 && `(${materials.length})`}
         </p>
         {loading ? (

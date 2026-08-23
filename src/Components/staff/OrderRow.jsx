@@ -41,13 +41,17 @@ function Pill({ children, color, bg, solid }) {
   )
 }
 
-function OrderRow({ order, onOpen }) {
+/* `tagScope` : les étiquettes sont PRIVÉES à chaque service. On n'affiche que
+   celles du service qui regarde ; sans scope, aucune n'est montrée. */
+function OrderRow({ order, onOpen, tagScope = null }) {
   const c        = order.customerInfo || {}
   const urgency  = URGENCY[order.pipeline?.urgency]
   const status   = ORDER_STATUS[order.status]
   const slow     = DESIGNER_TAGS[order.pipeline?.designerTag]
   const cd       = getCountdown(order.pipeline?.deadlineAt)
-  const custom   = order.pipeline?.customTags || []
+  const custom   = tagScope
+    ? (order.pipeline?.customTags || []).filter(t => t?.scope === tagScope)
+    : []
   const isUrgent = order.pipeline?.urgency && order.pipeline.urgency !== 'normal'
   const decided  = !!order.pipeline?.statusSetAt   // la confirmatrice a tranché
 

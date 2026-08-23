@@ -294,7 +294,7 @@ function DesignerPage() {
       })}
 
       {/* Consultation du stock — le designer n'a pas les droits de modification */}
-      <Link to="/stock"
+      <Link to="/stock?from=designer"
         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all hover:bg-purple-50 ml-auto"
         style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
         <Boxes size={15} /> Voir le stock
