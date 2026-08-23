@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, Inbox, CheckCircle2, Undo2, Sun, ListChecks, RefreshCcw,
+  Loader2, Inbox, CheckCircle2, Undo2, Sun, ListChecks, RefreshCcw, History,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from '../../Components/staff/OrderRow'
 import OrderDetailModal from '../../Components/staff/OrderDetailModal'
+import ServiceHistory from '../../Components/staff/ServiceHistory'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
@@ -89,6 +90,7 @@ function InsolationPage() {
   const selected = orders.find(o => o._id === selectedId) || null
 
   const load = useCallback(async () => {
+    if (view === 'historique') { setLoading(false); return }
     setLoading(true)
     try {
       const [list, cnt] = await Promise.all([
@@ -123,6 +125,7 @@ function InsolationPage() {
   const TABS = [
     { key: 'en_attente', label: 'À insoler', icon: ListChecks, count: counts?.en_attente, color: PURPLE },
     { key: 'confirme',   label: 'Confirmé',  icon: CheckCircle2, count: counts?.confirme, color: INSOLATION_STATUS.confirme.color },
+    { key: 'historique', label: 'Historique', icon: History,    count: null, color: '#6b7280' },
   ]
 
   return (
@@ -151,8 +154,13 @@ function InsolationPage() {
         })}
       </div>
 
+      {/* Historique du service */}
+      {view === 'historique' && (
+        <ServiceHistory service="insolation" summaryOpts={{ showDesign: true }} />
+      )}
+
       {/* Liste */}
-      {loading ? (
+      {view !== 'historique' && (loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-400 py-10 justify-center">
           <Loader2 size={16} className="animate-spin" /> Chargement…
         </div>
@@ -173,14 +181,14 @@ function InsolationPage() {
             <OrderRow key={order._id} order={order} onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
-      )}
+      ))}
 
       {/* Détail */}
       {selected && (
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={{ showDesign: true, showHistory: true }}
+          summaryOpts={{ showDesign: true }}
           onTagsChanged={handleChanged}
           notesReadOnly={readOnly}>
           {!readOnly && (

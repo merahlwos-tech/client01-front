@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   Phone, MapPin, Truck, User, FileText, Image as ImageIcon,
-  Package, History, ChevronDown, Palette, Timer, Clock, CalendarDays,
+  Package, Palette, Timer, Clock, CalendarDays,
   MessageSquare, PackageCheck,
 } from 'lucide-react'
 import {
@@ -65,10 +65,8 @@ function Row({ icon: Icon, children }) {
 }
 
 function OrderSummary({
-  order, showDesign = false, showMaterials = false, showHistory = false,
-  showNotes = false,
+  order, showDesign = false, showMaterials = false, showNotes = false,
 }) {
-  const [openHistory, setOpenHistory] = useState(false)
   const c = order.customerInfo || {}
   const stage      = STAGES[order.pipeline?.stage] || {}
   const urgencyCfg  = URGENCY[order.pipeline?.urgency]
@@ -255,28 +253,6 @@ function OrderSummary({
         </div>
       )}
 
-      {/* Historique */}
-      {showHistory && order.pipeline?.history?.length > 0 && (
-        <div>
-          <button onClick={() => setOpenHistory(o => !o)}
-            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70"
-            style={{ color: '#9ca3af' }}>
-            <History size={13} /> Historique ({order.pipeline.history.length})
-            <ChevronDown size={13} className="transition-transform" style={{ transform: openHistory ? 'rotate(180deg)' : 'none' }} />
-          </button>
-          {openHistory && (
-            <div className="mt-2 space-y-1.5 pl-2 border-l-2" style={{ borderColor: 'rgba(124,58,237,0.2)' }}>
-              {order.pipeline.history.slice().reverse().map((h, i) => (
-                <div key={i} className="text-xs text-gray-500">
-                  <span className="font-semibold" style={{ color: NAVY }}>{STAGES[h.stage]?.label || h.stage}</span>
-                  {h.by ? ` · ${h.by}` : ''} · {new Date(h.at).toLocaleString('fr-DZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  {h.note ? <span className="block text-gray-400">{h.note}</span> : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }

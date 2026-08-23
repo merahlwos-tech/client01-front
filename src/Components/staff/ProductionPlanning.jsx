@@ -210,7 +210,7 @@ function ProductionPlanning({ summaryOpts = {} }) {
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={{ showDesign: true, showHistory: true, ...summaryOpts }}
+          summaryOpts={{ showDesign: true, ...summaryOpts }}
           notesReadOnly={false}
           onTagsChanged={() => loadDay(selectedDate)}
         />

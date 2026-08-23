@@ -7,6 +7,7 @@ import staffApi from '../../utils/staffApi'
 import OrderRow from '../../Components/staff/OrderRow'
 import OrderDetailModal from '../../Components/staff/OrderDetailModal'
 import OrderForm from '../../Components/staff/OrderForm'
+import ServiceHistory from '../../Components/staff/ServiceHistory'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
@@ -151,6 +152,8 @@ function ConfirmatricePage() {
   }, [search])
 
   const load = useCallback(async () => {
+    // L'historique a son propre chargement (ServiceHistory)
+    if (filter === 'historique') { setLoading(false); return }
     setLoading(true)
     try {
       // `filter` vaut soit 'nouveau', soit un statut, soit 'tag:<id>'
@@ -211,7 +214,56 @@ function ConfirmatricePage() {
     ...STATUS_KEYS.map(s => ({
       key: s, label: ORDER_STATUS[s].label, count: counts?.[s], color: ORDER_STATUS[s].color,
     })),
+    { key: 'historique', label: 'Historique', count: null, color: '#6b7280' },
   ]
+
+  /* Barre d'onglets + étiquettes, partagée avec la vue historique */
+  const tabsBar = (
+    <div className="flex flex-wrap gap-1.5">
+      {TABS.map(t => {
+        const active = filter === t.key
+        return (
+          <button key={t.key} onClick={() => setFilter(t.key)}
+            className="px-3 py-2 rounded-full text-xs font-bold transition-all"
+            style={{
+              background: active ? t.color : '#f3f4f6',
+              color:      active ? 'white' : '#6b7280',
+            }}>
+            {t.label}{t.count != null ? ` (${t.count})` : ''}
+          </button>
+        )
+      })}
+
+      {/* Étiquettes : un clic filtre les commandes qui la portent */}
+      {tags.length > 0 && <span className="w-px self-stretch bg-gray-200 mx-1" />}
+      {tags.map(tag => {
+        const key    = `tag:${tag._id}`
+        const active = filter === key
+        const nb     = counts?.tags?.[tag._id]
+        return (
+          <button key={tag._id} onClick={() => setFilter(key)}
+            className="px-3 py-2 rounded-full text-xs font-bold transition-all"
+            style={{
+              background: active ? tag.color : tag.color + '1a',
+              color:      active ? 'white'   : tag.color,
+            }}>
+            {tag.name}{nb != null ? ` (${nb})` : ''}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  /* L'historique a sa propre mise en page (périodes + décomptes) */
+  if (filter === 'historique') {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <PageHeader eyebrow="Service confirmation" title="Historique" />
+        {tabsBar}
+        <ServiceHistory service="confirmatrice" tagScope="confirmatrice" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -236,39 +288,7 @@ function ConfirmatricePage() {
 
       {/* Filtres + recherche */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-        <div className="flex flex-wrap gap-1.5 flex-1">
-          {TABS.map(t => {
-            const active = filter === t.key
-            return (
-              <button key={t.key} onClick={() => setFilter(t.key)}
-                className="px-3 py-2 rounded-full text-xs font-bold transition-all"
-                style={{
-                  background: active ? t.color : '#f3f4f6',
-                  color:      active ? 'white' : '#6b7280',
-                }}>
-                {t.label}{t.count != null ? ` (${t.count})` : ''}
-              </button>
-            )
-          })}
-
-          {/* Étiquettes : un clic filtre les commandes qui la portent */}
-          {tags.length > 0 && <span className="w-px self-stretch bg-gray-200 mx-1" />}
-          {tags.map(tag => {
-            const key    = `tag:${tag._id}`
-            const active = filter === key
-            const nb     = counts?.tags?.[tag._id]
-            return (
-              <button key={tag._id} onClick={() => setFilter(key)}
-                className="px-3 py-2 rounded-full text-xs font-bold transition-all"
-                style={{
-                  background: active ? tag.color : tag.color + '1a',
-                  color:      active ? 'white'   : tag.color,
-                }}>
-                {tag.name}{nb != null ? ` (${nb})` : ''}
-              </button>
-            )
-          })}
-        </div>
+        <div className="flex-1">{tabsBar}</div>
 
         <div className="relative sm:w-64">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -311,7 +331,7 @@ function ConfirmatricePage() {
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={{ showHistory: true }}
+          summaryOpts={{}}
           tagScope={readOnly ? null : 'confirmatrice'}
           onTagsChanged={handleChanged}>
           {!readOnly && (

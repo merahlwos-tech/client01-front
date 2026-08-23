@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Loader2, Send, Clock3, Timer, AlertTriangle, ListChecks, UserX,
-  CheckCircle2, Factory, Undo2, CalendarDays, RotateCcw, Boxes,
+  CheckCircle2, Factory, Undo2, CalendarDays, RotateCcw, Boxes, History,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import StageBoard, { PageHeader } from '../../Components/staff/StageBoard'
 import ProductionPlanning from '../../Components/staff/ProductionPlanning'
+import ServiceHistory from '../../Components/staff/ServiceHistory'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, PURPLE, NAVY, DESIGNER_TAGS, getCountdown,
@@ -273,6 +274,7 @@ function DesignerPage() {
     { key: 'sent',     label: 'Envoyé à la production', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
     { key: 'planning', label: 'Planning production',    icon: CalendarDays, count: null, color: '#0ea5e9' },
     { key: 'slow',     label: 'Clients lents',          icon: UserX,       count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
+    { key: 'historique', label: 'Historique',           icon: History,     count: null, color: '#6b7280' },
   ]
 
   const tabs = (
@@ -336,6 +338,17 @@ function DesignerPage() {
     )
   }
 
+  if (view === 'historique') {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <PageHeader eyebrow="Service design" title="Historique" />
+        {tabs}
+        <ServiceHistory service="designer" tagScope="designer"
+          summaryOpts={{ showDesign: true }} />
+      </div>
+    )
+  }
+
   return (
     <StageBoard
       key={view}
@@ -343,7 +356,7 @@ function DesignerPage() {
       eyebrow="Service design"
       title={cfg.title}
       emptyText={cfg.empty}
-      summaryOpts={{ showHistory: true }}
+      summaryOpts={{}}
       readOnly={!canAct(role, 'design')}
       actions={cfg.actions}
       actionProps={{ onCountsChanged: refreshCounts }}

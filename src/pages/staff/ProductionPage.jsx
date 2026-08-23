@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
-  CalendarCheck, History, ShieldCheck, Undo2, Pencil, CalendarDays,
+  CalendarCheck, History, ShieldCheck, Undo2, Pencil, CalendarDays, Package,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -10,6 +10,8 @@ import StageBoard from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import NotesThread from '../../Components/staff/NotesThread'
 import OrderForm from '../../Components/staff/OrderForm'
+import ServiceHistory from '../../Components/staff/ServiceHistory'
+import { PageHeader } from '../../Components/staff/StageBoard'
 import {
   canAct, PURPLE, NAVY, todayStr, formatDayLabel,
   WEEKDAYS, nextDateForWeekday, STAGES,
@@ -317,6 +319,12 @@ function ProductionPage() {
           <History size={15} /> En retard ({counts.enRetard})
         </button>
       )}
+      <button onClick={() => setView('historique')}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+        style={{ background: view === 'historique' ? '#6b7280' : '#f3f4f6',
+                 color: view === 'historique' ? 'white' : '#6b7280' }}>
+        <History size={15} /> Historique
+      </button>
       <span className="text-xs text-gray-400 ml-1">{formatDayLabel(today)}</span>
       {chefMode && (
         <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ml-auto"
@@ -326,6 +334,17 @@ function ProductionPage() {
       )}
     </div>
   )
+
+  if (view === 'historique') {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <PageHeader eyebrow="Service production" title="Historique" />
+        {tabs}
+        <ServiceHistory service="production"
+          summaryOpts={{ showDesign: true, showMaterials: true }} />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -340,7 +359,7 @@ function ProductionPage() {
         ? 'Aucune commande en production.'
         : isLate ? 'Aucune commande en retard.'
         : 'Aucune commande à fabriquer aujourd\'hui.'}
-      summaryOpts={{ showDesign: true, showHistory: true, showNotes: true }}
+      summaryOpts={{ showDesign: true, showNotes: true }}
       readOnly={readOnly}
       actions={chefMode ? ChefProductionActions : ProductionActions}
       actionProps={{
