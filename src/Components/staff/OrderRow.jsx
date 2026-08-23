@@ -5,7 +5,7 @@
 import { ImageIcon, ChevronRight, FileText } from 'lucide-react'
 import {
   NAVY, PURPLE, URGENCY, ORDER_STATUS, DESIGNER_TAGS, INSOLATION_STATUS,
-  getCountdown, formatDayLabel, shortRef,
+  getCountdown, formatDayLabel, shortRef, thumb,
 } from './staffConfig'
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
@@ -16,7 +16,8 @@ function LogoThumb({ logoUrls = [] }) {
 
   if (img) {
     return (
-      <img src={img} alt="" loading="lazy"
+      <img src={thumb(img, 96)} alt="" loading="lazy" decoding="async"
+        width={48} height={48}
         className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
         style={{ borderColor: 'rgba(124,58,237,0.2)' }} />
     )

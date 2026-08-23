@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
-  getCountdown, formatDayLabel, shortRef,
+  getCountdown, formatDayLabel, shortRef, thumb,
 } from './staffConfig'
 
 /* Compte à rebours de l'atelier — se met à jour tout seul chaque minute */
@@ -45,10 +45,12 @@ function FileThumb({ url }) {
       </a>
     )
   }
+  /* La vignette est légère ; le lien ouvre l'original en pleine résolution. */
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-xl overflow-hidden border-2"
       style={{ borderColor: 'rgba(124,58,237,0.25)' }}>
-      <img src={url} alt="fichier" className="w-full h-full object-cover" loading="lazy" />
+      <img src={thumb(url, 160)} alt="fichier" width={80} height={80}
+        className="w-full h-full object-cover" loading="lazy" decoding="async" />
     </a>
   )
 }

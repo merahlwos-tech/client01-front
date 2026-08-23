@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { canWriteStock, NAVY, PURPLE } from '../../Components/staff/staffConfig'
+import { canWriteStock, NAVY, PURPLE, thumb } from '../../Components/staff/staffConfig'
 import { PageHeader } from '../../Components/staff/StageBoard'
 
 /* ── Carte de stat ── */
@@ -169,7 +169,8 @@ function MaterialRow({ material, canWrite, onChanged }) {
     <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: low ? '#fecaca' : '#f0f0f4', background: low ? '#fef2f2' : 'white' }}>
       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: '#f5f3ff' }}>
         {material.image
-          ? <img src={material.image} alt={material.name} className="w-full h-full object-cover" loading="lazy" />
+          ? <img src={thumb(material.image, 96)} alt={material.name} width={48} height={48}
+              className="w-full h-full object-cover" loading="lazy" decoding="async" />
           : <Boxes size={20} style={{ color: 'rgba(124,58,237,0.4)' }} />}
       </div>
       <div className="min-w-0 flex-1">

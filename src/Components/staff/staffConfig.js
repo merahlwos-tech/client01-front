@@ -38,10 +38,11 @@ export const STAGES = {
   annulee:      { label: 'Annulée',      color: '#ef4444', bg: '#fef2f2' },
 }
 
-// Statut public d'une commande (géré par la confirmatrice)
+// Statut public d'une commande (géré par la confirmatrice).
+// L'ordre des clés est celui d'affichage : confirmé, en attente, annulé.
 export const ORDER_STATUS = {
-  'en attente': { label: 'En attente', color: '#f59e0b', bg: '#fffbeb' },
   'confirmé':   { label: 'Confirmé',   color: '#10b981', bg: '#ecfdf5' },
+  'en attente': { label: 'En attente', color: '#f59e0b', bg: '#fffbeb' },
   'annulé':     { label: 'Annulé',     color: '#ef4444', bg: '#fef2f2' },
 }
 export const STATUS_KEYS = Object.keys(ORDER_STATUS)
@@ -156,6 +157,21 @@ export const canView = (role, stage) =>
 // Peut ajouter/modifier du stock (chef + superadmin)
 export const canWriteStock = (role) =>
   isSuperadmin(role) || role === 'chef_production'
+
+/* Vignette Cloudinary générée à la volée.
+   Les logos clients pèsent souvent près d'un Mo : les charger en pleine
+   résolution pour une vignette de 48 px bloque le rendu. Cloudinary sait
+   redimensionner et convertir côté serveur — quelques Ko suffisent alors.
+   Les URLs non-Cloudinary (ou les PDF) sont laissées intactes. */
+export function thumb(url, size = 96) {
+  if (!url || typeof url !== 'string') return url
+  if (!url.includes('/image/upload/')) return url          // PDF, raw, autre hébergeur
+  if (/\/upload\/[a-z]+_/.test(url)) return url            // transformation déjà présente
+  return url.replace(
+    '/image/upload/',
+    `/image/upload/w_${size},h_${size},c_fill,q_auto,f_auto/`
+  )
+}
 
 // Référence courte d'une commande (8 derniers caractères de l'_id)
 export const shortRef = (id) => (id ? String(id).slice(-8).toUpperCase() : '—')

@@ -11,6 +11,14 @@ import { NAVY, PURPLE, STATUS_KEYS, ORDER_STATUS, URGENCY_KEYS, URGENCY } from '
 
 const DELIVERY_METHODS = ['Domicile', 'Stop Desk']
 
+// Libellés lisibles des catégories du catalogue
+const CATEGORIES = {
+  Board:        'Boites',
+  Bags:         'Sacs',
+  Autocollants: 'Cartes & Autocollants',
+  Paper:        'Papier',
+}
+
 const emptyCustomer = {
   firstName: '', lastName: '', phone: '',
   wilaya: '', wilayaCode: null, commune: '',
@@ -38,9 +46,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const [products, setProducts] = useState([])
   const [saving, setSaving]     = useState(false)
 
-  /* ── Catalogue produits (pour les listes déroulantes) ── */
+  /* ── Catalogue COMPLET (y compris les catégories masquées au public) ── */
   useEffect(() => {
-    staffApi.get('/products')
+    staffApi.get('/workflow/products')
       .then(res => setProducts(Array.isArray(res.data) ? res.data : (res.data?.products || [])))
       .catch(() => { /* saisie libre possible sans catalogue */ })
   }, [])
@@ -251,7 +259,11 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                       <select value={it.product} className={field} style={{ color: NAVY }}
                         onChange={e => onProductChange(idx, e.target.value)}>
                         <option value="">— Produit libre —</option>
-                        {products.map(pr => <option key={pr._id} value={pr._id}>{pr.name}</option>)}
+                        {products.map(pr => (
+                          <option key={pr._id} value={pr._id}>
+                            {pr.name}{pr.category ? ` — ${CATEGORIES[pr.category] || pr.category}` : ''}
+                          </option>
+                        ))}
                       </select>
                       <input value={it.name} placeholder="Nom de l'article *" className={field} style={{ color: NAVY }}
                         onChange={e => setItem(idx, { name: e.target.value })} />
