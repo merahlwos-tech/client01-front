@@ -209,11 +209,18 @@ const RETOURS = {
   staff:         '/staff',
 }
 
+// Services qui consultent le stock sans pouvoir le modifier. En accès libre
+// les rôles n'existent plus (tout le monde passe pour un superadmin) : c'est
+// l'origine de la visite qui détermine les droits appliqués.
+const ORIGINES_LECTURE_SEULE = ['designer', 'confirmatrice', 'insolation', 'emballage', 'production']
+
 function StockPage() {
   const { role } = useStaffAuth()
-  const canWrite = canWriteStock(role)
   const [searchParams] = useSearchParams()
-  const backTo = RETOURS[searchParams.get('from')] || null
+  const from   = searchParams.get('from')
+  const backTo = RETOURS[from] || null
+
+  const canWrite = canWriteStock(role) && !ORIGINES_LECTURE_SEULE.includes(from)
   const [materials, setMaterials] = useState([])
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
