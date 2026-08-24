@@ -79,7 +79,9 @@ function DaySelector({ value, onChange }) {
 /* ══════════════════════════════════════════════
    Vue « À traiter » — validation puis envoi
 ══════════════════════════════════════════════ */
-function DesignActions({ order, removeOne, updateOne, onCountsChanged }) {
+/* `mode` : 'todo' = travail en cours (on valide seulement)
+            'traitees' = travail fini (on planifie et on envoie) */
+function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 'todo' }) {
   const [notes, setNotes] = useState(order.pipeline?.design?.notes || '')
   const [day, setDay]     = useState(null)
   const [busy, setBusy]   = useState(null)
@@ -92,10 +94,12 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged }) {
   const toggleValidate = async () => {
     setBusy('validate')
     try {
-      const res = await staffApi.patch(`/workflow/orders/${order._id}/design-validate`,
+      await staffApi.patch(`/workflow/orders/${order._id}/design-validate`,
         { validated: !validated, notes })
-      toast.success(!validated ? 'Design validé' : 'Validation retirée')
-      updateOne?.(res.data)
+      toast.success(!validated
+        ? 'Commande traitée — elle passe dans « Commandes traitées »'
+        : 'Validation retirée — retour dans « À traiter »')
+      removeOne(order._id)      // elle change de liste
       onCountsChanged?.()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
@@ -139,37 +143,45 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged }) {
     <div className="space-y-3">
       <DeadlineBanner deadlineAt={order.pipeline?.deadlineAt} />
 
-      {/* Étape 1 — validation */}
-      <button onClick={toggleValidate} disabled={!!busy}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50"
-        style={{
-          borderColor: validated ? '#10b981' : '#e5e7eb',
-          background:  validated ? '#10b981' : 'white',
-          color:       validated ? 'white'   : '#6b7280',
-        }}>
-        {busy === 'validate' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-        {validated ? 'Design validé — annuler la validation' : 'Marquer mon travail comme validé'}
-      </button>
+      {/* Liste « À traiter » : il termine son travail, rien de plus.
+          La planification se fait ensuite depuis « Commandes traitées ». */}
+      {mode === 'todo' ? (
+        <>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+            placeholder="Note pour la production (facultatif)"
+            className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
 
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-        placeholder="Note pour la production (facultatif)"
-        className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
-
-      {/* Étape 2 — envoi planifié (uniquement une fois validé) */}
-      {validated ? (
-        <div className="space-y-2 p-3 rounded-xl" style={{ background: '#faf9ff' }}>
-          <DaySelector value={day} onChange={setDay} />
-          <button onClick={sendToProduction} disabled={!!busy || day == null}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
-            style={{ background: PURPLE }}>
-            {busy === 'send' ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            Envoyer à la production
+          <button onClick={toggleValidate} disabled={!!busy}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ background: '#10b981' }}>
+            {busy === 'validate' ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+            Travail terminé
           </button>
-        </div>
+          <p className="text-[11px] text-gray-400 text-center">
+            La commande passera dans « Commandes traitées », où vous choisirez
+            son jour de fabrication.
+          </p>
+        </>
       ) : (
-        <p className="text-[11px] text-gray-400 text-center">
-          Validez votre travail pour pouvoir l'envoyer à la production.
-        </p>
+        /* Liste « Commandes traitées » : planification et envoi */
+        <>
+          <div className="space-y-2 p-3 rounded-xl" style={{ background: '#faf9ff' }}>
+            <DaySelector value={day} onChange={setDay} />
+            <button onClick={sendToProduction} disabled={!!busy || day == null}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
+              style={{ background: PURPLE }}>
+              {busy === 'send' ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              Ajouter au planning de production
+            </button>
+          </div>
+
+          <button onClick={toggleValidate} disabled={!!busy}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-50"
+            style={{ borderColor: '#e5e7eb', color: '#9ca3af' }}>
+            {busy === 'validate' ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
+            Reprendre le travail
+          </button>
+        </>
       )}
 
       {/* Client lent */}
@@ -270,7 +282,8 @@ function DesignerPage() {
   useEffect(() => { refreshCounts() }, [refreshCounts])
 
   const TABS = [
-    { key: 'todo',     label: 'À traiter',             icon: ListChecks,   count: counts ? counts.aTraiter + counts.validees : null, color: PURPLE },
+    { key: 'todo',     label: 'À traiter',             icon: ListChecks,   count: counts?.aTraiter, color: PURPLE },
+    { key: 'traitees', label: 'Commandes traitées',    icon: CheckCircle2, count: counts?.validees, color: '#10b981' },
     { key: 'sent',     label: 'Envoyé à la production', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
     { key: 'planning', label: 'Planning production',    icon: CalendarDays, count: null, color: '#0ea5e9' },
     { key: 'slow',     label: 'Clients lents',          icon: UserX,       count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
@@ -306,9 +319,15 @@ function DesignerPage() {
 
   const CONFIG = {
     todo: {
-      stage: 'design', params: { slow: 0 },
+      stage: 'design', params: { slow: 0, validated: 0 },
       title: 'Commandes à designer',
       empty: 'Aucune commande en attente de design.',
+      actions: DesignActions,
+    },
+    traitees: {
+      stage: 'design', params: { slow: 0, validated: 1 },
+      title: 'Commandes traitées',
+      empty: 'Aucune commande traitée en attente de planification.',
       actions: DesignActions,
     },
     sent: {
@@ -359,7 +378,9 @@ function DesignerPage() {
       summaryOpts={{}}
       readOnly={!canAct(role, 'design')}
       actions={cfg.actions}
-      actionProps={{ onCountsChanged: refreshCounts }}
+      /* La liste des clients lents garde les actions de travail */
+      actionProps={{ onCountsChanged: refreshCounts,
+                     mode: view === 'traitees' ? 'traitees' : 'todo' }}
       extraParams={cfg.params}
       headerExtra={tabs}
       layout="list"
