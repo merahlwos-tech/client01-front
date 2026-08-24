@@ -36,20 +36,21 @@ const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
 // Vignette d'un fichier (image ou PDF)
 function FileThumb({ url }) {
+  /* 96 px = 80 px agrandis de 20 % */
   if (isPdf(url)) {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer"
-        className="flex flex-col items-center justify-center gap-1 w-20 h-20 rounded-xl border-2 text-xs font-bold transition-all hover:opacity-80"
+        className="flex flex-col items-center justify-center gap-1 w-24 h-24 rounded-xl border-2 text-xs font-bold transition-all hover:opacity-80"
         style={{ borderColor: 'rgba(124,58,237,0.25)', background: '#faf9ff', color: PURPLE }}>
-        <FileText size={22} /> PDF
+        <FileText size={26} /> PDF
       </a>
     )
   }
   /* La vignette est légère ; le lien ouvre l'original en pleine résolution. */
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="block w-20 h-20 rounded-xl overflow-hidden border-2"
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block w-24 h-24 rounded-xl overflow-hidden border-2"
       style={{ borderColor: 'rgba(124,58,237,0.25)' }}>
-      <img src={thumb(url, 160)} alt="fichier" width={80} height={80}
+      <img src={thumb(url, 192)} alt="fichier" width={96} height={96}
         className="w-full h-full object-cover" loading="lazy" decoding="async" />
     </a>
   )

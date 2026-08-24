@@ -14,20 +14,22 @@ const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 function LogoThumb({ logoUrls = [] }) {
   const img = logoUrls.find(u => !isPdf(u))
 
+  /* 58 px = 48 px agrandis de 20 % ; la vignette est demandée en 128 px
+     pour rester nette sur les écrans à forte densité. */
   if (img) {
     return (
-      <img src={thumb(img, 96)} alt="" loading="lazy" decoding="async"
-        width={48} height={48}
-        className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
+      <img src={thumb(img, 128)} alt="" loading="lazy" decoding="async"
+        width={58} height={58}
+        className="w-[58px] h-[58px] rounded-xl object-cover flex-shrink-0 border"
         style={{ borderColor: 'rgba(124,58,237,0.2)' }} />
     )
   }
   return (
-    <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center border"
+    <div className="w-[58px] h-[58px] rounded-xl flex-shrink-0 flex items-center justify-center border"
       style={{ background: '#f5f3ff', borderColor: 'rgba(124,58,237,0.15)' }}>
       {logoUrls.length > 0
-        ? <FileText size={18} style={{ color: PURPLE }} />
-        : <ImageIcon size={18} style={{ color: 'rgba(124,58,237,0.35)' }} />}
+        ? <FileText size={22} style={{ color: PURPLE }} />
+        : <ImageIcon size={22} style={{ color: 'rgba(124,58,237,0.35)' }} />}
     </div>
   )
 }
