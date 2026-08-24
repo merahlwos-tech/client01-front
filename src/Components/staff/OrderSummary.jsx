@@ -66,6 +66,7 @@ function Row({ icon: Icon, children }) {
 
 function OrderSummary({
   order, showDesign = false, showMaterials = false, showNotes = false,
+  showQuantity = true,   // l'insolation n'a pas besoin des quantités
 }) {
   const c = order.customerInfo || {}
   const stage      = STAGES[order.pipeline?.stage] || {}
@@ -164,8 +165,10 @@ function OrderSummary({
                   {Array.isArray(it.selectedColors) && it.selectedColors.length ? ` · ${it.selectedColors.join(', ')}` : ''}
                 </p>
               </div>
-              <span className="flex-shrink-0 text-sm font-black px-2.5 py-1 rounded-lg"
-                style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>×{it.quantity}</span>
+              {showQuantity && (
+                <span className="flex-shrink-0 text-sm font-black px-2.5 py-1 rounded-lg"
+                  style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>×{it.quantity}</span>
+              )}
             </div>
           ))}
         </div>

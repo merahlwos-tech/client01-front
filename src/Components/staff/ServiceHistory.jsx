@@ -17,7 +17,7 @@ const PERIODES = [
   { key: 30, label: 'Mois' },
 ]
 
-function ServiceHistory({ service, tagScope = null, summaryOpts = {} }) {
+function ServiceHistory({ service, tagScope = null, summaryOpts = {}, showQuantity = true }) {
   const [days, setDays]       = useState(7)
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
@@ -104,7 +104,7 @@ function ServiceHistory({ service, tagScope = null, summaryOpts = {} }) {
             {orders.length} commande{orders.length > 1 ? 's' : ''}
           </p>
           {orders.map(o => (
-            <OrderRow key={o._id} order={o} tagScope={tagScope}
+            <OrderRow key={o._id} order={o} tagScope={tagScope} showQuantity={showQuantity}
               onOpen={x => setSelectedId(x._id)} />
           ))}
         </div>

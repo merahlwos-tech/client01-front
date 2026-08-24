@@ -2,7 +2,7 @@
 // Ligne compacte d'une commande : logo client, nom, notes tronquées et
 // pastilles d'état. Un clic ouvre le détail complet.
 
-import { ImageIcon, ChevronRight, FileText } from 'lucide-react'
+import { ImageIcon, ChevronRight, FileText, Package } from 'lucide-react'
 import {
   NAVY, PURPLE, URGENCY, ORDER_STATUS, DESIGNER_TAGS, INSOLATION_STATUS,
   getCountdown, formatDayLabel, shortRef, thumb,
@@ -43,8 +43,9 @@ function Pill({ children, color, bg, solid }) {
 }
 
 /* `tagScope` : les étiquettes sont PRIVÉES à chaque service. On n'affiche que
-   celles du service qui regarde ; sans scope, aucune n'est montrée. */
-function OrderRow({ order, onOpen, tagScope = null }) {
+   celles du service qui regarde ; sans scope, aucune n'est montrée.
+   `showQuantity` : l'insolation n'a pas besoin des quantités. */
+function OrderRow({ order, onOpen, tagScope = null, showQuantity = true }) {
   const c        = order.customerInfo || {}
   const urgency  = URGENCY[order.pipeline?.urgency]
   const status   = ORDER_STATUS[order.status]
@@ -55,6 +56,7 @@ function OrderRow({ order, onOpen, tagScope = null }) {
     : []
   const isUrgent = order.pipeline?.urgency && order.pipeline.urgency !== 'normal'
   const decided  = !!order.pipeline?.statusSetAt   // la confirmatrice a tranché
+  const items    = order.items || []
 
   return (
     <button onClick={() => onOpen(order)}
@@ -73,6 +75,23 @@ function OrderRow({ order, onOpen, tagScope = null }) {
             #{shortRef(order._id)}
           </span>
         </div>
+
+        {/* Articles : produit, taille et quantité */}
+        {items.length > 0 && (
+          <p className="text-xs truncate mt-0.5 flex items-center gap-1" style={{ color: '#4b5563' }}>
+            <Package size={11} className="flex-shrink-0" style={{ color: PURPLE }} />
+            {items.map((it, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-gray-300"> — </span>}
+                <span className="font-semibold">{it.name}</span>
+                {it.size && <span className="text-gray-400"> · {it.size}</span>}
+                {showQuantity && it.quantity != null && (
+                  <span className="font-bold" style={{ color: PURPLE }}> ×{it.quantity}</span>
+                )}
+              </span>
+            ))}
+          </p>
+        )}
 
         {/* Notes du client, tronquées sur une ligne */}
         <p className="text-xs text-gray-400 truncate mt-0.5">
