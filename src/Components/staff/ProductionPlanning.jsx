@@ -4,13 +4,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, ChevronLeft, ChevronRight, CalendarDays, Inbox, RotateCcw,
+  Loader2, ChevronLeft, ChevronRight, CalendarDays, Inbox, RotateCcw, Undo2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
-import { NAVY, PURPLE, WEEKDAYS, toDateStr, todayStr, formatDayLabel } from './staffConfig'
+import {
+  NAVY, PURPLE, WEEKDAYS, toDateStr, todayStr, formatDayLabel, nextDateForWeekday,
+} from './staffConfig'
 
 /* Les 7 jours de la semaine contenant `ref`, du dimanche au samedi */
 function weekDays(ref) {
@@ -23,7 +25,85 @@ function weekDays(ref) {
   })
 }
 
-function ProductionPlanning({ summaryOpts = {} }) {
+/* Replanification depuis le planning : c'est ici qu'on a la vision d'ensemble
+   des journées, donc l'endroit naturel pour rééquilibrer la charge. */
+function PlanningActions({ order, onDone }) {
+  const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
+  const [busy, setBusy] = useState(null)
+
+  const replanifier = async () => {
+    if (day == null) return
+    setBusy('day')
+    try {
+      await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
+        productionDate: nextDateForWeekday(day),
+        productionDay:  day,
+      })
+      toast.success(`Replanifiée — ${formatDayLabel(nextDateForWeekday(day))}`)
+      onDone()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    } finally { setBusy(null) }
+  }
+
+  const retirer = async () => {
+    if (!window.confirm('Retirer cette commande de la production ?')) return
+    setBusy('pull')
+    try {
+      await staffApi.post(`/workflow/orders/${order._id}/pull-back`)
+      toast.success('Commande retirée de la production')
+      onDone()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+          <CalendarDays size={12} /> Jour de fabrication
+        </p>
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
+          {WEEKDAYS.map(w => {
+            const active = day === w.day
+            return (
+              <button key={w.day} type="button" onClick={() => setDay(w.day)}
+                className="py-2 rounded-lg text-[11px] font-bold transition-all"
+                style={{ background: active ? PURPLE : '#f3f4f6', color: active ? 'white' : '#6b7280' }}>
+                {w.short}
+              </button>
+            )
+          })}
+        </div>
+        {day != null && (
+          <p className="text-[11px] text-gray-400">
+            → fabrication le <span className="font-bold" style={{ color: NAVY }}>
+              {formatDayLabel(nextDateForWeekday(day))}
+            </span>
+          </p>
+        )}
+        <button onClick={replanifier}
+          disabled={!!busy || day == null || day === order.pipeline?.productionDay}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
+          style={{ background: PURPLE }}>
+          {busy === 'day' ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+          Replanifier
+        </button>
+      </div>
+
+      <button onClick={retirer} disabled={!!busy}
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold border-2 transition-all hover:bg-red-50 disabled:opacity-50"
+        style={{ borderColor: '#fecaca', color: '#ef4444' }}>
+        {busy === 'pull' ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
+        Ne pas donner à la production
+      </button>
+    </div>
+  )
+}
+
+function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
   const [weekRef, setWeekRef]   = useState(() => new Date())
   const [planning, setPlanning] = useState([])       // [{date,total,urgent,pieces}]
   const [loading, setLoading]   = useState(true)
@@ -212,8 +292,15 @@ function ProductionPlanning({ summaryOpts = {} }) {
           onClose={() => setSelectedId(null)}
           summaryOpts={{ showDesign: true, ...summaryOpts }}
           notesReadOnly={false}
-          onTagsChanged={() => loadDay(selectedDate)}
-        />
+          onTagsChanged={() => loadDay(selectedDate)}>
+          {!readOnly && (
+            <PlanningActions order={selected} onDone={() => {
+              setSelectedId(null)
+              loadWeek()                       // les compteurs des jours changent
+              if (selectedDate) loadDay(selectedDate)
+            }} />
+          )}
+        </OrderDetailModal>
       )}
     </div>
   )
