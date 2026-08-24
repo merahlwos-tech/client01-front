@@ -18,6 +18,7 @@ const CATEGORIES = {
   Autocollants: 'Cartes & Autocollants',
   Paper:        'Papier',
 }
+const CATEGORY_KEYS = Object.keys(CATEGORIES)
 
 const emptyCustomer = {
   firstName: '', lastName: '', phone: '',
@@ -25,8 +26,11 @@ const emptyCustomer = {
   description: '', deliveryMethod: 'Domicile', deliveryFee: '',
 }
 
+// Mêmes paliers de quantité que sur le site (QuantitySelector)
+const QTY_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000]
+
 const emptyItem = () => ({
-  product: '', name: '', size: '', quantity: 1, price: '',
+  category: '', product: '', name: '', size: '', quantity: 100, price: '',
 })
 
 const field = 'w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors'
@@ -92,6 +96,21 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const productById = useCallback(
     (id) => products.find(p => p._id === id), [products]
   )
+
+  /* Catégorie de l'article : celle choisie, sinon déduite du produit
+     (utile à l'ouverture en modification, où seule la référence est connue) */
+  const itemCategory = (it) =>
+    it.category
+    || productById(it.product)?.category
+    || (it.name ? 'libre' : '')   // article saisi hors catalogue
+
+  const productsOfCategory = (cat) =>
+    cat && cat !== 'libre' ? products.filter(p => p.category === cat) : []
+
+  /* Changer de type remet à zéro le produit : les tailles et prix en dépendent */
+  const onCategoryChange = (idx, cat) => {
+    setItem(idx, { category: cat, product: '', name: '', size: '', price: '' })
+  }
 
   const onProductChange = (idx, productId) => {
     const p = productById(productId)
@@ -255,39 +274,80 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                 const p = selectedProduct(idx)
                 return (
                   <div key={idx} className="p-3 rounded-xl border-2 border-gray-100 space-y-2">
+
+                    {/* Type de produit → nom du produit (comme sur le site) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <select value={it.product} className={field} style={{ color: NAVY }}
-                        onChange={e => onProductChange(idx, e.target.value)}>
-                        <option value="">— Produit libre —</option>
-                        {products.map(pr => (
-                          <option key={pr._id} value={pr._id}>
-                            {pr.name}{pr.category ? ` — ${CATEGORIES[pr.category] || pr.category}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <input value={it.name} placeholder="Nom de l'article *" className={field} style={{ color: NAVY }}
-                        onChange={e => setItem(idx, { name: e.target.value })} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {p?.sizes?.length > 0 ? (
-                        <select value={it.size} className={field} style={{ color: NAVY }}
-                          onChange={e => onSizeChange(idx, e.target.value)}>
-                          <option value="">Taille…</option>
-                          {p.sizes.map(s => <option key={s.size} value={s.size}>{s.size} — {s.price} DA</option>)}
+                      <div>
+                        <label className={label}>Type de produit</label>
+                        <select value={itemCategory(it)} className={field} style={{ color: NAVY }}
+                          onChange={e => onCategoryChange(idx, e.target.value)}>
+                          <option value="">Choisir…</option>
+                          {CATEGORY_KEYS.map(k => (
+                            <option key={k} value={k}>{CATEGORIES[k]}</option>
+                          ))}
+                          <option value="libre">Article libre (hors catalogue)</option>
                         </select>
-                      ) : (
-                        <input value={it.size} placeholder="Taille" className={field} style={{ color: NAVY }}
-                          onChange={e => setItem(idx, { size: e.target.value })} />
-                      )}
-                      <input type="number" min="1" value={it.quantity} placeholder="Qté" className={field} style={{ color: NAVY }}
-                        onChange={e => setItem(idx, { quantity: e.target.value })} />
-                      <div className="flex gap-1">
-                        <input type="number" min="0" value={it.price} placeholder="Prix U." className={field} style={{ color: NAVY }}
-                          onChange={e => setItem(idx, { price: e.target.value })} />
-                        <button type="button" onClick={() => removeItem(idx)} disabled={items.length === 1}
-                          className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-30">
-                          <Trash2 size={15} />
-                        </button>
+                      </div>
+                      <div>
+                        <label className={label}>Nom du produit</label>
+                        {itemCategory(it) === 'libre' ? (
+                          <input value={it.name} placeholder="Nom de l'article *"
+                            className={field} style={{ color: NAVY }}
+                            onChange={e => setItem(idx, { name: e.target.value })} />
+                        ) : (
+                          <select value={it.product} className={field} style={{ color: NAVY }}
+                            onChange={e => onProductChange(idx, e.target.value)}>
+                            <option value="">Choisir…</option>
+                            {productsOfCategory(itemCategory(it)).map(pr => (
+                              <option key={pr._id} value={pr._id}>{pr.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className={label}>Taille</label>
+                        {p?.sizes?.length > 0 ? (
+                          <select value={it.size} className={field} style={{ color: NAVY }}
+                            onChange={e => onSizeChange(idx, e.target.value)}>
+                            <option value="">Choisir…</option>
+                            {p.sizes.map(s => <option key={s.size} value={s.size}>{s.size} — {s.price} DA</option>)}
+                          </select>
+                        ) : (
+                          <input value={it.size} placeholder="Taille" className={field} style={{ color: NAVY }}
+                            onChange={e => setItem(idx, { size: e.target.value })} />
+                        )}
+                      </div>
+                      <div>
+                        <label className={label}>Quantité</label>
+                        {QTY_OPTIONS.includes(Number(it.quantity)) || it.quantity === '' ? (
+                          <select value={it.quantity} className={field} style={{ color: NAVY }}
+                            onChange={e => setItem(idx, {
+                              quantity: e.target.value === 'autre' ? '' : Number(e.target.value),
+                            })}>
+                            {QTY_OPTIONS.map(q => (
+                              <option key={q} value={q}>{q.toLocaleString('fr-DZ')}</option>
+                            ))}
+                            <option value="autre">Autre…</option>
+                          </select>
+                        ) : (
+                          <input type="number" min="1" value={it.quantity} placeholder="Qté"
+                            className={field} style={{ color: NAVY }} autoFocus
+                            onChange={e => setItem(idx, { quantity: e.target.value })} />
+                        )}
+                      </div>
+                      <div>
+                        <label className={label}>Prix unitaire</label>
+                        <div className="flex gap-1">
+                          <input type="number" min="0" value={it.price} placeholder="DA" className={field} style={{ color: NAVY }}
+                            onChange={e => setItem(idx, { price: e.target.value })} />
+                          <button type="button" onClick={() => removeItem(idx)} disabled={items.length === 1}
+                            className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-30">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <p className="text-xs text-gray-400 text-right">
