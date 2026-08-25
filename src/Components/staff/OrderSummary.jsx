@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
-  getCountdown, formatDayLabel, shortRef, thumb,
+  getCountdown, formatDayLabel, shortRef, thumb, badgesFor,
 } from './staffConfig'
 
 /* Compte à rebours de l'atelier — se met à jour tout seul chaque minute */
@@ -68,7 +68,9 @@ function Row({ icon: Icon, children }) {
 function OrderSummary({
   order, showDesign = false, showMaterials = false, showNotes = false,
   showQuantity = true,   // l'insolation n'a pas besoin des quantités
+  service = null,        // détermine les états affichés (voir badgesFor)
 }) {
+  const badges = badgesFor(service)
   const c = order.customerInfo || {}
   const stage      = STAGES[order.pipeline?.stage] || {}
   const urgencyCfg  = URGENCY[order.pipeline?.urgency]
@@ -97,7 +99,7 @@ function OrderSummary({
           )}
           {/* « En attente » est une décision de la confirmatrice : tant qu'elle
               n'a pas tranché, la commande est simplement nouvelle. */}
-          {!order.pipeline?.statusSetAt ? (
+          {badges.orderStatus && (!order.pipeline?.statusSetAt ? (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>
               Nouveau
@@ -107,23 +109,23 @@ function OrderSummary({
               style={{ background: statusCfg.bg, color: statusCfg.color }}>
               {statusCfg.label}
             </span>
-          )}
+          ))}
           {/* Étiquette du designer (ex. client lent à répondre) */}
-          {designerCfg && order.pipeline?.designerTag !== 'aucun' && (
+          {badges.slowClient && designerCfg && order.pipeline?.designerTag !== 'aucun' && (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: designerCfg.bg, color: designerCfg.color }}>
               {designerCfg.label}
             </span>
           )}
           {/* Design validé par le designer */}
-          {order.pipeline?.designValidated && (
+          {badges.designValidated && order.pipeline?.designValidated && (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: '#ecfdf5', color: '#10b981' }}>
-              Validé
+              Traité
             </span>
           )}
           {/* Jour de fabrication planifié */}
-          {order.pipeline?.productionDate && (
+          {badges.productionDate && order.pipeline?.productionDate && (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: '#eff6ff', color: '#2563eb' }}>
               <CalendarDays size={11} /> {formatDayLabel(order.pipeline.productionDate)}

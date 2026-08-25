@@ -157,7 +157,7 @@ function InsolationPage() {
       {/* Historique du service */}
       {view === 'historique' && (
         <ServiceHistory service="insolation" showQuantity={false}
-          summaryOpts={{ showDesign: true, showQuantity: false }} />
+          summaryOpts={{ showDesign: true, showQuantity: false, service: 'insolation' }} />
       )}
 
       {/* Liste */}
@@ -180,7 +180,7 @@ function InsolationPage() {
         <div className="space-y-2">
           {orders.map(order => (
             /* L'insolation n'a pas besoin des quantités */
-            <OrderRow key={order._id} order={order} showQuantity={false}
+            <OrderRow key={order._id} order={order} showQuantity={false} service="insolation"
               onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>

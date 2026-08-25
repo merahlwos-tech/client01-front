@@ -320,7 +320,7 @@ function ConfirmatricePage() {
       ) : (
         <div className="space-y-2">
           {orders.map(order => (
-            <OrderRow key={order._id} order={order} tagScope="confirmatrice"
+            <OrderRow key={order._id} order={order} tagScope="confirmatrice" service="confirmatrice"
               onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
@@ -331,7 +331,7 @@ function ConfirmatricePage() {
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={{}}
+          summaryOpts={{ service: 'confirmatrice' }}
           tagScope={readOnly ? null : 'confirmatrice'}
           onTagsChanged={handleChanged}>
           {!readOnly && (

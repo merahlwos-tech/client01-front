@@ -385,6 +385,7 @@ function DesignerPage() {
       headerExtra={tabs}
       layout="list"
       tagScope="designer"
+      service="designer"
     />
   )
 }

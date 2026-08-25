@@ -272,7 +272,7 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
           ) : (
             <div className="space-y-2">
               {orders.map(o => (
-                <OrderRow key={o._id} order={o} onOpen={x => setSelectedId(x._id)} />
+                <OrderRow key={o._id} order={o} service="designer" onOpen={x => setSelectedId(x._id)} />
               ))}
             </div>
           )}

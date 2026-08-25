@@ -92,6 +92,7 @@ function EmballagePage() {
       emptyText="Aucune commande à emballer."
       summaryOpts={{ showDesign: true, showMaterials: true }}
       layout="cards"
+      service="emballage"
       readOnly={!canAct(role, 'emballage')}
       actions={EmballageActions}
     />

@@ -360,6 +360,7 @@ function ProductionPage() {
         : isLate ? 'Aucune commande en retard.'
         : 'Aucune commande à fabriquer aujourd\'hui.'}
       summaryOpts={{ showDesign: true, showNotes: true }}
+      service={chefMode ? 'chef' : 'production'}
       readOnly={readOnly}
       actions={chefMode ? ChefProductionActions : ProductionActions}
       actionProps={{

@@ -106,6 +106,7 @@ function LivraisonPage() {
       title="Commandes à expédier"
       emptyText="Aucune commande prête à expédier."
       summaryOpts={{ showDesign: true, showMaterials: true }}
+      service="livraison"
       readOnly={!canAct(role, 'livraison')}
       actions={LivraisonActions}
     />

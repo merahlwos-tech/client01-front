@@ -5,7 +5,7 @@
 import { ImageIcon, ChevronRight, FileText, Package } from 'lucide-react'
 import {
   NAVY, PURPLE, URGENCY, ORDER_STATUS, DESIGNER_TAGS, INSOLATION_STATUS,
-  getCountdown, formatDayLabel, shortRef, thumb,
+  getCountdown, formatDayLabel, shortRef, thumb, badgesFor,
 } from './staffConfig'
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
@@ -14,22 +14,22 @@ const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 function LogoThumb({ logoUrls = [] }) {
   const img = logoUrls.find(u => !isPdf(u))
 
-  /* 58 px = 48 px agrandis de 20 % ; la vignette est demandée en 128 px
-     pour rester nette sur les écrans à forte densité. */
+  /* La vignette est demandée en 160 px pour rester nette sur les écrans
+     à forte densité (72 px affichés). */
   if (img) {
     return (
-      <img src={thumb(img, 128)} alt="" loading="lazy" decoding="async"
-        width={58} height={58}
-        className="w-[58px] h-[58px] rounded-xl object-cover flex-shrink-0 border"
+      <img src={thumb(img, 160)} alt="" loading="lazy" decoding="async"
+        width={72} height={72}
+        className="w-[72px] h-[72px] rounded-xl object-cover flex-shrink-0 border"
         style={{ borderColor: 'rgba(124,58,237,0.2)' }} />
     )
   }
   return (
-    <div className="w-[58px] h-[58px] rounded-xl flex-shrink-0 flex items-center justify-center border"
+    <div className="w-[72px] h-[72px] rounded-xl flex-shrink-0 flex items-center justify-center border"
       style={{ background: '#f5f3ff', borderColor: 'rgba(124,58,237,0.15)' }}>
       {logoUrls.length > 0
-        ? <FileText size={22} style={{ color: PURPLE }} />
-        : <ImageIcon size={22} style={{ color: 'rgba(124,58,237,0.35)' }} />}
+        ? <FileText size={26} style={{ color: PURPLE }} />
+        : <ImageIcon size={26} style={{ color: 'rgba(124,58,237,0.35)' }} />}
     </div>
   )
 }
@@ -47,7 +47,8 @@ function Pill({ children, color, bg, solid }) {
 /* `tagScope` : les étiquettes sont PRIVÉES à chaque service. On n'affiche que
    celles du service qui regarde ; sans scope, aucune n'est montrée.
    `showQuantity` : l'insolation n'a pas besoin des quantités. */
-function OrderRow({ order, onOpen, tagScope = null, showQuantity = true }) {
+function OrderRow({ order, onOpen, tagScope = null, showQuantity = true, service = null }) {
+  const badges = badgesFor(service)
   const c        = order.customerInfo || {}
   const urgency  = URGENCY[order.pipeline?.urgency]
   const status   = ORDER_STATUS[order.status]
@@ -102,18 +103,21 @@ function OrderRow({ order, onOpen, tagScope = null, showQuantity = true }) {
 
         {/* Pastilles d'état */}
         <div className="flex items-center gap-1 flex-wrap mt-1.5">
+          {/* L'urgence est un signal commun : elle reste visible partout */}
           {isUrgent && <Pill color={urgency.color} solid>{urgency.short}</Pill>}
-          {/* Tant que la confirmatrice n'a rien décidé, la commande est
-              « nouvelle » : afficher « En attente » serait trompeur. */}
-          {!decided
+
+          {/* Décision de la confirmatrice — visible d'elle seule */}
+          {badges.orderStatus && (!decided
             ? <Pill color={PURPLE} bg="rgba(124,58,237,0.1)">Nouveau</Pill>
-            : status && <Pill color={status.color} bg={status.bg}>{status.label}</Pill>}
-          {order.pipeline?.designValidated && <Pill color="#10b981" bg="#ecfdf5">Validé</Pill>}
-          {order.pipeline?.designerTag === 'reponses_lentes' &&
+            : status && <Pill color={status.color} bg={status.bg}>{status.label}</Pill>)}
+
+          {badges.designValidated && order.pipeline?.designValidated &&
+            <Pill color="#10b981" bg="#ecfdf5">Traité</Pill>}
+          {badges.slowClient && order.pipeline?.designerTag === 'reponses_lentes' &&
             <Pill color={slow.color} bg={slow.bg}>Lent</Pill>}
-          {order.pipeline?.productionDate &&
+          {badges.productionDate && order.pipeline?.productionDate &&
             <Pill color="#2563eb" bg="#eff6ff">{formatDayLabel(order.pipeline.productionDate)}</Pill>}
-          {order.pipeline?.insolation?.status === 'confirme' && (
+          {badges.insolation && order.pipeline?.insolation?.status === 'confirme' && (
             <Pill color={INSOLATION_STATUS.confirme.color} bg={INSOLATION_STATUS.confirme.bg}>
               Insolé
             </Pill>

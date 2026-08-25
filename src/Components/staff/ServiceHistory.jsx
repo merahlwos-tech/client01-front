@@ -104,7 +104,7 @@ function ServiceHistory({ service, tagScope = null, summaryOpts = {}, showQuanti
             {orders.length} commande{orders.length > 1 ? 's' : ''}
           </p>
           {orders.map(o => (
-            <OrderRow key={o._id} order={o} tagScope={tagScope} showQuantity={showQuantity}
+            <OrderRow key={o._id} order={o} tagScope={tagScope} showQuantity={showQuantity} service={service}
               onOpen={x => setSelectedId(x._id)} />
           ))}
         </div>
@@ -114,7 +114,7 @@ function ServiceHistory({ service, tagScope = null, summaryOpts = {}, showQuanti
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={summaryOpts}
+          summaryOpts={{ service, ...summaryOpts }}
           notesReadOnly
           onTagsChanged={load}
         />

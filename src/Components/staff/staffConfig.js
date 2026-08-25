@@ -135,6 +135,33 @@ export function formatDayLabel(dateStr) {
   return `${label} ${d}/${String(m).padStart(2, '0')}`
 }
 
+/* ── Quels états chaque service voit-il ? ────────────────────────────────────
+   Un statut appartient au service qui le pose : « Confirmé » est la décision
+   de la confirmatrice, elle n'a pas à s'afficher chez le designer. L'urgence,
+   le compte à rebours et les notes restent visibles partout : ce sont des
+   signaux communs à l'atelier.                                              */
+const TOUT = {
+  orderStatus: true, designValidated: true, insolation: true,
+  productionDate: true, slowClient: true,
+}
+const RIEN = {
+  orderStatus: false, designValidated: false, insolation: false,
+  productionDate: false, slowClient: false,
+}
+
+export const SERVICE_BADGES = {
+  confirmatrice: { ...RIEN, orderStatus: true },
+  designer:      { ...RIEN, designValidated: true, productionDate: true, slowClient: true },
+  insolation:    { ...RIEN, insolation: true },
+  production:    { ...RIEN, productionDate: true },
+  emballage:     { ...RIEN },
+  livraison:     { ...RIEN },
+  chef:          { ...TOUT },   // supervision : il voit tout
+}
+
+// Sans service précisé (vue superadmin / hub), on montre tout
+export const badgesFor = (service) => SERVICE_BADGES[service] || TOUT
+
 // Qui AGIT sur chaque étape
 export const STAGE_ACTOR = {
   confirmation: 'confirmatrice',
