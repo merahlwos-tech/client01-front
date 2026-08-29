@@ -64,7 +64,8 @@ export const INSOLATION_STATUS = {
 // Étiquette posée par le designer
 export const DESIGNER_TAGS = {
   aucun:           { label: 'Aucune',         color: '#6b7280', bg: '#f3f4f6' },
-  reponses_lentes: { label: 'Réponses lentes', color: '#0ea5e9', bg: '#f0f9ff' },
+  // Orange franc, distinct de l'ambre de l'urgence pour éviter la confusion
+  reponses_lentes: { label: 'Réponses lentes', color: '#ea580c', bg: '#fff7ed' },
 }
 export const DESIGNER_TAG_KEYS = Object.keys(DESIGNER_TAGS)
 
