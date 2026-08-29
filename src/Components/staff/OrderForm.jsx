@@ -2,10 +2,13 @@
 // Formulaire de commande utilisé par la confirmatrice, en création comme en
 // modification. `order = null` → création ; sinon édition de la commande.
 
-import { useState, useEffect, useCallback } from 'react'
-import { X, Plus, Trash2, Loader2, Save, ShoppingBag } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import {
+  X, Plus, Trash2, Loader2, Save, ShoppingBag, ImagePlus, FileText,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
+import { uploadMultipleToCloudinary } from '../../utils/uploadCloudinary'
 import { wilayas } from '../../data/wilayas'
 import { NAVY, PURPLE, STATUS_KEYS, ORDER_STATUS, URGENCY_KEYS, URGENCY } from './staffConfig'
 
@@ -19,6 +22,11 @@ const CATEGORIES = {
   Paper:        'Papier',
 }
 const CATEGORY_KEYS = Object.keys(CATEGORIES)
+
+// Nombre de fichiers de logo acceptés par commande
+const MAX_LOGOS = 4
+
+const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
 const emptyCustomer = {
   firstName: '', lastName: '', phone: '',
@@ -50,6 +58,33 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const [products, setProducts] = useState([])
   const [saving, setSaving]     = useState(false)
 
+  /* Logos du client : images ou PDF, envoyés directement à Cloudinary */
+  const [logoUrls, setLogoUrls]   = useState([])
+  const [uploading, setUploading] = useState(false)
+  const logoInputRef = useRef(null)
+
+  const addLogos = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    if (logoUrls.length + files.length > MAX_LOGOS) {
+      toast.error(`${MAX_LOGOS} fichiers au maximum`)
+      return
+    }
+    setUploading(true)
+    try {
+      const urls = await uploadMultipleToCloudinary(files)
+      setLogoUrls(prev => [...prev, ...urls])
+      toast.success(`${urls.length} fichier(s) ajouté(s)`)
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de l\'envoi')
+    } finally {
+      setUploading(false)
+      if (logoInputRef.current) logoInputRef.current.value = ''
+    }
+  }
+
+  const removeLogo = (url) => setLogoUrls(prev => prev.filter(u => u !== url))
+
   /* ── Catalogue COMPLET (y compris les catégories masquées au public) ── */
   useEffect(() => {
     staffApi.get('/workflow/products')
@@ -78,6 +113,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       selectedColors: i.selectedColors || [],
       numberOfColors: i.numberOfColors ?? null,
     })))
+    setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls : [])
     setStatus(order.status || 'en attente')
     setUrgency(order.pipeline?.urgency || 'normal')
     setTotalOverride('')
@@ -153,6 +189,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       customerInfo: {
         ...customer,
         deliveryFee: customer.deliveryFee === '' ? null : Number(customer.deliveryFee),
+        logoUrls,
       },
       items: cleanItems.map(i => ({
         product:  i.product || undefined,
@@ -262,6 +299,53 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                 <textarea rows={2} value={customer.description}
                   className={`${field} resize-none`} style={{ color: NAVY }}
                   onChange={e => setCustomer(p => ({ ...p, description: e.target.value }))} />
+              </div>
+
+              {/* Logo(s) du client — images ou PDF */}
+              <div className="sm:col-span-2">
+                <label className={label}>Logo du client ({MAX_LOGOS} fichiers max)</label>
+
+                <div className="flex flex-wrap gap-2 items-center">
+                  {logoUrls.map(url => (
+                    <div key={url} className="relative">
+                      {isPdf(url) ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer"
+                          className="flex flex-col items-center justify-center gap-0.5 w-20 h-20 rounded-xl border-2 text-[10px] font-bold"
+                          style={{ borderColor: 'rgba(124,58,237,0.25)', background: '#faf9ff', color: PURPLE }}>
+                          <FileText size={20} /> PDF
+                        </a>
+                      ) : (
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt="logo" width={80} height={80}
+                            className="w-20 h-20 rounded-xl object-cover border-2"
+                            style={{ borderColor: 'rgba(124,58,237,0.25)' }} />
+                        </a>
+                      )}
+                      <button type="button" onClick={() => removeLogo(url)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow"
+                        style={{ background: '#ef4444' }}>
+                        <X size={11} color="white" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {logoUrls.length < MAX_LOGOS && (
+                    <>
+                      <input ref={logoInputRef} type="file" accept="image/*,application/pdf"
+                        multiple onChange={addLogos} className="hidden" id="order-logo-input" />
+                      <label htmlFor="order-logo-input"
+                        className="flex flex-col items-center justify-center gap-1 w-20 h-20 rounded-xl border-2 border-dashed cursor-pointer text-[10px] font-bold transition-all hover:opacity-80"
+                        style={{ borderColor: 'rgba(124,58,237,0.35)', color: PURPLE, background: '#faf9ff' }}>
+                        {uploading
+                          ? <Loader2 size={20} className="animate-spin" />
+                          : <><ImagePlus size={20} /> Ajouter</>}
+                      </label>
+                    </>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Images ou PDF — visibles ensuite par le designer et la production.
+                </p>
               </div>
             </div>
           </div>
