@@ -284,9 +284,9 @@ function DesignerPage() {
   const TABS = [
     { key: 'todo',     label: 'À traiter',             icon: ListChecks,   count: counts?.aTraiter, color: PURPLE },
     { key: 'traitees', label: 'Commandes traitées',    icon: CheckCircle2, count: counts?.validees, color: '#10b981' },
-    { key: 'sent',     label: 'Envoyé à la production', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
+    { key: 'slow',     label: 'Commandes lentes',      icon: UserX,        count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
+    { key: 'sent',     label: 'Envoyé à l\'insolation', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
     { key: 'planning', label: 'Planning production',    icon: CalendarDays, count: null, color: '#0ea5e9' },
-    { key: 'slow',     label: 'Clients lents',          icon: UserX,       count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
     { key: 'historique', label: 'Historique',           icon: History,     count: null, color: '#6b7280' },
   ]
 
@@ -332,13 +332,13 @@ function DesignerPage() {
     },
     sent: {
       stage: 'production', params: {},
-      title: 'Envoyées à la production',
+      title: "Envoyées à l'insolation",
       empty: 'Aucune commande en attente chez la production.',
       actions: SentActions,
     },
     slow: {
       stage: 'design', params: { slow: 1 },
-      title: 'Clients lents à répondre',
+      title: 'Commandes lentes',
       empty: 'Aucun client signalé comme lent à répondre.',
       actions: DesignActions,
     },
