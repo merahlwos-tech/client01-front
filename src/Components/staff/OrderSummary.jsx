@@ -68,6 +68,7 @@ function Row({ icon: Icon, children }) {
 function OrderSummary({
   order, showDesign = false, showMaterials = false, showNotes = false,
   showQuantity = true,   // l'insolation n'a pas besoin des quantités
+  showPrice = true,      // production et insolation ne voient pas les montants
   service = null,        // détermine les états affichés (voir badgesFor)
 }) {
   const badges = badgesFor(service)
@@ -135,9 +136,11 @@ function OrderSummary({
           <Countdown deadlineAt={order.pipeline?.deadlineAt} />
         </div>
         <div className="text-right">
-          <p className="font-black text-sm" style={{ color: PURPLE }}>
-            {Number(order.total || 0).toLocaleString('fr-DZ')} DA
-          </p>
+          {showPrice && (
+            <p className="font-black text-sm" style={{ color: PURPLE }}>
+              {Number(order.total || 0).toLocaleString('fr-DZ')} DA
+            </p>
+          )}
           <p className="text-[11px] text-gray-400">
             {new Date(order.createdAt).toLocaleDateString('fr-DZ', { day: '2-digit', month: 'short', year: 'numeric' })}
           </p>
@@ -149,7 +152,10 @@ function OrderSummary({
         <Row icon={User}>{c.firstName} {c.lastName}</Row>
         <Row icon={Phone}><a href={`tel:${c.phone}`} className="hover:underline">{c.phone}</a></Row>
         <Row icon={MapPin}>{c.wilaya}{c.commune ? ` — ${c.commune}` : ''}</Row>
-        <Row icon={Truck}>{c.deliveryMethod || 'Domicile'}{c.deliveryFee != null ? ` (${c.deliveryFee} DA)` : ''}</Row>
+        <Row icon={Truck}>
+          {c.deliveryMethod || 'Domicile'}
+          {showPrice && c.deliveryFee != null ? ` (${c.deliveryFee} DA)` : ''}
+        </Row>
         {c.description && <Row icon={FileText}>{c.description}</Row>}
       </div>
 

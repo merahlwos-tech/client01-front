@@ -32,6 +32,7 @@ function StageBoard({
   extraParams = {}, headerExtra = null,
   layout = 'cards',          // 'cards' | 'list' (liste + détail au clic)
   service = null,            // filtre les états affichés selon le métier
+  showPrice = true,          // production et insolation ne voient pas les montants
   tagScope = null,           // active les étiquettes personnalisées
 }) {
   const [orders, setOrders]   = useState([])
@@ -103,7 +104,7 @@ function StageBoard({
         /* ── Liste compacte : on clique une ligne pour voir le détail ── */
         <div className="space-y-2">
           {orders.map(order => (
-            <OrderRow key={order._id} order={order} tagScope={tagScope} service={service}
+            <OrderRow key={order._id} order={order} tagScope={tagScope} service={service} showPrice={showPrice}
               onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
@@ -111,7 +112,7 @@ function StageBoard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {orders.map(order => (
             <div key={order._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <OrderSummary order={order} service={service} {...summaryOpts} />
+              <OrderSummary order={order} service={service} showPrice={showPrice} {...summaryOpts} />
               {/* Rendu comme COMPOSANT (<Actions />) et non appelé comme une
                   fonction : les actions utilisent des hooks, les appeler dans
                   ce .map() violerait les règles des hooks (React #310). */}
@@ -131,7 +132,7 @@ function StageBoard({
         <OrderDetailModal
           order={selected}
           onClose={closeDetail}
-          summaryOpts={{ service, ...summaryOpts }}
+          summaryOpts={{ service, showPrice, ...summaryOpts }}
           tagScope={readOnly ? null : tagScope}
           onTagsChanged={updateOneKeepOpen}>
           {!readOnly && Actions && (

@@ -14,7 +14,7 @@ import ServiceHistory from '../../Components/staff/ServiceHistory'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import {
   canAct, PURPLE, NAVY, todayStr, formatDayLabel,
-  WEEKDAYS, nextDateForWeekday, STAGES,
+  WEEKDAYS_ORDERED, nextDateForWeekday, STAGES,
 } from '../../Components/staff/staffConfig'
 
 // Étapes vers lesquelles le chef peut déplacer une commande
@@ -82,7 +82,7 @@ function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
           Affectation du designer — modifiable
         </p>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-          {WEEKDAYS.map(w => {
+          {WEEKDAYS_ORDERED.map(w => {
             const active = day === w.day
             return (
               <button key={w.day} type="button" onClick={() => setDay(w.day)}
@@ -226,12 +226,20 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
         placeholder="Notes de production (optionnel)"
         className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
 
-      <button onClick={finish} disabled={sending || validRows.length === 0}
+      {/* Le bouton reste cliquable même sans matière saisie : un bouton inerte
+          laisse croire à une panne. Il explique alors ce qui manque. */}
+      <button onClick={finish} disabled={sending}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
-        style={{ background: '#3b82f6' }}>
+        style={{ background: validRows.length === 0 ? '#93c5fd' : '#3b82f6' }}>
         {sending ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
         Fabrication terminée
       </button>
+
+      {validRows.length === 0 && materials.length > 0 && (
+        <p className="text-[11px] text-center" style={{ color: '#b45309' }}>
+          Choisissez une matière et sa quantité pour pouvoir terminer.
+        </p>
+      )}
     </div>
   )
 }
@@ -361,6 +369,8 @@ function ProductionPage() {
         : 'Aucune commande à fabriquer aujourd\'hui.'}
       summaryOpts={{ showDesign: true, showNotes: true }}
       service={chefMode ? 'chef' : 'production'}
+      layout="list"
+      showPrice={chefMode}
       readOnly={readOnly}
       actions={chefMode ? ChefProductionActions : ProductionActions}
       actionProps={{

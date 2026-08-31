@@ -11,13 +11,15 @@ import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
 import {
-  NAVY, PURPLE, WEEKDAYS, toDateStr, todayStr, formatDayLabel, nextDateForWeekday,
+  NAVY, PURPLE, WEEKDAYS, WEEKDAYS_ORDERED, WEEK_START,
+  toDateStr, todayStr, formatDayLabel, nextDateForWeekday,
 } from './staffConfig'
 
 /* Les 7 jours de la semaine contenant `ref`, du dimanche au samedi */
 function weekDays(ref) {
   const start = new Date(ref)
-  start.setDate(ref.getDate() - ref.getDay())   // recule jusqu'au dimanche
+  // Recule jusqu'au samedi : la semaine de l'atelier va du samedi au vendredi
+  start.setDate(ref.getDate() - ((ref.getDay() - WEEK_START + 7) % 7))
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
@@ -66,7 +68,7 @@ function PlanningActions({ order, onDone }) {
           <CalendarDays size={12} /> Jour de fabrication
         </p>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-          {WEEKDAYS.map(w => {
+          {WEEKDAYS_ORDERED.map(w => {
             const active = day === w.day
             return (
               <button key={w.day} type="button" onClick={() => setDay(w.day)}
@@ -161,6 +163,29 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
   const infoFor = (dateStr) => planning.find(p => p.date === dateStr)
   const selected = orders.find(o => o._id === selectedId) || null
 
+  /* ── Glisser-déposer : on saisit une commande et on la lâche sur un jour ── */
+  const [dragged, setDragged]   = useState(null)   // commande en cours de déplacement
+  const [hoverDay, setHoverDay] = useState(null)   // jour survolé
+
+  const dropOnDay = async (dateStr, weekday) => {
+    setHoverDay(null)
+    const order = dragged
+    setDragged(null)
+    if (!order || order.pipeline?.productionDate === dateStr) return
+
+    try {
+      await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
+        productionDate: dateStr,
+        productionDay:  weekday,
+      })
+      toast.success(`Déplacée au ${formatDayLabel(dateStr)}`)
+      loadWeek()
+      if (selectedDate) loadDay(selectedDate)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    }
+  }
+
   const moisLabel = days[0].toLocaleDateString('fr-DZ', { month: 'long', year: 'numeric' })
 
   return (
@@ -202,12 +227,19 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
             const active = selectedDate === ds
             const nb     = info?.total || 0
 
+            const survole = hoverDay === ds
             return (
               <button key={ds} onClick={() => openDay(ds)}
+                /* Cible de dépôt : on peut lâcher une commande sur ce jour */
+                onDragOver={e => { if (dragged) { e.preventDefault(); setHoverDay(ds) } }}
+                onDragLeave={() => setHoverDay(h => h === ds ? null : h)}
+                onDrop={e => { e.preventDefault(); dropOnDay(ds, d.getDay()) }}
                 className="p-2.5 rounded-xl border-2 text-center transition-all hover:-translate-y-0.5"
                 style={{
-                  borderColor: active ? PURPLE : isToday ? 'rgba(124,58,237,0.35)' : '#f0f0f4',
-                  background:  active ? PURPLE : 'white',
+                  borderColor: survole ? '#10b981'
+                    : active ? PURPLE : isToday ? 'rgba(124,58,237,0.35)' : '#f0f0f4',
+                  background:  survole ? '#ecfdf5' : active ? PURPLE : 'white',
+                  transform:   survole ? 'scale(1.06)' : undefined,
                 }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider"
                   style={{ color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
@@ -272,7 +304,16 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
           ) : (
             <div className="space-y-2">
               {orders.map(o => (
-                <OrderRow key={o._id} order={o} service="designer" onOpen={x => setSelectedId(x._id)} />
+                /* Chaque commande se saisit à la souris et se lâche sur un jour */
+          <div key={o._id}
+            draggable={!readOnly}
+            onDragStart={() => setDragged(o)}
+            onDragEnd={() => { setDragged(null); setHoverDay(null) }}
+            className={readOnly ? '' : 'cursor-grab active:cursor-grabbing'}
+            style={{ opacity: dragged?._id === o._id ? 0.4 : 1 }}>
+            <OrderRow order={o} service="designer" showPrice={false}
+              onOpen={x => setSelectedId(x._id)} />
+          </div>
               ))}
             </div>
           )}

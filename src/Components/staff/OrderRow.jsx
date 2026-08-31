@@ -47,7 +47,10 @@ function Pill({ children, color, bg, solid }) {
 /* `tagScope` : les étiquettes sont PRIVÉES à chaque service. On n'affiche que
    celles du service qui regarde ; sans scope, aucune n'est montrée.
    `showQuantity` : l'insolation n'a pas besoin des quantités. */
-function OrderRow({ order, onOpen, tagScope = null, showQuantity = true, service = null }) {
+function OrderRow({
+  order, onOpen, tagScope = null, showQuantity = true, service = null,
+  showPrice = true,   // production et insolation n'ont pas à voir les montants
+}) {
   const badges = badgesFor(service)
   const c        = order.customerInfo || {}
   const urgency  = URGENCY[order.pipeline?.urgency]
@@ -133,9 +136,11 @@ function OrderRow({ order, onOpen, tagScope = null, showQuantity = true, service
       </div>
 
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className="text-sm font-black" style={{ color: PURPLE }}>
-          {Number(order.total || 0).toLocaleString('fr-DZ')}
-        </span>
+        {showPrice && (
+          <span className="text-sm font-black" style={{ color: PURPLE }}>
+            {Number(order.total || 0).toLocaleString('fr-DZ')}
+          </span>
+        )}
         <ChevronRight size={16} className="text-gray-300" />
       </div>
     </button>

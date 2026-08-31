@@ -99,7 +99,8 @@ export function getCountdown(deadlineAt) {
    Les dates sont manipulées en LOCAL (fuseau de l'atelier) et transmises au
    serveur sous forme « YYYY-MM-DD », ce qui évite tout décalage de jour.   */
 
-// 0 = dimanche … 6 = samedi (convention JS getDay)
+// Indexé par getDay() : 0 = dimanche … 6 = samedi. Sert aux recherches
+// WEEKDAYS[date.getDay()] — ne pas réordonner ce tableau.
 export const WEEKDAYS = [
   { day: 0, label: 'Dimanche', short: 'Dim' },
   { day: 1, label: 'Lundi',    short: 'Lun' },
@@ -109,6 +110,10 @@ export const WEEKDAYS = [
   { day: 5, label: 'Vendredi', short: 'Ven' },
   { day: 6, label: 'Samedi',   short: 'Sam' },
 ]
+
+// La semaine de l'atelier va du SAMEDI au VENDREDI
+export const WEEK_START = 6                       // samedi (getDay)
+export const WEEKDAYS_ORDERED = [6, 0, 1, 2, 3, 4, 5].map(i => WEEKDAYS[i])
 
 // Date locale au format YYYY-MM-DD (sans passer par UTC)
 export function toDateStr(d) {

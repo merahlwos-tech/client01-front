@@ -12,7 +12,7 @@ import ServiceHistory from '../../Components/staff/ServiceHistory'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, PURPLE, NAVY, DESIGNER_TAGS, getCountdown,
-  WEEKDAYS, nextDateForWeekday, formatDayLabel,
+  WEEKDAYS_ORDERED, nextDateForWeekday, formatDayLabel,
 } from '../../Components/staff/staffConfig'
 
 /* ── Compte à rebours de l'atelier ── */
@@ -51,7 +51,7 @@ function DaySelector({ value, onChange }) {
         <CalendarDays size={12} /> Jour de fabrication
       </p>
       <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-        {WEEKDAYS.map(w => {
+        {WEEKDAYS_ORDERED.map(w => {
           const active = value === w.day
           return (
             <button key={w.day} type="button" onClick={() => onChange(w.day)}
