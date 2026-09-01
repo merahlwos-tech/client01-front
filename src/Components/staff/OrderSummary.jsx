@@ -8,8 +8,25 @@ import {
 } from 'lucide-react'
 import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
-  getCountdown, formatDayLabel, shortRef, thumb, badgesFor,
+  getCountdown, formatDayLabel, shortRef, thumb, badgesFor, swatchOf,
 } from './staffConfig'
+
+/* Couleur demandée pour un article (sac ou impression). La pastille n'apparaît
+   que si le nom est reconnu ; une teinte libre reste lisible en texte. */
+function ColorPill({ label, value }) {
+  const swatch = swatchOf(value)
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+      style={{ background: '#f5f3ff', color: NAVY }}>
+      {swatch && (
+        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 border"
+          style={{ background: swatch, borderColor: 'rgba(0,0,0,0.2)' }} />
+      )}
+      <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{label}</span>
+      {value}
+    </span>
+  )
+}
 
 /* Compte à rebours de l'atelier — se met à jour tout seul chaque minute */
 function Countdown({ deadlineAt }) {
@@ -150,7 +167,16 @@ function OrderSummary({
       {/* Client */}
       <div className="space-y-1.5 p-3 rounded-xl" style={{ background: '#f9fafb' }}>
         <Row icon={User}>{c.firstName} {c.lastName}</Row>
-        <Row icon={Phone}><a href={`tel:${c.phone}`} className="hover:underline">{c.phone}</a></Row>
+        {/* Numéro principal, suivi des numéros ajoutés par la confirmatrice */}
+        <Row icon={Phone}>
+          <a href={`tel:${c.phone}`} className="hover:underline">{c.phone}</a>
+          {(c.extraPhones || []).map((p, i) => (
+            <span key={i}>
+              <span className="text-gray-300 mx-1.5">·</span>
+              <a href={`tel:${p}`} className="hover:underline">{p}</a>
+            </span>
+          ))}
+        </Row>
         <Row icon={MapPin}>{c.wilaya}{c.commune ? ` — ${c.commune}` : ''}</Row>
         <Row icon={Truck}>
           {c.deliveryMethod || 'Domicile'}
@@ -173,6 +199,12 @@ function OrderSummary({
                   {it.numberOfColors ? ` · ${it.numberOfColors} couleur(s)` : ''}
                   {Array.isArray(it.selectedColors) && it.selectedColors.length ? ` · ${it.selectedColors.join(', ')}` : ''}
                 </p>
+                {(it.bagColor || it.printColor) && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    {it.bagColor   && <ColorPill label="Sac" value={it.bagColor} />}
+                    {it.printColor && <ColorPill label="Impression" value={it.printColor} />}
+                  </div>
+                )}
               </div>
               {showQuantity && (
                 <span className="flex-shrink-0 text-sm font-black px-2.5 py-1 rounded-lg"

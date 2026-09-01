@@ -208,3 +208,39 @@ export function thumb(url, size = 96) {
 
 // Référence courte d'une commande (8 derniers caractères de l'_id)
 export const shortRef = (id) => (id ? String(id).slice(-8).toUpperCase() : '—')
+
+/* ── Couleurs du sac et de l'impression ─────────────────────────────────────
+   La confirmatrice les note pendant l'appel. La saisie reste LIBRE (le client
+   peut demander « bleu ciel », « Pantone 485 »…) ; cette liste ne sert qu'à
+   proposer les teintes courantes et à afficher une pastille reconnaissable. */
+export const COLOR_SWATCHES = {
+  blanc:       '#ffffff',
+  noir:        '#111827',
+  kraft:       '#c19a6b',
+  beige:       '#e8dcc8',
+  gris:        '#9ca3af',
+  rouge:       '#ef4444',
+  bordeaux:    '#7f1d1d',
+  rose:        '#ec4899',
+  orange:      '#f97316',
+  jaune:       '#eab308',
+  vert:        '#22c55e',
+  'vert foncé':'#166534',
+  turquoise:   '#06b6d4',
+  bleu:        '#3b82f6',
+  'bleu ciel': '#7dd3fc',
+  marine:      '#1e3a8a',
+  violet:      '#7c3aed',
+  marron:      '#78350f',
+  or:          '#d4af37',
+  argent:      '#c0c0c0',
+  transparent: 'transparent',
+}
+export const COLOR_OPTIONS = Object.keys(COLOR_SWATCHES)
+
+/* Pastille correspondant à une couleur saisie — null si le nom est libre
+   (« Pantone 485 »), auquel cas seul le texte est affiché. */
+export function swatchOf(name) {
+  if (!name) return null
+  return COLOR_SWATCHES[String(name).trim().toLowerCase()] || null
+}

@@ -10,7 +10,10 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import { uploadMultipleToCloudinary } from '../../utils/uploadCloudinary'
 import { wilayas } from '../../data/wilayas'
-import { NAVY, PURPLE, STATUS_KEYS, ORDER_STATUS, URGENCY_KEYS, URGENCY } from './staffConfig'
+import {
+  NAVY, PURPLE, STATUS_KEYS, ORDER_STATUS, URGENCY_KEYS, URGENCY,
+  COLOR_OPTIONS, swatchOf,
+} from './staffConfig'
 
 const DELIVERY_METHODS = ['Domicile', 'Stop Desk']
 
@@ -29,20 +32,48 @@ const MAX_LOGOS = 4
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
 const emptyCustomer = {
-  firstName: '', lastName: '', phone: '',
+  firstName: '', lastName: '', phone: '', extraPhones: [],
   wilaya: '', wilayaCode: null, commune: '',
   description: '', deliveryMethod: 'Domicile', deliveryFee: '',
 }
+
+// Numéros secondaires acceptés en plus du principal (aligné sur le back)
+const MAX_EXTRA_PHONES = 5
 
 // Mêmes paliers de quantité que sur le site (QuantitySelector)
 const QTY_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000]
 
 const emptyItem = () => ({
   category: '', product: '', name: '', size: '', quantity: 100, price: '',
+  bagColor: '', printColor: '',
 })
 
 const field = 'w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors'
 const label = 'block text-xs font-bold uppercase tracking-widest mb-1.5 text-gray-400'
+
+/* Champ de couleur : saisie LIBRE (« bleu ciel », « Pantone 485 »…) avec les
+   teintes courantes en suggestion et une pastille de rappel quand le nom
+   correspond à l'une d'elles. */
+function ColorField({ id, label: text, value, onChange }) {
+  const swatch = swatchOf(value)
+  return (
+    <div>
+      <label className={label} htmlFor={id}>{text}</label>
+      <div className="relative">
+        <input id={id} list={`${id}-list`} value={value} placeholder="Ex. kraft, blanc…"
+          className={`${field} ${swatch ? 'pl-9' : ''}`} style={{ color: NAVY }}
+          onChange={e => onChange(e.target.value)} />
+        {swatch && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border pointer-events-none"
+            style={{ background: swatch, borderColor: 'rgba(0,0,0,0.2)' }} />
+        )}
+      </div>
+      <datalist id={`${id}-list`}>
+        {COLOR_OPTIONS.map(c => <option key={c} value={c} />)}
+      </datalist>
+    </div>
+  )
+}
 
 // `asChef` : marque l'intention du chef de production, seule façon de modifier
 // une commande déjà en fabrication (voir canForce côté serveur).
@@ -98,6 +129,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     const c = order.customerInfo || {}
     setCustomer({
       firstName: c.firstName || '', lastName: c.lastName || '', phone: c.phone || '',
+      extraPhones: Array.isArray(c.extraPhones) ? c.extraPhones : [],
       wilaya: c.wilaya || '', wilayaCode: c.wilayaCode ?? null, commune: c.commune || '',
       description: c.description || '',
       deliveryMethod: c.deliveryMethod || 'Domicile',
@@ -112,6 +144,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       doubleSided: !!i.doubleSided,
       selectedColors: i.selectedColors || [],
       numberOfColors: i.numberOfColors ?? null,
+      bagColor:   i.bagColor   || '',
+      printColor: i.printColor || '',
     })))
     setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls : [])
     setStatus(order.status || 'en attente')
@@ -167,6 +201,19 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const addItem    = () => setItems(prev => [...prev, emptyItem()])
   const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx))
 
+  /* ── Numéros secondaires du client ── */
+  const setExtraPhone = (i, v) => setCustomer(p => ({
+    ...p, extraPhones: p.extraPhones.map((x, idx) => idx === i ? v : x),
+  }))
+  const addExtraPhone = () => setCustomer(p => (
+    p.extraPhones.length >= MAX_EXTRA_PHONES
+      ? p
+      : { ...p, extraPhones: [...p.extraPhones, ''] }
+  ))
+  const removeExtraPhone = (i) => setCustomer(p => ({
+    ...p, extraPhones: p.extraPhones.filter((_, idx) => idx !== i),
+  }))
+
   /* ── Wilaya ── */
   const onWilayaChange = (name) => {
     const w = wilayas.find(x => x.name === name)
@@ -188,6 +235,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     const payload = {
       customerInfo: {
         ...customer,
+        // Les champs laissés vides ne sont pas envoyés
+        extraPhones: customer.extraPhones.map(p => p.trim()).filter(Boolean),
         deliveryFee: customer.deliveryFee === '' ? null : Number(customer.deliveryFee),
         logoUrls,
       },
@@ -200,6 +249,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
         doubleSided:    i.doubleSided,
         selectedColors: i.selectedColors,
         numberOfColors: i.numberOfColors,
+        bagColor:   (i.bagColor   || '').trim(),
+        printColor: (i.printColor || '').trim(),
       })),
       total: finalTotal,
     }
@@ -264,10 +315,36 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                 <input value={customer.lastName} className={field} style={{ color: NAVY }}
                   onChange={e => setCustomer(p => ({ ...p, lastName: e.target.value }))} />
               </div>
+              {/* Téléphone principal + numéros supplémentaires du client */}
               <div>
                 <label className={label}>Téléphone *</label>
                 <input value={customer.phone} type="tel" placeholder="0xxxxxxxxx" className={field} style={{ color: NAVY }}
                   onChange={e => setCustomer(p => ({ ...p, phone: e.target.value }))} />
+
+                {customer.extraPhones.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {customer.extraPhones.map((ph, i) => (
+                      <div key={i} className="flex gap-1.5">
+                        <input value={ph} type="tel" placeholder={`Autre numéro ${i + 1}`}
+                          className={field} style={{ color: NAVY }}
+                          onChange={e => setExtraPhone(i, e.target.value)} />
+                        <button type="button" onClick={() => removeExtraPhone(i)}
+                          title="Retirer ce numéro"
+                          className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {customer.extraPhones.length < MAX_EXTRA_PHONES && (
+                  <button type="button" onClick={addExtraPhone}
+                    className="mt-1.5 flex items-center gap-1.5 text-xs font-bold py-1.5 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70"
+                    style={{ color: PURPLE }}>
+                    <Plus size={13} /> Ajouter un numéro
+                  </button>
+                )}
               </div>
               <div>
                 <label className={label}>Wilaya *</label>
@@ -434,6 +511,17 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                         </div>
                       </div>
                     </div>
+                    {/* Couleurs relevées par la confirmatrice — le designer
+                        et la production s'y réfèrent pour fabriquer */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <ColorField id={`bag-color-${idx}`} label="Couleur du sac"
+                        value={it.bagColor || ''}
+                        onChange={v => setItem(idx, { bagColor: v })} />
+                      <ColorField id={`print-color-${idx}`} label="Couleur de l'impression"
+                        value={it.printColor || ''}
+                        onChange={v => setItem(idx, { printColor: v })} />
+                    </div>
+
                     <p className="text-xs text-gray-400 text-right">
                       Sous-total : <span className="font-bold" style={{ color: NAVY }}>
                         {((Number(it.price) || 0) * (Number(it.quantity) || 0)).toLocaleString('fr-DZ')} DA
