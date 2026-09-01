@@ -230,7 +230,7 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
           laisse croire à une panne. Il explique alors ce qui manque. */}
       <button onClick={finish} disabled={sending}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
-        style={{ background: validRows.length === 0 ? '#93c5fd' : '#3b82f6' }}>
+        style={{ background: validRows.length === 0 ? '#fdba74' : '#f97316' }}>
         {sending ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
         Fabrication terminée
       </button>
