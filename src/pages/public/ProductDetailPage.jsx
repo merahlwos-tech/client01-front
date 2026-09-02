@@ -8,33 +8,13 @@ import QuantitySelector, { getPriceForQty } from '../../Components/public/Quanti
 import { useLang } from '../../context/LanguageContext'
 import { trackViewContent, trackAddToCart, trackHighQualityVisitor, trackScrollToForm } from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
+import { COLOR_NAMES } from '../../data/productColors'
 import toast from 'react-hot-toast'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 const CAT_LABELS_FR = { Board: 'Boites', Bags: 'Sacs', Autocollants: 'Cartes et Autocollants', Paper: 'Papier' }
 const CAT_LABELS_AR = { Board: 'علب كرتونية', Bags: 'أكياس', Autocollants: 'بطاقات', Paper: 'ورق' }
-
-const COLOR_NAMES = {
-  '#000000': { fr: 'Noir',        ar: 'أسود' },
-  '#FFFFFF': { fr: 'Blanc',       ar: 'أبيض' },
-  '#EF4444': { fr: 'Rouge',       ar: 'أحمر' },
-  '#3B82F6': { fr: 'Bleu',        ar: 'أزرق' },
-  '#22C55E': { fr: 'Vert',        ar: 'أخضر' },
-  '#EAB308': { fr: 'Jaune',       ar: 'أصفر' },
-  '#F97316': { fr: 'Orange',      ar: 'برتقالي' },
-  '#EC4899': { fr: 'Rose',        ar: 'وردي' },
-  '#A855F7': { fr: 'Violet',      ar: 'بنفسجي' },
-  '#92400E': { fr: 'Marron',      ar: 'بني' },
-  '#6B7280': { fr: 'Gris',        ar: 'رمادي' },
-  '#D97706': { fr: 'Doré',        ar: 'ذهبي' },
-  '#94A3B8': { fr: 'Argenté',     ar: 'فضي' },
-  '#1E3A8A': { fr: 'Bleu marine', ar: 'أزرق داكن' },
-  '#7F1D1D': { fr: 'Bordeaux',    ar: 'بوردو' },
-  '#0D9488': { fr: 'Turquoise',   ar: 'تركوازي' },
-  '#F5E6C8': { fr: 'Beige',       ar: 'بيج' },
-  '#8B5CF6': { fr: 'Lavande',     ar: 'لافندر' },
-}
 
 function ColorDropdown({ colors, value, onChange, lang }) {
   const [open, setOpen] = React.useState(false)

@@ -1,19 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 import { useLang } from '../../context/LanguageContext'
+// La règle de palier vit dans utils/pricing : l'atelier l'applique aussi.
+import { getPriceForQty } from '../../utils/pricing'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
 
-const QTY_OPTIONS = [100,200,300,400,500,600,700,800,900,1000,2000,3000]
+export const QTY_OPTIONS = [100,200,300,400,500,600,700,800,900,1000,2000,3000]
 
-export function getPriceForQty(qty, baseUnitPrice, sizePrice, priceTiers = []) {
-  if (!priceTiers.length) return baseUnitPrice
-  const sorted = [...priceTiers].sort((a, b) => a.qty - b.qty)
-  let tierPrice = sizePrice
-  for (const t of sorted) { if (qty >= t.qty) tierPrice = t.price }
-  return tierPrice + (baseUnitPrice - sizePrice)
-}
+export { getPriceForQty }
 
 export default function QuantitySelector({ value, onChange, baseUnitPrice = 0, sizePrice = 0, priceTiers = [] }) {
   const [open, setOpen]  = useState(false)
