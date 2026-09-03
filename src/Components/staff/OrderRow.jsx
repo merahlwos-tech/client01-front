@@ -50,6 +50,10 @@ function Pill({ children, color, bg, solid }) {
 function OrderRow({
   order, onOpen, tagScope = null, showQuantity = true, service = null,
   showPrice = true,   // production et insolation n'ont pas à voir les montants
+  /* Mode sélection (suppression manuelle) : la case vit HORS du bouton,
+     un élément interactif ne pouvant en contenir un autre. */
+  selectable = false, selected = false, onToggleSelect,
+  purge = null,       // compte à rebours avant suppression d'une annulée
 }) {
   const badges = badgesFor(service)
   const c        = order.customerInfo || {}
@@ -64,10 +68,10 @@ function OrderRow({
   const decided  = !!order.pipeline?.statusSetAt   // la confirmatrice a tranché
   const items    = order.items || []
 
-  return (
+  const row = (
     <button onClick={() => onOpen(order)}
       className="w-full flex items-center gap-3 p-3 rounded-2xl bg-white border-2 text-left transition-all hover:shadow-md"
-      style={{ borderColor: isUrgent ? urgency.color + '55' : '#f0f0f4' }}>
+      style={{ borderColor: selected ? PURPLE : isUrgent ? urgency.color + '55' : '#f0f0f4' }}>
 
       <LogoThumb logoUrls={c.logoUrls} />
 
@@ -129,6 +133,8 @@ function OrderRow({
             <Pill color="#6b7280" bg="#f3f4f6">{order.pipeline.notes.length} note{order.pipeline.notes.length > 1 ? 's' : ''}</Pill>
           )}
           {cd && <Pill color={cd.color} bg={cd.bg}>{cd.label}</Pill>}
+          {/* Commande annulée : dans combien de temps disparaît-elle ? */}
+          {purge && <Pill color={purge.color} bg={purge.bg}>{purge.label}</Pill>}
           {custom.map(t => (
             <Pill key={t._id} color={t.color} bg={t.color + '1a'}>{t.name}</Pill>
           ))}
@@ -144,6 +150,18 @@ function OrderRow({
         <ChevronRight size={16} className="text-gray-300" />
       </div>
     </button>
+  )
+
+  if (!selectable) return row
+
+  return (
+    <div className="flex items-center gap-2">
+      <input type="checkbox" checked={selected}
+        onChange={() => onToggleSelect?.(order._id)}
+        aria-label="Sélectionner cette commande"
+        className="w-5 h-5 flex-shrink-0 accent-purple-600 cursor-pointer" />
+      <div className="min-w-0 flex-1">{row}</div>
+    </div>
   )
 }
 

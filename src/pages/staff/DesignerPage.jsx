@@ -331,7 +331,9 @@ function DesignerPage() {
       actions: DesignActions,
     },
     sent: {
-      stage: 'production', params: {},
+      /* La commande disparaît d'ici dès que l'insolation la confirme ou que
+         la production la fabrique : le service suivant a pris le relais. */
+      stage: 'production', params: { insolation: 'pending' },
       title: "Envoyées à l'insolation",
       empty: 'Aucune commande en attente chez la production.',
       actions: SentActions,
@@ -362,8 +364,9 @@ function DesignerPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <PageHeader eyebrow="Service design" title="Historique" />
         {tabs}
-        <ServiceHistory service="designer" tagScope="designer"
-          summaryOpts={{ showDesign: true }} />
+        {/* Le designer ne voit pas les montants */}
+        <ServiceHistory service="designer" tagScope="designer" showPrice={false} deletable
+          summaryOpts={{ showDesign: true, showPrice: false }} />
       </div>
     )
   }
@@ -375,7 +378,9 @@ function DesignerPage() {
       eyebrow="Service design"
       title={cfg.title}
       emptyText={cfg.empty}
-      summaryOpts={{}}
+      summaryOpts={{ showPrice: false }}
+      showPrice={false}
+      deletable
       readOnly={!canAct(role, 'design')}
       actions={cfg.actions}
       /* La liste des clients lents garde les actions de travail */

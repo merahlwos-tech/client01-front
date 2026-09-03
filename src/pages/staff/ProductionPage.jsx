@@ -348,8 +348,9 @@ function ProductionPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <PageHeader eyebrow="Service production" title="Historique" />
         {tabs}
-        <ServiceHistory service="production"
-          summaryOpts={{ showDesign: true, showMaterials: true }} />
+        {/* La production ne voit pas les montants — sauf le chef */}
+        <ServiceHistory service="production" showPrice={chefMode}
+          summaryOpts={{ showDesign: true, showMaterials: true, showPrice: chefMode }} />
       </div>
     )
   }

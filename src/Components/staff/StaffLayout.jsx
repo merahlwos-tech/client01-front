@@ -6,7 +6,8 @@ import {
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { NAVY, PURPLE, ROLE_LABELS, isSuperadmin, OPEN_ACCESS } from './staffConfig'
+import OrderSearch from './OrderSearch'
+import { NAVY, ROLE_LABELS, isSuperadmin, OPEN_ACCESS } from './staffConfig'
 
 // Chaque lien déclare les rôles qui le voient. Le superadmin voit tout.
 const NAV_ITEMS = [
@@ -151,7 +152,11 @@ function StaffLayout() {
           <div className="w-10" />
         </header>
 
-        <main className="flex-1 p-3 sm:p-5 lg:p-6 min-w-0">
+        <main className="flex-1 p-3 sm:p-5 lg:p-6 min-w-0 space-y-4">
+          {/* Recherche transverse — commune à tous les services */}
+          <div className="flex justify-end">
+            <OrderSearch compact />
+          </div>
           <Outlet />
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Plus, Search, Pencil, Inbox, RefreshCcw, AlertTriangle, Lock,
+  CheckSquare, Square, Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
@@ -12,7 +13,7 @@ import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, NAVY, PURPLE,
-  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS,
+  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS, getPurgeCountdown,
 } from '../../Components/staff/staffConfig'
 
 /* Étapes où la commande est déjà travaillée en atelier :
@@ -208,6 +209,36 @@ function ConfirmatricePage() {
   const openCreate = () => { setEditing(null); setFormOpen(true) }
   const openEdit   = (order) => { setEditing(order); setFormOpen(true) }
 
+  /* ── Suppression manuelle par sélection ── */
+  const [picking, setPicking]   = useState(false)
+  const [picked, setPicked]     = useState([])
+  const [deleting, setDeleting] = useState(false)
+
+  // Changer d'onglet ferme la sélection : elle ne vaut que pour la liste vue
+  useEffect(() => { setPicking(false); setPicked([]) }, [filter])
+
+  const togglePick = (id) =>
+    setPicked(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+  const pickAll = () =>
+    setPicked(picked.length === orders.length ? [] : orders.map(o => o._id))
+
+  const removePicked = async () => {
+    if (picked.length === 0) return
+    if (!window.confirm(
+      `Supprimer définitivement ${picked.length} commande(s) ?\n\n`
+      + 'Les logos clients seront effacés eux aussi. Cette action est irréversible.'
+    )) return
+    setDeleting(true)
+    try {
+      const res = await staffApi.post('/workflow/orders/bulk-delete', { ids: picked })
+      toast.success(`${res.data?.deleted ?? picked.length} commande(s) supprimée(s)`)
+      setPicked([]); setPicking(false)
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    } finally { setDeleting(false) }
+  }
+
   // « Commandes » = celles qu'elle n'a pas encore traitées
   const TABS = [
     { key: 'nouveau', label: 'Commandes', count: counts?.nouveau, color: PURPLE },
@@ -260,7 +291,7 @@ function ConfirmatricePage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <PageHeader eyebrow="Service confirmation" title="Historique" />
         {tabsBar}
-        <ServiceHistory service="confirmatrice" tagScope="confirmatrice" />
+        <ServiceHistory service="confirmatrice" tagScope="confirmatrice" deletable={!readOnly} />
       </div>
     )
   }
@@ -319,8 +350,38 @@ function ConfirmatricePage() {
         </div>
       ) : (
         <div className="space-y-2">
+          {/* Sélection puis suppression définitive */}
+          {!readOnly && (
+            <div className="flex flex-wrap items-center gap-2 pb-1">
+              <button onClick={() => { setPicking(p => !p); setPicked([]) }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+                style={picking
+                  ? { borderColor: PURPLE, background: PURPLE, color: 'white' }
+                  : { borderColor: '#e5e7eb', color: '#6b7280' }}>
+                <CheckSquare size={13} /> {picking ? 'Quitter la sélection' : 'Sélectionner'}
+              </button>
+              {picking && (
+                <>
+                  <button onClick={pickAll}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 border-gray-200 text-gray-500 transition-all hover:bg-gray-50">
+                    <Square size={13} />
+                    {picked.length === orders.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                  </button>
+                  <button onClick={removePicked} disabled={picked.length === 0 || deleting}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-40"
+                    style={{ background: '#ef4444' }}>
+                    {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                    Supprimer ({picked.length})
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {orders.map(order => (
             <OrderRow key={order._id} order={order} tagScope="confirmatrice" service="confirmatrice"
+              selectable={picking} selected={picked.includes(order._id)} onToggleSelect={togglePick}
+              purge={getPurgeCountdown(order)}
               onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>

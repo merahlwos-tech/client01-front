@@ -6,11 +6,14 @@ import { X } from 'lucide-react'
 import OrderSummary from './OrderSummary'
 import TagPicker from './TagPicker'
 import NotesThread from './NotesThread'
+import CancelOrderButton from './CancelOrderButton'
 import { NAVY, shortRef } from './staffConfig'
 
+/* `onCancelled` : passer un callback suffit à donner au service le droit
+   d'annuler la commande. Tous les panels l'utilisent. */
 function OrderDetailModal({
   order, onClose, summaryOpts = {}, tagScope, onTagsChanged,
-  showNotes = true, notesReadOnly = false, children,
+  showNotes = true, notesReadOnly = false, onCancelled, children,
 }) {
   if (!order) return null
 
@@ -60,6 +63,13 @@ function OrderDetailModal({
           {children && (
             <div className="pt-4 border-t border-gray-100">
               {children}
+            </div>
+          )}
+
+          {/* Annulation — chaque service peut sortir une commande du circuit */}
+          {onCancelled && (
+            <div className="pt-4 border-t border-gray-100">
+              <CancelOrderButton order={order} onCancelled={onCancelled} />
             </div>
           )}
         </div>

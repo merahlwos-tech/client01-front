@@ -156,7 +156,7 @@ function InsolationPage() {
 
       {/* Historique du service */}
       {view === 'historique' && (
-        <ServiceHistory service="insolation" showQuantity={false}
+        <ServiceHistory service="insolation" showQuantity={false} showPrice={false}
           summaryOpts={{ showDesign: true, showQuantity: false, showPrice: false, service: 'insolation' }} />
       )}
 
@@ -191,9 +191,11 @@ function InsolationPage() {
         <OrderDetailModal
           order={selected}
           onClose={() => setSelectedId(null)}
-          summaryOpts={{ showDesign: true, showQuantity: false }}
+          /* L'insolation ne voit ni les quantités ni les montants */
+          summaryOpts={{ showDesign: true, showQuantity: false, showPrice: false, service: 'insolation' }}
           onTagsChanged={handleChanged}
-          notesReadOnly={readOnly}>
+          notesReadOnly={readOnly}
+          onCancelled={readOnly ? undefined : () => { setSelectedId(null); load() }}>
           {!readOnly && (
             <InsolationActions order={selected} onChanged={handleChanged} />
           )}

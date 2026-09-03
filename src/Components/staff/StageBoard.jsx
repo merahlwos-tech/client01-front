@@ -2,13 +2,13 @@
 // Tableau générique d'une étape : récupère les commandes de l'étape et les
 // affiche en grille de cartes. Chaque panel fournit ses propres actions.
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, Inbox, Lock } from 'lucide-react'
+import { Loader2, Inbox, Lock, CheckSquare, Square, Trash2 } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import toast from 'react-hot-toast'
 import OrderSummary from './OrderSummary'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
-import { NAVY, PURPLE } from './staffConfig'
+import { NAVY, PURPLE, getPurgeCountdown } from './staffConfig'
 
 export function PageHeader({ eyebrow, title, count }) {
   return (
@@ -34,6 +34,7 @@ function StageBoard({
   service = null,            // filtre les états affichés selon le métier
   showPrice = true,          // production et insolation ne voient pas les montants
   tagScope = null,           // active les étiquettes personnalisées
+  deletable = false,         // suppression manuelle par sélection (mode liste)
 }) {
   const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -66,6 +67,33 @@ function StageBoard({
   /* ── Mode liste : la commande sélectionnée s'ouvre en détail ── */
   const [selectedId, setSelectedId] = useState(null)
   const selected = orders.find(o => o._id === selectedId) || null
+
+  /* ── Suppression manuelle par sélection ── */
+  const [picking, setPicking]   = useState(false)
+  const [picked, setPicked]     = useState([])
+  const [deleting, setDeleting] = useState(false)
+
+  const togglePick = (id) =>
+    setPicked(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+  const pickAll = () =>
+    setPicked(picked.length === orders.length ? [] : orders.map(o => o._id))
+
+  const removePicked = async () => {
+    if (picked.length === 0) return
+    if (!window.confirm(
+      `Supprimer définitivement ${picked.length} commande(s) ?\n\n`
+      + 'Les logos clients seront effacés eux aussi. Cette action est irréversible.'
+    )) return
+    setDeleting(true)
+    try {
+      const res = await staffApi.post('/workflow/orders/bulk-delete', { ids: picked })
+      toast.success(`${res.data?.deleted ?? picked.length} commande(s) supprimée(s)`)
+      setOrders(prev => prev.filter(o => !picked.includes(o._id)))
+      setPicked([]); setPicking(false)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur')
+    } finally { setDeleting(false) }
+  }
 
   const closeDetail = () => setSelectedId(null)
 
@@ -103,8 +131,36 @@ function StageBoard({
       ) : layout === 'list' ? (
         /* ── Liste compacte : on clique une ligne pour voir le détail ── */
         <div className="space-y-2">
+          {deletable && !readOnly && (
+            <div className="flex flex-wrap items-center gap-2 pb-1">
+              <button onClick={() => { setPicking(p => !p); setPicked([]) }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+                style={picking
+                  ? { borderColor: PURPLE, background: PURPLE, color: 'white' }
+                  : { borderColor: '#e5e7eb', color: '#6b7280' }}>
+                <CheckSquare size={13} /> {picking ? 'Quitter la sélection' : 'Sélectionner'}
+              </button>
+              {picking && (
+                <>
+                  <button onClick={pickAll}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 border-gray-200 text-gray-500 transition-all hover:bg-gray-50">
+                    <Square size={13} />
+                    {picked.length === orders.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                  </button>
+                  <button onClick={removePicked} disabled={picked.length === 0 || deleting}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-40"
+                    style={{ background: '#ef4444' }}>
+                    {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                    Supprimer ({picked.length})
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {orders.map(order => (
             <OrderRow key={order._id} order={order} tagScope={tagScope} service={service} showPrice={showPrice}
+              selectable={picking} selected={picked.includes(order._id)} onToggleSelect={togglePick}
+              purge={getPurgeCountdown(order)}
               onOpen={o => setSelectedId(o._id)} />
           ))}
         </div>
@@ -134,7 +190,9 @@ function StageBoard({
           onClose={closeDetail}
           summaryOpts={{ service, showPrice, ...summaryOpts }}
           tagScope={readOnly ? null : tagScope}
-          onTagsChanged={updateOneKeepOpen}>
+          onTagsChanged={updateOneKeepOpen}
+          /* Annulée = sortie du circuit : elle quitte la liste du service */
+          onCancelled={readOnly ? undefined : (_u, id) => removeOneAndClose(id)}>
           {!readOnly && Actions && (
             <Actions order={selected} refresh={refresh}
               removeOne={removeOneAndClose} updateOne={updateOneKeepOpen}

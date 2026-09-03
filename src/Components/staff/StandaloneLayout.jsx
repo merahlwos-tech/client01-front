@@ -7,7 +7,8 @@
 // que son propre poste de travail.
 
 import { useEffect } from 'react'
-import { NAVY, PURPLE } from './staffConfig'
+import OrderSearch from './OrderSearch'
+import { NAVY } from './staffConfig'
 
 function StandaloneLayout({ label, children }) {
   /* L'atelier est toujours en français / LTR, même si le site public
@@ -47,7 +48,17 @@ function StandaloneLayout({ label, children }) {
             {label}
           </p>
         </div>
+
+        {/* Recherche transverse : retrouver une commande où qu'elle soit */}
+        <div className="ml-auto w-full max-w-xs hidden sm:block">
+          <OrderSearch compact />
+        </div>
       </header>
+
+      {/* Sur mobile la recherche passe sous l'en-tête, faute de place */}
+      <div className="sm:hidden px-3 pt-3">
+        <OrderSearch />
+      </div>
 
       <main className="flex-1 p-3 sm:p-5 lg:p-6 min-w-0">
         {children}

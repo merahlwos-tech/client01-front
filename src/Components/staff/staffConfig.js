@@ -209,6 +209,58 @@ export function thumb(url, size = 96) {
 // Référence courte d'une commande (8 derniers caractères de l'_id)
 export const shortRef = (id) => (id ? String(id).slice(-8).toUpperCase() : '—')
 
+/* ── Où se trouve une commande ? ────────────────────────────────────────────
+   La recherche transverse doit répondre à « chez quel service est-elle ? ».
+   L'étape seule ne suffit pas : une commande en « design » peut être en cours
+   ou déjà traitée, et « production » couvre aussi l'insolation.            */
+export function whereIs(order) {
+  const p = order?.pipeline || {}
+  const stage = p.stage || 'confirmation'
+  const base = STAGES[stage] || STAGES.confirmation
+
+  if (stage === 'design') {
+    return { ...base, label: p.designValidated ? 'Design — à planifier' : 'Design' }
+  }
+  if (stage === 'production') {
+    return {
+      ...base,
+      label: p.insolation?.status === 'confirme'
+        ? 'Production — insolation faite'
+        : 'Production + insolation',
+    }
+  }
+  return { ...base, label: base.label }
+}
+
+/* Durée de conservation d'une commande annulée avant suppression définitive.
+   Doit rester alignée avec CANCELLED_RETENTION_DAYS côté serveur. */
+export const CANCELLED_RETENTION_DAYS = 30
+
+/* Compte à rebours avant la suppression d'une commande annulée.
+   → { days, label, color, bg, imminent } ou null si elle n'est pas annulée. */
+export function getPurgeCountdown(order, retentionDays = CANCELLED_RETENTION_DAYS) {
+  const at = order?.pipeline?.cancelledAt
+  if (!at) return null
+  const elapsed = Math.floor((Date.now() - new Date(at).getTime()) / 86400000)
+  const left    = retentionDays - elapsed
+
+  if (left <= 0) return {
+    days: 0, elapsed, imminent: true,
+    label: 'Un mois écoulé — suppression imminente',
+    color: '#ef4444', bg: '#fef2f2',
+  }
+  if (left <= 7) return {
+    days: left, elapsed, imminent: true,
+    label: `Supprimée dans ${left} j`,
+    color: '#ef4444', bg: '#fef2f2',
+  }
+  return {
+    days: left, elapsed, imminent: false,
+    label: `Supprimée dans ${left} j`,
+    color: '#b45309', bg: '#fffbeb',
+  }
+}
+
 /* ── Couleurs du sac et de l'impression ─────────────────────────────────────
    La confirmatrice les note pendant l'appel. La saisie reste LIBRE (le client
    peut demander « bleu ciel », « Pantone 485 »…) ; cette liste ne sert qu'à
