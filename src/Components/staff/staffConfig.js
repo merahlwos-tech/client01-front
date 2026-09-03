@@ -132,6 +132,13 @@ export function nextDateForWeekday(weekday) {
   return toDateStr(target)
 }
 
+// Jour de la semaine (0 = dimanche) d'une date « YYYY-MM-DD »
+export function weekdayOf(dateStr) {
+  if (!dateStr) return null
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).getDay()
+}
+
 // « Lundi 24 août » — libellé lisible d'une date YYYY-MM-DD
 export function formatDayLabel(dateStr) {
   if (!dateStr) return ''

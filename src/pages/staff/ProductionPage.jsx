@@ -11,10 +11,10 @@ import { useStaffAuth } from '../../context/StaffAuthContext'
 import NotesThread from '../../Components/staff/NotesThread'
 import OrderForm from '../../Components/staff/OrderForm'
 import ServiceHistory from '../../Components/staff/ServiceHistory'
+import DayCalendarPicker from '../../Components/staff/DayCalendarPicker'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import {
-  canAct, PURPLE, NAVY, todayStr, formatDayLabel,
-  WEEKDAYS_ORDERED, nextDateForWeekday, STAGES,
+  canAct, PURPLE, NAVY, todayStr, formatDayLabel, weekdayOf, STAGES,
 } from '../../Components/staff/staffConfig'
 
 // Étapes vers lesquelles le chef peut déplacer une commande
@@ -23,7 +23,7 @@ const FORCEABLE_STAGES = ['confirmation', 'design', 'production', 'emballage', '
 /* Le chef de production peut corriger le jour choisi par le designer,
    et retirer la commande de la production comme le designer. */
 function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
-  const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
+  const [date, setDate] = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy] = useState(null)   // 'day' | 'pull' | 'stage'
 
   /* Déplace la commande à l'étape voulue, sans passer par les intermédiaires */
@@ -45,14 +45,14 @@ function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
   }
 
   const save = async () => {
-    if (day == null) return
+    if (!date) return
     setBusy('day')
     try {
       const res = await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
-        productionDate: nextDateForWeekday(day),
-        productionDay:  day,
+        productionDate: date,
+        productionDay:  weekdayOf(date),
       })
-      toast.success(`Replanifiée — ${formatDayLabel(nextDateForWeekday(day))}`)
+      toast.success(`Replanifiée — ${formatDayLabel(date)}`)
       updateOne?.(res.data)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
@@ -78,22 +78,9 @@ function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
       <NotesThread order={order} onChanged={updateOne} />
 
       <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-          Affectation du designer — modifiable
-        </p>
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-          {WEEKDAYS_ORDERED.map(w => {
-            const active = day === w.day
-            return (
-              <button key={w.day} type="button" onClick={() => setDay(w.day)}
-                className="py-2 rounded-lg text-[11px] font-bold transition-all"
-                style={{ background: active ? PURPLE : '#f3f4f6', color: active ? 'white' : '#6b7280' }}>
-                {w.short}
-              </button>
-            )
-          })}
-        </div>
-        <button onClick={save} disabled={!!busy || day == null || day === order.pipeline?.productionDay}
+        <DayCalendarPicker value={date} onChange={setDate}
+          label="Affectation du designer — modifiable" />
+        <button onClick={save} disabled={!!busy || !date || date === order.pipeline?.productionDate}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40"
           style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
           {busy === 'day' ? <Loader2 size={13} className="animate-spin" /> : <CalendarCheck size={13} />}

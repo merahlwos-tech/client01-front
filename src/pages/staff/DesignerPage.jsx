@@ -9,10 +9,10 @@ import staffApi from '../../utils/staffApi'
 import StageBoard, { PageHeader } from '../../Components/staff/StageBoard'
 import ProductionPlanning from '../../Components/staff/ProductionPlanning'
 import ServiceHistory from '../../Components/staff/ServiceHistory'
+import DayCalendarPicker from '../../Components/staff/DayCalendarPicker'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
-  canAct, PURPLE, NAVY, DESIGNER_TAGS, getCountdown,
-  WEEKDAYS_ORDERED, nextDateForWeekday, formatDayLabel,
+  canAct, PURPLE, DESIGNER_TAGS, getCountdown, weekdayOf, formatDayLabel,
 } from '../../Components/staff/staffConfig'
 
 /* ── Compte à rebours de l'atelier ── */
@@ -43,39 +43,6 @@ function DeadlineBanner({ deadlineAt }) {
   )
 }
 
-/* ── Sélecteur du jour de fabrication ── */
-function DaySelector({ value, onChange }) {
-  return (
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1.5">
-        <CalendarDays size={12} /> Jour de fabrication
-      </p>
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-        {WEEKDAYS_ORDERED.map(w => {
-          const active = value === w.day
-          return (
-            <button key={w.day} type="button" onClick={() => onChange(w.day)}
-              className="py-2 rounded-lg text-[11px] font-bold transition-all"
-              style={{
-                background: active ? PURPLE : '#f3f4f6',
-                color:      active ? 'white' : '#6b7280',
-              }}>
-              {w.short}
-            </button>
-          )
-        })}
-      </div>
-      {value != null && (
-        <p className="text-[11px] text-gray-400 mt-1.5">
-          → fabrication le <span className="font-bold" style={{ color: NAVY }}>
-            {formatDayLabel(nextDateForWeekday(value))}
-          </span>
-        </p>
-      )}
-    </div>
-  )
-}
-
 /* ══════════════════════════════════════════════
    Vue « À traiter » — validation puis envoi
 ══════════════════════════════════════════════ */
@@ -83,7 +50,7 @@ function DaySelector({ value, onChange }) {
             'traitees' = travail fini (on planifie et on envoie) */
 function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 'todo' }) {
   const [notes, setNotes] = useState(order.pipeline?.design?.notes || '')
-  const [day, setDay]     = useState(null)
+  const [date, setDate]   = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy]   = useState(null)
 
   const validated = !!order.pipeline?.designValidated
@@ -106,17 +73,17 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 't
     } finally { setBusy(null) }
   }
 
-  /* Envoyer en production avec le jour choisi */
+  /* Envoyer en production à la date choisie sur le calendrier */
   const sendToProduction = async () => {
-    if (day == null) return toast.error('Choisissez le jour de fabrication')
+    if (!date) return toast.error('Choisissez la date de fabrication')
     setBusy('send')
     try {
       await staffApi.post(`/workflow/orders/${order._id}/send-production`, {
-        productionDate: nextDateForWeekday(day),
-        productionDay:  day,
+        productionDate: date,
+        productionDay:  weekdayOf(date),
         notes,
       })
-      toast.success(`Envoyée en production — ${formatDayLabel(nextDateForWeekday(day))}`)
+      toast.success(`Envoyée en production — ${formatDayLabel(date)}`)
       removeOne(order._id)
       onCountsChanged?.()
     } catch (err) {
@@ -166,8 +133,9 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 't
         /* Liste « Commandes traitées » : planification et envoi */
         <>
           <div className="space-y-2 p-3 rounded-xl" style={{ background: '#faf9ff' }}>
-            <DaySelector value={day} onChange={setDay} />
-            <button onClick={sendToProduction} disabled={!!busy || day == null}
+            <DayCalendarPicker value={date} onChange={setDate}
+              label="Date de fabrication" />
+            <button onClick={sendToProduction} disabled={!!busy || !date}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
               style={{ background: PURPLE }}>
               {busy === 'send' ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
@@ -203,18 +171,18 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 't
    Vue « Envoyé à la production »
 ══════════════════════════════════════════════ */
 function SentActions({ order, removeOne, updateOne, onCountsChanged }) {
-  const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
+  const [date, setDate] = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy] = useState(null)
 
   const reschedule = async () => {
-    if (day == null) return
+    if (!date) return
     setBusy('day')
     try {
       const res = await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
-        productionDate: nextDateForWeekday(day),
-        productionDay:  day,
+        productionDate: date,
+        productionDay:  weekdayOf(date),
       })
-      toast.success(`Replanifiée — ${formatDayLabel(nextDateForWeekday(day))}`)
+      toast.success(`Replanifiée — ${formatDayLabel(date)}`)
       updateOne?.(res.data)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
@@ -245,9 +213,10 @@ function SentActions({ order, removeOne, updateOne, onCountsChanged }) {
       </div>
 
       <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
-        <DaySelector value={day} onChange={setDay} />
+        <DayCalendarPicker value={date} onChange={setDate}
+          label="Date de fabrication" />
         <button onClick={reschedule}
-          disabled={!!busy || day == null || day === order.pipeline?.productionDay}
+          disabled={!!busy || !date || date === order.pipeline?.productionDate}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40"
           style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
           {busy === 'day' ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
@@ -285,7 +254,9 @@ function DesignerPage() {
     { key: 'todo',     label: 'À traiter',             icon: ListChecks,   count: counts?.aTraiter, color: PURPLE },
     { key: 'traitees', label: 'Commandes traitées',    icon: CheckCircle2, count: counts?.validees, color: '#10b981' },
     { key: 'slow',     label: 'Commandes lentes',      icon: UserX,        count: counts?.slow, color: DESIGNER_TAGS.reponses_lentes.color },
-    { key: 'sent',     label: 'Envoyé à l\'insolation', icon: Factory,     count: counts?.enProduction, color: '#2563eb' },
+    /* Compteur aligné sur la liste : la commande en sort dès que l'insolation
+       confirme, l'onglet ne doit donc pas la compter. */
+    { key: 'sent',     label: 'Envoyé à l\'insolation', icon: Factory,     count: counts?.enInsolation, color: '#2563eb' },
     { key: 'planning', label: 'Planning production',    icon: CalendarDays, count: null, color: '#0ea5e9' },
     { key: 'historique', label: 'Historique',           icon: History,     count: null, color: '#6b7280' },
   ]

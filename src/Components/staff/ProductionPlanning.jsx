@@ -10,9 +10,10 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
+import DayCalendarPicker from './DayCalendarPicker'
 import {
-  NAVY, PURPLE, WEEKDAYS, WEEKDAYS_ORDERED, WEEK_START,
-  toDateStr, todayStr, formatDayLabel, nextDateForWeekday,
+  NAVY, PURPLE, WEEKDAYS, WEEK_START,
+  toDateStr, todayStr, formatDayLabel, weekdayOf,
 } from './staffConfig'
 
 /* Les 7 jours de la semaine contenant `ref`, du dimanche au samedi */
@@ -30,18 +31,18 @@ function weekDays(ref) {
 /* Replanification depuis le planning : c'est ici qu'on a la vision d'ensemble
    des journées, donc l'endroit naturel pour rééquilibrer la charge. */
 function PlanningActions({ order, onDone }) {
-  const [day, setDay]   = useState(order.pipeline?.productionDay ?? null)
+  const [date, setDate] = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy] = useState(null)
 
   const replanifier = async () => {
-    if (day == null) return
+    if (!date) return
     setBusy('day')
     try {
       await staffApi.patch(`/workflow/orders/${order._id}/production-day`, {
-        productionDate: nextDateForWeekday(day),
-        productionDay:  day,
+        productionDate: date,
+        productionDay:  weekdayOf(date),
       })
-      toast.success(`Replanifiée — ${formatDayLabel(nextDateForWeekday(day))}`)
+      toast.success(`Replanifiée — ${formatDayLabel(date)}`)
       onDone()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
@@ -64,30 +65,9 @@ function PlanningActions({ order, onDone }) {
   return (
     <div className="space-y-3">
       <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
-          <CalendarDays size={12} /> Jour de fabrication
-        </p>
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-          {WEEKDAYS_ORDERED.map(w => {
-            const active = day === w.day
-            return (
-              <button key={w.day} type="button" onClick={() => setDay(w.day)}
-                className="py-2 rounded-lg text-[11px] font-bold transition-all"
-                style={{ background: active ? PURPLE : '#f3f4f6', color: active ? 'white' : '#6b7280' }}>
-                {w.short}
-              </button>
-            )
-          })}
-        </div>
-        {day != null && (
-          <p className="text-[11px] text-gray-400">
-            → fabrication le <span className="font-bold" style={{ color: NAVY }}>
-              {formatDayLabel(nextDateForWeekday(day))}
-            </span>
-          </p>
-        )}
+        <DayCalendarPicker value={date} onChange={setDate} label="Date de fabrication" />
         <button onClick={replanifier}
-          disabled={!!busy || day == null || day === order.pipeline?.productionDay}
+          disabled={!!busy || !date || date === order.pipeline?.productionDate}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
           style={{ background: PURPLE }}>
           {busy === 'day' ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
