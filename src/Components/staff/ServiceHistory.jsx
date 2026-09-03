@@ -198,8 +198,10 @@ function ServiceHistory({
             const active   = day === key
             const isToday  = key === todayStr
             return (
+              /* Hauteur fixe : `aspect-square` étirerait chaque case à la
+                 largeur d'un septième du panneau — un mois haut de 700 px. */
               <button key={key} onClick={() => { setDay(active ? null : key); setPicked([]) }}
-                className="aspect-square min-h-[38px] rounded-lg flex flex-col items-center justify-center transition-all"
+                className="h-11 sm:h-12 rounded-lg flex flex-col items-center justify-center transition-all"
                 style={{
                   background: active ? PURPLE
                     : info ? 'rgba(124,58,237,0.08)' : 'transparent',
