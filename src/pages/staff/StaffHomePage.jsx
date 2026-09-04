@@ -5,7 +5,10 @@ import {
 } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import { useStaffAuth } from '../../context/StaffAuthContext'
-import { STAGES, ROLE_LABELS, canView, NAVY, PURPLE } from '../../Components/staff/staffConfig'
+import WorkshopStats from '../../Components/staff/WorkshopStats'
+import {
+  STAGES, ROLE_LABELS, canView, isSuperadmin, NAVY, PURPLE,
+} from '../../Components/staff/staffConfig'
 
 const STAGE_META = [
   { key: 'confirmation', to: '/staff/confirmation', icon: CheckCircle2 },
@@ -70,6 +73,13 @@ function StaffHomePage() {
               ? <Link key={key} to={to} className="block hover:-translate-y-0.5 transition-transform">{CardInner}</Link>
               : <div key={key}>{CardInner}</div>
           })}
+        </div>
+      )}
+
+      {/* Le tableau de bord complet est réservé à la supervision */}
+      {(isSuperadmin(role) || role === 'chef_production') && (
+        <div className="pt-2 border-t border-gray-100">
+          <WorkshopStats />
         </div>
       )}
     </div>

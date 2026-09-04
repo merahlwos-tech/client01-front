@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import {
   CheckCircle2, Palette, Sun, Hammer, Package, Truck, Boxes,
   CheckCheck, XCircle, Loader2, ArrowRight, Eye, Pencil,
+  LayoutGrid, BarChart3,
 } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import { PageHeader } from '../../Components/staff/StageBoard'
+import WorkshopStats from '../../Components/staff/WorkshopStats'
 import { STAGES, NAVY, PURPLE } from '../../Components/staff/staffConfig'
 
 /* Le chef supervise toutes les étapes ; il n'agit que sur le stock,
@@ -27,7 +29,13 @@ const ACCESS = {
   gerer:     { label: 'Gestion',      icon: Pencil, color: '#10b981', bg: '#ecfdf5' },
 }
 
+const VUES = [
+  { key: 'services', label: 'Supervision',   icon: LayoutGrid },
+  { key: 'stats',    label: 'Statistiques',  icon: BarChart3 },
+]
+
 function ChefPage() {
+  const [vue, setVue]         = useState('services')
   const [stats, setStats]     = useState(null)
   const [stock, setStock]     = useState(null)
   const [loading, setLoading] = useState(true)
@@ -41,9 +49,24 @@ function ChefPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <PageHeader eyebrow="Chef de production" title="Supervision" />
+      <PageHeader eyebrow="Chef de production"
+        title={vue === 'stats' ? 'Statistiques' : 'Supervision'} />
 
-      {loading ? (
+      <div className="flex flex-wrap gap-2">
+        {VUES.map(v => {
+          const Icon = v.icon
+          const active = vue === v.key
+          return (
+            <button key={v.key} onClick={() => setVue(v.key)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+              style={{ background: active ? PURPLE : '#f3f4f6', color: active ? 'white' : '#6b7280' }}>
+              <Icon size={15} /> {v.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {vue === 'stats' ? <WorkshopStats /> : loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-400 py-10 justify-center">
           <Loader2 size={16} className="animate-spin" /> Chargement…
         </div>
