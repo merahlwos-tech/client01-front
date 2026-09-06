@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, History, ChevronLeft, ChevronRight, Trash2, CheckSquare, Square, X,
+  CalendarDays, ChevronUp, ChevronDown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
@@ -18,6 +19,17 @@ import {
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+
+/* Le calendrier est replié ou déplié selon la préférence de l'utilisateur.
+   Elle vit dans le navigateur : un poste peut la refuser (navigation privée),
+   auquel cas on repart simplement du calendrier ouvert. */
+const CAL_KEY = 'staff_historique_calendrier'
+const readCalPref = () => {
+  try { return localStorage.getItem(CAL_KEY) !== 'ferme' } catch { return true }
+}
+const writeCalPref = (open) => {
+  try { localStorage.setItem(CAL_KEY, open ? 'ouvert' : 'ferme') } catch { /* stockage refusé */ }
+}
 
 /* Décalage du fuseau de l'atelier, au format attendu par MongoDB (+01:00).
    Sans lui, une commande de 23 h serait comptée la veille. */
@@ -57,6 +69,7 @@ function ServiceHistory({
   const [day, setDay]     = useState(null)          // 'YYYY-MM-DD' ou null = tout le mois
   const [statut, setStatut] = useState('total')     // total | confirmé | en attente | annulé
 
+  const [showCal, setShowCal] = useState(readCalPref)
   const [jours, setJours]     = useState({})
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
@@ -166,23 +179,55 @@ function ServiceHistory({
   return (
     <div className="space-y-5">
 
-      {/* ── Calendrier du mois ── */}
+      {/* ── Calendrier du mois, repliable ── */}
       <div className="bg-white rounded-2xl p-3 sm:p-4 border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => shiftMonth(-1)} title="Mois précédent"
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
-            <ChevronLeft size={17} />
-          </button>
-          <p className="text-sm font-black capitalize" style={{ color: NAVY }}>
-            {MOIS[month]} {year}
-          </p>
-          <button onClick={() => shiftMonth(1)} title="Mois suivant"
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
-            <ChevronRight size={17} />
+        {/* La navigation par mois reste visible même calendrier replié :
+            c'est elle qui définit la période affichée en dessous. */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => shiftMonth(-1)} title="Mois précédent"
+              className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+              <ChevronLeft size={17} />
+            </button>
+            <p className="text-sm font-black capitalize min-w-[7.5rem] text-center" style={{ color: NAVY }}>
+              {MOIS[month]} {year}
+            </p>
+            <button onClick={() => shiftMonth(1)} title="Mois suivant"
+              className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+              <ChevronRight size={17} />
+            </button>
+          </div>
+
+          <button onClick={() => { const v = !showCal; setShowCal(v); writeCalPref(v) }}
+            title={showCal ? 'Masquer le calendrier' : 'Afficher le calendrier'}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+            style={showCal
+              ? { borderColor: PURPLE, background: PURPLE, color: 'white' }
+              : { borderColor: '#e5e7eb', color: '#6b7280' }}>
+            <CalendarDays size={13} />
+            <span className="hidden sm:inline">Calendrier</span>
+            {showCal ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-1">
+        {/* Calendrier replié sur une journée choisie : on rappelle laquelle,
+            sinon le filtre agirait sans qu'on voie d'où il vient. */}
+        {!showCal && day && (
+          <div className="flex items-center justify-between gap-2 mt-2 px-3 py-2 rounded-xl"
+            style={{ background: 'rgba(124,58,237,0.08)' }}>
+            <span className="text-xs font-bold" style={{ color: PURPLE }}>
+              Journée du {day.split('-').reverse().slice(0, 2).join('/')}
+            </span>
+            <button onClick={() => { setDay(null); setPicked([]) }}
+              className="flex items-center gap-1 text-[11px] font-bold hover:opacity-70 transition-opacity"
+              style={{ color: PURPLE }}>
+              <X size={12} /> Tout le mois
+            </button>
+          </div>
+        )}
+
+        {showCal && (<>
+        <div className="grid grid-cols-7 gap-1 mb-1 mt-3">
           {WEEKDAYS_ORDERED.map(w => (
             <p key={w.day} className="text-[10px] font-bold uppercase text-center text-gray-400">
               {w.short}
@@ -228,6 +273,7 @@ function ServiceHistory({
             <X size={13} /> Voir tout le mois
           </button>
         )}
+        </>)}
       </div>
 
       {/* ── Décomptes cliquables : ils filtrent la liste ── */}
