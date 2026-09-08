@@ -225,13 +225,14 @@ function ConfirmatricePage() {
   const removePicked = async () => {
     if (picked.length === 0) return
     if (!window.confirm(
-      `Supprimer définitivement ${picked.length} commande(s) ?\n\n`
-      + 'Les logos clients seront effacés eux aussi. Cette action est irréversible.'
+      `Retirer ${picked.length} commande(s) des listes de travail ?\n\n`
+      + 'Elles disparaissent de tous les services mais restent visibles dans '
+      + 'l\'historique et par la recherche, où vous pourrez les restaurer.'
     )) return
     setDeleting(true)
     try {
       const res = await staffApi.post('/workflow/orders/bulk-delete', { ids: picked })
-      toast.success(`${res.data?.deleted ?? picked.length} commande(s) supprimée(s)`)
+      toast.success(`${res.data?.deleted ?? picked.length} commande(s) retirée(s)`)
       setPicked([]); setPicking(false)
       load()
     } catch (err) {
@@ -371,7 +372,7 @@ function ConfirmatricePage() {
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-40"
                     style={{ background: '#ef4444' }}>
                     {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                    Supprimer ({picked.length})
+                    Retirer ({picked.length})
                   </button>
                 </>
               )}

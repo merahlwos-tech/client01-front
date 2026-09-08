@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, History, ChevronLeft, ChevronRight, Trash2, CheckSquare, Square, X,
-  CalendarDays, ChevronUp, ChevronDown,
+  CalendarDays, ChevronUp, ChevronDown, RotateCcw,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
@@ -134,9 +134,14 @@ function ServiceHistory({
   const allOrders = data?.orders || []
 
   // Le décompte cliqué filtre la liste : « Annulé » ne montre que les annulées
-  const orders = statut === 'total'
-    ? allOrders
+  const orders = statut === 'total' ? allOrders
+    : statut === 'retirees' ? allOrders.filter(o => o.pipeline?.deletedAt)
     : allOrders.filter(o => o.status === statut)
+
+  // Au moins une commande retirée dans la sélection → restauration possible
+  const peutRestaurer = picked.some(
+    id => allOrders.find(o => o._id === id)?.pipeline?.deletedAt
+  )
 
   const selected = orders.find(o => o._id === selectedId) || null
 
@@ -145,16 +150,23 @@ function ServiceHistory({
   const pickAll = () =>
     setPicked(picked.length === orders.length ? [] : orders.map(o => o._id))
 
-  const removePicked = async () => {
+  /* Retrait et restauration partagent tout, sauf le sens */
+  const applyToPicked = async (action) => {
     if (picked.length === 0) return
-    if (!window.confirm(
-      `Supprimer définitivement ${picked.length} commande(s) ?\n\n`
-      + 'Les logos clients seront effacés eux aussi. Cette action est irréversible.'
+    const retrait = action === 'delete'
+    if (retrait && !window.confirm(
+      `Retirer ${picked.length} commande(s) des listes de travail ?\n\n`
+      + 'Elles disparaissent de tous les services mais restent visibles ici, '
+      + 'dans l\'historique, et par la recherche. Vous pourrez les restaurer.'
     )) return
     setDeleting(true)
     try {
-      const res = await staffApi.post('/workflow/orders/bulk-delete', { ids: picked })
-      toast.success(`${res.data?.deleted ?? picked.length} commande(s) supprimée(s)`)
+      const res = await staffApi.post(
+        `/workflow/orders/bulk-${retrait ? 'delete' : 'restore'}`, { ids: picked },
+      )
+      toast.success(retrait
+        ? `${res.data?.deleted ?? picked.length} commande(s) retirée(s)`
+        : `${res.data?.restored ?? picked.length} commande(s) restaurée(s)`)
       setPicked([]); setPicking(false)
       load()
       // Les décomptes du calendrier changent aussi
@@ -172,6 +184,10 @@ function ServiceHistory({
     ...STATUS_KEYS.map(s => ({
       key: s, label: ORDER_STATUS[s].label, color: ORDER_STATUS[s].color, value: counts[s] ?? 0,
     })),
+    // Les commandes retirées d'un service restent consultables ici
+    ...(counts.retirees > 0
+      ? [{ key: 'retirees', label: 'Retirées', color: '#6b7280', value: counts.retirees }]
+      : []),
   ]
 
   const todayStr = toDateStr(today)
@@ -316,12 +332,19 @@ function ServiceHistory({
                 <Square size={13} />
                 {picked.length === orders.length ? 'Tout désélectionner' : 'Tout sélectionner'}
               </button>
-              <button onClick={removePicked} disabled={picked.length === 0 || deleting}
+              <button onClick={() => applyToPicked('delete')} disabled={picked.length === 0 || deleting}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-40"
                 style={{ background: '#ef4444' }}>
                 {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                Supprimer ({picked.length})
+                Retirer ({picked.length})
               </button>
+              {peutRestaurer && (
+                <button onClick={() => applyToPicked('restore')} disabled={deleting}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-40"
+                  style={{ borderColor: '#10b981', color: '#10b981' }}>
+                  <RotateCcw size={13} /> Restaurer
+                </button>
+              )}
             </>
           )}
         </div>
@@ -341,15 +364,24 @@ function ServiceHistory({
           <p className="text-sm text-gray-400">
             {statut === 'total'
               ? (day ? 'Aucune commande ce jour-là.' : 'Aucune commande traitée ce mois-ci.')
-              : `Aucune commande « ${ORDER_STATUS[statut]?.label} » sur cette période.`}
+              : statut === 'retirees'
+                ? 'Aucune commande retirée sur cette période.'
+                : `Aucune commande « ${ORDER_STATUS[statut]?.label} » sur cette période.`}
           </p>
         </div>
       ) : (
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>
             {orders.length} commande{orders.length > 1 ? 's' : ''}
-            {statut !== 'total' && ` · ${ORDER_STATUS[statut]?.label}`}
+            {statut === 'retirees' ? ' · Retirées'
+              : statut !== 'total' ? ` · ${ORDER_STATUS[statut]?.label}` : ''}
           </p>
+          {statut === 'retirees' && (
+            <p className="text-[11px] px-3 py-2 rounded-xl" style={{ background: '#f3f4f6', color: '#4b5563' }}>
+              Ces commandes ne figurent plus dans aucune liste de travail, mais restent
+              consultables ici et par la recherche. Sélectionnez-les pour les restaurer.
+            </p>
+          )}
           {statut === 'annulé' && (
             <p className="text-[11px] px-3 py-2 rounded-xl" style={{ background: '#fffbeb', color: '#b45309' }}>
               Une commande annulée est définitivement supprimée {CANCELLED_RETENTION_DAYS} jours

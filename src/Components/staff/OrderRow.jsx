@@ -135,6 +135,10 @@ function OrderRow({
           {cd && <Pill color={cd.color} bg={cd.bg}>{cd.label}</Pill>}
           {/* Commande annulée : dans combien de temps disparaît-elle ? */}
           {purge && <Pill color={purge.color} bg={purge.bg}>{purge.label}</Pill>}
+          {/* Retirée par un service : elle ne vit plus que dans l'historique */}
+          {order.pipeline?.deletedAt && (
+            <Pill color="#6b7280" bg="#f3f4f6">Retirée</Pill>
+          )}
           {custom.map(t => (
             <Pill key={t._id} color={t.color} bg={t.color + '1a'}>{t.name}</Pill>
           ))}

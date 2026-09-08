@@ -225,6 +225,17 @@ export function whereIs(order) {
   const stage = p.stage || 'confirmation'
   const base = STAGES[stage] || STAGES.confirmation
 
+  /* Retirée : elle ne figure plus dans aucune liste de travail. On dit d'où
+     elle a été retirée, sinon la recherche la situerait à une étape où
+     personne ne la voit plus. */
+  if (p.deletedAt) {
+    return {
+      color: '#6b7280', bg: '#f3f4f6',
+      label: `Retirée de ${ROLE_LABELS[p.deletedFrom] || base.label || 'l’atelier'}`,
+      removed: true,
+    }
+  }
+
   if (stage === 'design') {
     return { ...base, label: p.designValidated ? 'Design — à planifier' : 'Design' }
   }
