@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import OrderSummary from './OrderSummary'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
+import { retraitReversible, MESSAGE_SERVEUR_ANCIEN } from './retraitReversible'
 import { NAVY, PURPLE, getPurgeCountdown } from './staffConfig'
 
 export function PageHeader({ eyebrow, title, count }) {
@@ -80,6 +81,9 @@ function StageBoard({
 
   const removePicked = async () => {
     if (picked.length === 0) return
+    if (!(await retraitReversible())) {
+      return toast.error(MESSAGE_SERVEUR_ANCIEN, { duration: 6000 })
+    }
     if (!window.confirm(
       `Retirer ${picked.length} commande(s) des listes de travail ?\n\n`
       + 'Elles disparaissent de tous les services mais restent visibles dans '

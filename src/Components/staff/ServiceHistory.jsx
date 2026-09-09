@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
+import { retraitReversible, MESSAGE_SERVEUR_ANCIEN } from './retraitReversible'
 import {
   NAVY, PURPLE, ORDER_STATUS, STATUS_KEYS, WEEKDAYS_ORDERED, WEEK_START,
   toDateStr, getPurgeCountdown, CANCELLED_RETENTION_DAYS,
@@ -154,6 +155,9 @@ function ServiceHistory({
   const applyToPicked = async (action) => {
     if (picked.length === 0) return
     const retrait = action === 'delete'
+    if (retrait && !(await retraitReversible())) {
+      return toast.error(MESSAGE_SERVEUR_ANCIEN, { duration: 6000 })
+    }
     if (retrait && !window.confirm(
       `Retirer ${picked.length} commande(s) des listes de travail ?\n\n`
       + 'Elles disparaissent de tous les services mais restent visibles ici, '

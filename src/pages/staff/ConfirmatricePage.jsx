@@ -9,6 +9,9 @@ import OrderRow from '../../Components/staff/OrderRow'
 import OrderDetailModal from '../../Components/staff/OrderDetailModal'
 import OrderForm from '../../Components/staff/OrderForm'
 import ServiceHistory from '../../Components/staff/ServiceHistory'
+import {
+  retraitReversible, MESSAGE_SERVEUR_ANCIEN,
+} from '../../Components/staff/retraitReversible'
 import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
@@ -224,6 +227,9 @@ function ConfirmatricePage() {
 
   const removePicked = async () => {
     if (picked.length === 0) return
+    if (!(await retraitReversible())) {
+      return toast.error(MESSAGE_SERVEUR_ANCIEN, { duration: 6000 })
+    }
     if (!window.confirm(
       `Retirer ${picked.length} commande(s) des listes de travail ?\n\n`
       + 'Elles disparaissent de tous les services mais restent visibles dans '
