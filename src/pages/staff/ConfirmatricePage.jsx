@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, Plus, Search, Pencil, Inbox, RefreshCcw, AlertTriangle, Lock,
+  Loader2, Plus, Pencil, Inbox, RefreshCcw, AlertTriangle, Lock,
   CheckSquare, Square, Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -141,19 +141,11 @@ function ConfirmatricePage() {
   // 'nouveau' (non traitées) | un statut | 'tag:<id>'
   const [filter, setFilter]   = useState('nouveau')
   const [tags, setTags]       = useState([])
-  const [search, setSearch]   = useState('')
-  const [query, setQuery]     = useState('')        // recherche appliquée (débouncée)
   const [formOpen, setFormOpen]     = useState(false)
   const [editing, setEditing]       = useState(null)
   const [selectedId, setSelectedId] = useState(null)   // commande ouverte en détail
 
   const selected = orders.find(o => o._id === selectedId) || null
-
-  /* Débounce de la recherche (évite une requête par frappe) */
-  useEffect(() => {
-    const t = setTimeout(() => setQuery(search), 400)
-    return () => clearTimeout(t)
-  }, [search])
 
   const load = useCallback(async () => {
     // L'historique a son propre chargement (ServiceHistory)
@@ -164,7 +156,6 @@ function ConfirmatricePage() {
       const params = filter.startsWith('tag:')
         ? { tag: filter.slice(4) }
         : { status: filter }
-      if (query.trim()) params.q = query.trim()
 
       const [list, cnt, tg] = await Promise.all([
         staffApi.get('/workflow/confirmation', { params }),
@@ -179,7 +170,7 @@ function ConfirmatricePage() {
     } finally {
       setLoading(false)
     }
-  }, [filter, query])
+  }, [filter])
 
   useEffect(() => { load() }, [load])
 
@@ -324,21 +315,15 @@ function ConfirmatricePage() {
         </div>
       )}
 
-      {/* Filtres + recherche */}
+      {/* Filtres. La recherche est celle de l'en-tête : une seule pour tout
+          l'atelier, qui trouve les commandes de tous les services. */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
         <div className="flex-1">{tabsBar}</div>
 
-        <div className="relative sm:w-64">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Nom, téléphone, commune…"
-            className="w-full pl-9 pr-9 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors"
-            style={{ color: NAVY }} />
-          <button onClick={load} title="Rafraîchir"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-50 transition-colors">
-            <RefreshCcw size={14} />
-          </button>
-        </div>
+        <button onClick={load} title="Rafraîchir"
+          className="p-2.5 rounded-xl border-2 border-gray-200 text-gray-400 hover:text-purple-600 transition-colors self-start sm:self-auto">
+          <RefreshCcw size={15} />
+        </button>
       </div>
 
       {/* Liste */}
@@ -352,7 +337,7 @@ function ConfirmatricePage() {
             <Inbox size={26} style={{ color: PURPLE }} />
           </div>
           <p className="text-sm text-gray-400">
-            {query ? 'Aucune commande ne correspond à cette recherche.' : 'Aucune commande pour ce filtre.'}
+            Aucune commande pour ce filtre.
           </p>
         </div>
       ) : (

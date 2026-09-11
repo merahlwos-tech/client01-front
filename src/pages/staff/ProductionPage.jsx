@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Plus, Trash2, Loader2, CheckCircle2, AlertTriangle, PackageOpen,
+  Loader2, CheckCircle2,
   CalendarCheck, History, ShieldCheck, Undo2, Pencil, CalendarDays, Package,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -133,33 +133,19 @@ function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
   )
 }
 
-function ProductionActions({ order, removeOne, materials, onStockChanged }) {
-  const [rows, setRows]   = useState([{ material: '', quantity: '' }])
+/* La production n'a plus à déclarer les matières consommées : elle note ce
+   qu'elle veut et termine. Le stock ne bouge donc plus tout seul — seul le
+   chef de production le fait varier depuis la page Stock. */
+function ProductionActions({ order, removeOne }) {
   const [notes, setNotes] = useState('')
   const [sending, setSending] = useState(false)
 
-  const setRow = (i, patch) => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))
-  const addRow = () => setRows(prev => [...prev, { material: '', quantity: '' }])
-  const removeRow = (i) => setRows(prev => prev.filter((_, idx) => idx !== i))
-
-  const matById = (id) => materials.find(m => m._id === id)
-
-  const validRows = rows
-    .map(r => ({ material: r.material, quantity: Number(r.quantity) }))
-    .filter(r => r.material && r.quantity > 0)
-
   const finish = async () => {
-    if (validRows.length === 0) {
-      return toast.error('Indiquez au moins une matière consommée')
-    }
     setSending(true)
     try {
-      await staffApi.post(`/workflow/orders/${order._id}/produce`, {
-        materialsUsed: validRows, notes,
-      })
+      await staffApi.post(`/workflow/orders/${order._id}/produce`, { notes })
       toast.success('Fabrication terminée → emballage')
       removeOne(order._id)
-      onStockChanged?.()          // rafraîchit le stock après consommation
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
     } finally {
@@ -169,64 +155,16 @@ function ProductionActions({ order, removeOne, materials, onStockChanged }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: PURPLE }}>
-        <PackageOpen size={13} /> Matières premières consommées
-      </p>
-
-      {materials.length === 0 ? (
-        <div className="flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl" style={{ background: '#fffbeb', color: '#b45309' }}>
-          <AlertTriangle size={14} /> Aucune matière en stock. Le chef de production doit en ajouter.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {rows.map((row, i) => {
-            const mat = matById(row.material)
-            const over = mat && Number(row.quantity) > mat.quantity
-            return (
-              <div key={i} className="flex gap-2 items-start">
-                <select value={row.material} onChange={e => setRow(i, { material: e.target.value })}
-                  className="flex-1 min-w-0 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors"
-                  style={{ color: NAVY }}>
-                  <option value="">Matière…</option>
-                  {materials.map(m => (
-                    <option key={m._id} value={m._id}>{m.name} (stock : {m.quantity} {m.unit})</option>
-                  ))}
-                </select>
-                <input type="number" min="0" value={row.quantity} onChange={e => setRow(i, { quantity: e.target.value })}
-                  placeholder="Qté"
-                  className="w-20 px-2 py-2 rounded-xl border-2 text-sm outline-none focus:border-purple-400 transition-colors"
-                  style={{ borderColor: over ? '#fca5a5' : '#e5e7eb', color: NAVY }} />
-                <button onClick={() => removeRow(i)} disabled={rows.length === 1}
-                  className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-30">
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            )
-          })}
-          <button onClick={addRow} className="flex items-center gap-1.5 text-xs font-bold py-2 px-1 -mx-1 rounded-lg transition-colors hover:opacity-70" style={{ color: PURPLE }}>
-            <Plus size={14} /> Ajouter une matière
-          </button>
-        </div>
-      )}
-
       <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
         placeholder="Notes de production (optionnel)"
         className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
 
-      {/* Le bouton reste cliquable même sans matière saisie : un bouton inerte
-          laisse croire à une panne. Il explique alors ce qui manque. */}
       <button onClick={finish} disabled={sending}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
-        style={{ background: validRows.length === 0 ? '#fdba74' : '#f97316' }}>
+        style={{ background: '#f97316' }}>
         {sending ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
         Fabrication terminée
       </button>
-
-      {validRows.length === 0 && materials.length > 0 && (
-        <p className="text-[11px] text-center" style={{ color: '#b45309' }}>
-          Choisissez une matière et sa quantité pour pouvoir terminer.
-        </p>
-      )}
     </div>
   )
 }
@@ -255,7 +193,6 @@ function ProductionPage() {
      même quand l'accès libre le fait passer pour un superadmin. */
   const chefMode = role === 'chef_production' || searchParams.get('chef') === '1'
   const readOnly = !canAct(role, 'production') && !chefMode
-  const [materials, setMaterials] = useState([])
   const [editing, setEditing]     = useState(null)   // commande en cours d'édition (chef)
   const [reloadKey, setReloadKey] = useState(0)      // force le rechargement après édition
   /* Le chef gère le planning : il arrive donc sur la vue complète, alors que
@@ -265,15 +202,6 @@ function ProductionPage() {
 
   // Date locale de l'atelier (recalculée à chaque rendu de la page)
   const today = todayStr()
-
-  const fetchMaterials = useCallback(async () => {
-    try {
-      const res = await staffApi.get('/stock')
-      setMaterials(res.data || [])
-    } catch { /* silencieux : le board affiche déjà les erreurs commandes */ }
-  }, [])
-
-  useEffect(() => { fetchMaterials() }, [fetchMaterials])
 
   /* Compteurs du jour / en retard */
   const refreshCounts = useCallback(() => {
@@ -362,8 +290,6 @@ function ProductionPage() {
       readOnly={readOnly}
       actions={chefMode ? ChefProductionActions : ProductionActions}
       actionProps={{
-        materials,
-        onStockChanged: () => { fetchMaterials(); refreshCounts() },
         onEdit: setEditing,
       }}
       extraParams={view === 'all' ? {}
