@@ -282,22 +282,29 @@ function WorkshopStats({ showRevenue = true }) {
           </p>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-            {stock.map(m => {
+            {stock.map((m, i) => {
               const c = m.couvertureJours
-              const couleur = c == null ? '#9ca3af'
+              const couleur = m.absente ? '#b45309'
+                : c == null ? '#9ca3af'
                 : c <= 7 ? '#ef4444' : c <= 21 ? '#f59e0b' : '#10b981'
               return (
-                <div key={m.name} className="flex items-center gap-3 p-3">
+                <div key={`${m.name}-${i}`} className="flex items-center gap-3 p-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{m.name}</p>
                     <p className="text-[11px] text-gray-400">
-                      {money(m.quantity)} {m.unit} en stock
-                      {m.consomme > 0 && ` · ${money(m.consomme)} consommé${m.consomme > 1 ? 's' : ''} · ${m.parJour}/jour`}
+                      {m.absente
+                        ? `Déclarée par la production, absente du stock — ${money(m.consomme)} consommé${m.consomme > 1 ? 's' : ''}`
+                        : <>
+                            {money(m.quantity)} {m.unit} en stock
+                            {m.consomme > 0 && ` · ${money(m.consomme)} consommé${m.consomme > 1 ? 's' : ''} · ${m.parJour}/jour`}
+                          </>}
                     </p>
                   </div>
                   <span className="text-xs font-black px-2.5 py-1 rounded-lg flex-shrink-0"
                     style={{ background: couleur + '18', color: couleur }}>
-                    {c == null ? 'pas de conso' : c === 0 ? 'épuisé' : `${c} j`}
+                    {m.absente ? 'hors stock'
+                      : c == null ? 'pas de conso'
+                      : c === 0 ? 'épuisé' : `${c} j`}
                   </span>
                 </div>
               )
