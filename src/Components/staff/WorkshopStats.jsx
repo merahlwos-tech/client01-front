@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Loader2, TrendingUp, Timer, AlertTriangle, Boxes, MapPin, Package,
+  Loader2, TrendingUp, Timer, AlertTriangle, MapPin, Package,
   CalendarDays, Activity, Gauge,
 } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
@@ -111,7 +111,7 @@ function WorkshopStats({ showRevenue = true }) {
     return <p className="text-sm text-gray-400 py-6 text-center">Statistiques indisponibles.</p>
   }
 
-  const { flux, delais, respectDelai, etapes, topProduits, topWilayas, stock, serie, charge } = data
+  const { flux, delais, respectDelai, etapes, topProduits, topWilayas, serie, charge } = data
 
   const serieMax   = Math.max(1, ...serie.map(d => Math.max(d.recues, d.fabriquees)))
   const chargeMax  = Math.max(1, ...charge.map(c => c.total))
@@ -269,46 +269,6 @@ function WorkshopStats({ showRevenue = true }) {
                 color={c.urgent > 0 ? '#ef4444' : '#3b82f6'}
                 right={`${c.total} cde · ${money(c.pieces)} p.`} />
             ))}
-          </div>
-        )}
-      </Section>
-
-      {/* ── Stock : ce qu'il faut racheter ── */}
-      <Section title="Couverture du stock" icon={Boxes}
-        hint="Au rythme de consommation mesuré sur la période, nombre de jours restants.">
-        {stock.length === 0 ? (
-          <p className="text-sm text-gray-400 bg-white rounded-2xl p-4 border border-gray-100">
-            Aucune matière en stock.
-          </p>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-            {stock.map((m, i) => {
-              const c = m.couvertureJours
-              const couleur = m.absente ? '#b45309'
-                : c == null ? '#9ca3af'
-                : c <= 7 ? '#ef4444' : c <= 21 ? '#f59e0b' : '#10b981'
-              return (
-                <div key={`${m.name}-${i}`} className="flex items-center gap-3 p-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold truncate" style={{ color: NAVY }}>{m.name}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {m.absente
-                        ? `Déclarée par la production, absente du stock — ${money(m.consomme)} consommé${m.consomme > 1 ? 's' : ''}`
-                        : <>
-                            {money(m.quantity)} {m.unit} en stock
-                            {m.consomme > 0 && ` · ${money(m.consomme)} consommé${m.consomme > 1 ? 's' : ''} · ${m.parJour}/jour`}
-                          </>}
-                    </p>
-                  </div>
-                  <span className="text-xs font-black px-2.5 py-1 rounded-lg flex-shrink-0"
-                    style={{ background: couleur + '18', color: couleur }}>
-                    {m.absente ? 'hors stock'
-                      : c == null ? 'pas de conso'
-                      : c === 0 ? 'épuisé' : `${c} j`}
-                  </span>
-                </div>
-              )
-            })}
           </div>
         )}
       </Section>
