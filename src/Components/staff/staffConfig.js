@@ -225,13 +225,17 @@ export function whereIs(order) {
   const stage = p.stage || 'confirmation'
   const base = STAGES[stage] || STAGES.confirmation
 
-  /* Retirée : elle ne figure plus dans aucune liste de travail. On dit d'où
-     elle a été retirée, sinon la recherche la situerait à une étape où
-     personne ne la voit plus. */
+  /* Retirée : elle ne figure plus dans aucune liste de travail. On nomme
+     l'étape où elle en était, sinon la recherche la situerait là où plus
+     personne ne la voit. En accès libre tout le monde passe pour un
+     superadmin : ce rôle-là n'apprend rien, on garde alors l'étape. */
   if (p.deletedAt) {
+    const role = p.deletedFrom
+    const service = role && role !== 'superadmin' && role !== 'admin'
+      ? ROLE_LABELS[role] : null
     return {
       color: '#6b7280', bg: '#f3f4f6',
-      label: `Retirée de ${ROLE_LABELS[p.deletedFrom] || base.label || 'l’atelier'}`,
+      label: `Retirée — ${service || base.label || 'atelier'}`,
       removed: true,
     }
   }
