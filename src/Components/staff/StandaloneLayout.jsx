@@ -8,7 +8,7 @@
 
 import { useEffect } from 'react'
 import OrderSearch from './OrderSearch'
-import { NAVY } from './staffConfig'
+import { PURPLE } from './staffConfig'
 
 function StandaloneLayout({ label, children }) {
   /* L'atelier est toujours en français / LTR, même si le site public
@@ -35,16 +35,19 @@ function StandaloneLayout({ label, children }) {
     <div dir="ltr" className="min-h-screen flex flex-col" style={{ background: '#f5f3ff' }}>
 
       {/* En-tête minimal : identité du service, sans navigation */}
+      {/* Même violet que les boutons de l'atelier : une seule couleur d'accent
+          dans toute l'interface. Le sous-titre passe en blanc translucide,
+          l'ancien mauve clair ne se détacherait plus du fond. */}
       <header
         className="sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center gap-3"
-        style={{ background: NAVY, borderBottom: '1px solid rgba(124,58,237,0.2)' }}>
+        style={{ background: PURPLE }}>
         <img src="/icon.webp" alt=""
           className="w-8 h-8 rounded-full object-contain flex-shrink-0"
           onError={e => { e.currentTarget.style.display = 'none' }} />
         <div className="min-w-0">
           <p className="text-white font-black italic text-sm leading-none truncate">BrandPack</p>
           <p className="text-[11px] mt-0.5 font-bold uppercase tracking-widest truncate"
-            style={{ color: '#a78bfa' }}>
+            style={{ color: 'rgba(255,255,255,0.8)' }}>
             {label}
           </p>
         </div>

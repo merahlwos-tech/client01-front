@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import OrderSearch from './OrderSearch'
-import { NAVY, ROLE_LABELS, isSuperadmin, OPEN_ACCESS } from './staffConfig'
+import { PURPLE, ROLE_LABELS, isSuperadmin, OPEN_ACCESS } from './staffConfig'
 
 // Chaque lien déclare les rôles qui le voient. Le superadmin voit tout.
 const NAV_ITEMS = [
@@ -33,16 +33,16 @@ function SidebarContent({ role, username, onClose, onLogout }) {
   return (
     <div className="flex flex-col h-full">
       {/* En-tête */}
-      <div className="px-6 py-5" style={{ borderBottom: '1px solid rgba(124,58,237,0.2)' }}>
+      <div className="px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
         <p className="text-white font-black italic text-base leading-none">BrandPack</p>
-        <p className="text-xs mt-1" style={{ color: 'rgba(124,58,237,0.8)' }}>Atelier</p>
+        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.75)' }}>Atelier</p>
       </div>
 
       {/* Utilisateur */}
-      <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(124,58,237,0.12)' }}>
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
         <p className="text-white text-sm font-bold truncate">{username}</p>
         <span className="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: 'rgba(124,58,237,0.2)', color: '#c4b5fd' }}>
+          style={{ background: 'rgba(255,255,255,0.2)', color: '#ffffff' }}>
           {ROLE_LABELS[role] || role}
         </span>
       </div>
@@ -56,9 +56,9 @@ function SidebarContent({ role, username, onClose, onLogout }) {
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '10px 14px', borderRadius: '10px',
               fontWeight: 600, fontSize: '14px', transition: 'all 0.2s',
-              background:  isActive ? 'rgba(124,58,237,0.15)' : 'transparent',
-              color:       isActive ? '#a78bfa' : 'rgba(255,255,255,0.55)',
-              borderLeft:  isActive ? '3px solid #7c3aed' : '3px solid transparent',
+              background:  isActive ? 'rgba(255,255,255,0.18)' : 'transparent',
+              color:       isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
+              borderLeft:  isActive ? '3px solid #ffffff' : '3px solid transparent',
               textDecoration: 'none',
             })}>
             <Icon size={16} />
@@ -69,7 +69,7 @@ function SidebarContent({ role, username, onClose, onLogout }) {
       </nav>
 
       {/* Déconnexion — masquée en accès libre (aucune session à fermer) */}
-      <div className="px-3 py-4" style={{ borderTop: '1px solid rgba(124,58,237,0.15)' }}>
+      <div className="px-3 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
         {OPEN_ACCESS ? (
           <p className="px-4 text-[11px] leading-relaxed" style={{ color: 'rgba(251,191,36,0.75)' }}>
             ⚠️ Accès libre activé — aucune connexion requise.
@@ -120,7 +120,7 @@ function StaffLayout() {
     <div dir="ltr" className="min-h-screen flex" style={{ background: '#f5f3ff' }}>
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex flex-col w-60 fixed top-0 bottom-0 left-0 z-30"
-        style={{ background: NAVY, borderRight: '1px solid rgba(124,58,237,0.2)' }}>
+        style={{ background: PURPLE }}>
         <SidebarContent role={role} username={username} onClose={closeSidebar} onLogout={handleLogout} />
       </aside>
 
@@ -130,7 +130,7 @@ function StaffLayout() {
           <div className="absolute inset-0"
             style={{ background: 'rgba(30,27,75,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
           <aside className="absolute top-0 left-0 bottom-0 w-64 flex flex-col"
-            style={{ background: NAVY, borderRight: '1px solid rgba(124,58,237,0.2)' }}
+            style={{ background: PURPLE }}
             onClick={e => e.stopPropagation()}>
             <button onClick={closeSidebar} className="absolute top-4 right-4 p-1.5 rounded-lg"
               style={{ color: 'rgba(255,255,255,0.45)' }}>
@@ -144,7 +144,7 @@ function StaffLayout() {
       {/* Contenu */}
       <div className="flex-1 lg:ml-60 flex flex-col min-h-screen min-w-0">
         <header className="lg:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-40"
-          style={{ background: NAVY, borderBottom: '1px solid rgba(124,58,237,0.2)' }}>
+          style={{ background: PURPLE }}>
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg" style={{ color: 'rgba(255,255,255,0.65)' }}>
             <Menu size={20} />
           </button>
