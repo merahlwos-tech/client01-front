@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, CheckCircle2,
+  Loader2, CheckCircle2, AlertTriangle,
   CalendarCheck, History, ShieldCheck, Undo2, Pencil, CalendarDays, Package,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -136,14 +136,21 @@ function ChefRescheduleActions({ order, updateOne, removeOne, onEdit }) {
 /* La production n'a plus à déclarer les matières consommées : elle note ce
    qu'elle veut et termine. Le stock ne bouge donc plus tout seul — seul le
    chef de production le fait varier depuis la page Stock. */
-function ProductionActions({ order, removeOne }) {
+function ProductionActions({ order, removeOne, chefMode = false }) {
   const [notes, setNotes] = useState('')
   const [sending, setSending] = useState(false)
+
+  /* L'écran doit être insolé avant de fabriquer. Tant que l'insolation n'a pas
+     confirmé, le serveur refuse — on le dit ici plutôt que de laisser cliquer
+     dans le vide. Le chef, lui, peut passer outre. */
+  const insole  = order.pipeline?.insolation?.status === 'confirme'
+  const bloquee = !insole && !chefMode
 
   const finish = async () => {
     setSending(true)
     try {
-      await staffApi.post(`/workflow/orders/${order._id}/produce`, { notes })
+      await staffApi.post(`/workflow/orders/${order._id}/produce`,
+        chefMode ? { notes, asChef: true } : { notes })
       toast.success('Fabrication terminée → emballage')
       removeOne(order._id)
     } catch (err) {
@@ -155,13 +162,26 @@ function ProductionActions({ order, removeOne }) {
 
   return (
     <div className="space-y-3">
+      {!insole && (
+        <div className="flex items-start gap-2 text-xs font-semibold px-3 py-2 rounded-xl"
+          style={{ background: '#fffbeb', color: '#b45309' }}>
+          <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+          <span>
+            L'insolation n'a pas encore confirmé cette commande.
+            {chefMode
+              ? ' En tant que chef, vous pouvez terminer quand même.'
+              : ' La fabrication ne peut pas être déclarée terminée avant.'}
+          </span>
+        </div>
+      )}
+
       <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
         placeholder="Notes de production (optionnel)"
         className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors resize-none" />
 
-      <button onClick={finish} disabled={sending}
+      <button onClick={finish} disabled={sending || bloquee}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
-        style={{ background: '#f97316' }}>
+        style={{ background: bloquee ? '#fdba74' : '#f97316' }}>
         {sending ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
         Fabrication terminée
       </button>
@@ -291,6 +311,7 @@ function ProductionPage() {
       actions={chefMode ? ChefProductionActions : ProductionActions}
       actionProps={{
         onEdit: setEditing,
+        chefMode,          // seul le chef peut fabriquer sans insolation
       }}
       extraParams={view === 'all' ? {}
                  : isLate ? { overdueBefore: today }
