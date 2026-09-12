@@ -407,7 +407,9 @@ function ServiceHistory({
           order={selected}
           onClose={() => setSelectedId(null)}
           summaryOpts={{ service, showPrice, ...summaryOpts }}
-          notesReadOnly
+          /* Un service garde la parole sur une commande partie ailleurs :
+             c'est souvent après coup qu'il a quelque chose à signaler. */
+          notesReadOnly={false}
           onTagsChanged={load}
         />
       )}

@@ -113,13 +113,16 @@ function OrderSearch({ compact = false }) {
         </div>
       )}
 
-      {/* Lecture seule : la recherche sert à situer la commande, pas à agir */}
+      {/* La recherche sert à situer la commande, pas à la faire avancer : pas
+          d'actions d'étape. Les notes, elles, restent ouvertes — un service
+          doit pouvoir signaler quelque chose sur une commande déjà partie. */}
       {selected && (
         <OrderDetailModal
           order={selected}
           onClose={() => setSelected(null)}
           summaryOpts={{ service: 'chef' }}
-          notesReadOnly
+          notesReadOnly={false}
+          onTagsChanged={upd => upd?._id && setSelected(upd)}
         />
       )}
     </div>
