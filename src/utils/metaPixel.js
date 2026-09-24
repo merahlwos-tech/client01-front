@@ -248,10 +248,16 @@ export function trackAddPaymentInfo(items, total) {
 
 /**
  * Purchase — côté Pixel uniquement.
- * @returns {string} eventId — à transmettre au backend
+ *
+ * À appeler APRÈS que le serveur a enregistré la commande, avec l'eventId
+ * déjà transmis au backend (qui envoie le même au CAPI → déduplication).
+ * L'appeler avant, c'est déclarer à Meta un achat qui n'existe pas dès que
+ * l'enregistrement échoue.
+ *
+ * @param {string} [eventId] — celui envoyé au backend ; généré sinon
+ * @returns {string} eventId
  */
-export function trackPurchase(items, total) {
-  const eventId  = generateEventId()
+export function trackPurchase(items, total, eventId = generateEventId()) {
   const numItems = items.reduce((s, i) => s + i.quantity, 0)
   fbq('track', 'Purchase', {
     content_ids:  items.map(i => i.productId),

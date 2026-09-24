@@ -7,7 +7,9 @@ import CheckoutForm from '../../Components/public/CheckoutForm'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
-import { trackInitiateCheckout, trackPurchase, trackAddPaymentInfo, getMetaCookies } from '../../utils/metaPixel'
+import {
+  trackInitiateCheckout, trackPurchase, trackAddPaymentInfo, getMetaCookies, generateEventId,
+} from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
 
 const NAVY   = '#1e1b4b'
@@ -112,7 +114,11 @@ function CartPage() {
     setPendingOrder(null)
     setSubmitting(true)
     trackAddPaymentInfo(items, totalWithDelivery)
-    const metaEventId = trackPurchase(items, totalWithDelivery)
+    /* L'identifiant est fixé maintenant et part avec la commande : le serveur
+       le transmet au CAPI, le pixel le reprend après — Meta déduplique. Mais
+       le pixel n'annonce l'achat qu'une fois la commande enregistrée : un
+       envoi raté ne doit pas devenir une conversion fantôme. */
+    const metaEventId = generateEventId()
     const { fbp, fbc } = getMetaCookies()
     try {
       await api.post('/orders', {
@@ -132,6 +138,7 @@ function CartPage() {
         ...(fbp && { metaFbp: fbp }),
         ...(fbc && { metaFbc: fbc }),
       })
+      trackPurchase(items, totalWithDelivery, metaEventId)
       clearCart()
       navigate('/confirmation', { replace: true })
     } catch (err) {
