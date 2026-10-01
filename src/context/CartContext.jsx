@@ -1,6 +1,29 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
+import { priceBreakdown } from '../utils/pricing'
 
 const CartContext = createContext(null)
+
+/* Ce qu'il faut garder d'un produit pour recalculer son prix dans le panier :
+   la taille choisie avec ses paliers, et les suppléments. Sans ça, changer la
+   quantité ne pouvait pas faire jouer les paliers dégressifs. */
+function pricingSnapshot(product, size) {
+  const sizeObj = product.sizes?.find(s => String(s.size) === String(size))
+  return {
+    sizes: sizeObj ? [{ size: sizeObj.size, price: sizeObj.price, priceTiers: sizeObj.priceTiers || [] }] : [],
+    doubleSided:              !!product.doubleSided,
+    doubleSidedPrice:         product.doubleSidedPrice ?? 0,
+    colorDesignEnabled:       !!product.colorDesignEnabled,
+    colorDesignPricePerColor: product.colorDesignPricePerColor ?? 0,
+  }
+}
+
+/* Prix unitaire d'une ligne, avec la MÊME règle que la fiche produit et que
+   le serveur (paliers + recto-verso + couleurs). Une ligne ancienne, sans
+   instantané de prix, garde son prix : le serveur recalcule de toute façon. */
+function linePrice(item, quantity) {
+  if (!item.pricing?.sizes?.length) return item.price
+  return priceBreakdown(item.pricing, item.size, quantity, item.doubleSided, item.numberOfColors).unitPrice
+}
 
 const ACTIONS = {
   ADD: 'ADD_TO_CART', REMOVE: 'REMOVE_FROM_CART',
@@ -13,16 +36,20 @@ function cartReducer(state, action) {
 
     case ACTIONS.ADD: {
       const { product, size, quantity, doubleSided, selectedColors = [], numberOfColors = null } = action.payload
-      const sizeObj   = product.sizes?.find(s => s.size === size)
-      const basePrice = sizeObj?.price ?? product.computedPrice ?? 0
-      const extra     = (doubleSided && product.doubleSided) ? (product.doubleSidedPrice ?? 0) : 0
-      const unitPrice = basePrice + extra
+      /* L'ancien calcul prenait le prix de base de la taille AVANT le prix
+         calculé par la fiche (paliers + couleurs), qui n'était donc jamais
+         utilisé : le panier affichait et envoyait un autre prix que la fiche. */
+      const pricing   = pricingSnapshot(product, size)
       const colorKey  = [...selectedColors].sort().join(',')
       const key       = `${product._id}-${size}-${doubleSided ? '2' : '1'}-${colorKey}-${numberOfColors ?? 0}`
+      const base      = { size, doubleSided: !!doubleSided, numberOfColors, pricing }
+      const unitPrice = pricing.sizes.length
+        ? linePrice(base, quantity)
+        : (product.computedPrice ?? 0)
       const existing  = state.find(item => item.key === key)
       if (existing) {
         return state.map(item =>
-          item.key === key ? { ...item, quantity } : item
+          item.key === key ? { ...item, quantity, pricing, price: unitPrice } : item
         )
       }
       return [...state, {
@@ -30,17 +57,18 @@ function cartReducer(state, action) {
         price: unitPrice, image: product.images?.[0] || '',
         size, doubleSided: !!doubleSided,
         selectedColors, numberOfColors,
-        quantity,
+        quantity, pricing,
       }]
     }
 
     case ACTIONS.REMOVE:
       return state.filter(item => item.key !== action.payload)
 
+    // Changer la quantité fait jouer les paliers : le prix unitaire suit
     case ACTIONS.UPDATE_QTY:
       return state.map(item =>
         item.key === action.payload.key
-          ? { ...item, quantity: action.payload.quantity }
+          ? { ...item, quantity: action.payload.quantity, price: linePrice(item, action.payload.quantity) }
           : item
       )
 

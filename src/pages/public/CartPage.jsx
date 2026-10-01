@@ -121,7 +121,7 @@ function CartPage() {
     const metaEventId = generateEventId()
     const { fbp, fbc } = getMetaCookies()
     try {
-      await api.post('/orders', {
+      const { data: saved } = await api.post('/orders', {
         customerInfo,
         items: items.map(item => ({
           product:        item.productId,
@@ -138,7 +138,9 @@ function CartPage() {
         ...(fbp && { metaFbp: fbp }),
         ...(fbc && { metaFbc: fbc }),
       })
-      trackPurchase(items, totalWithDelivery, metaEventId)
+      /* Le serveur recalcule le total depuis le catalogue : c'est ce montant
+         qui part au CAPI, le pixel doit déclarer exactement le même. */
+      trackPurchase(items, Number(saved?.total) || totalWithDelivery, metaEventId)
       clearCart()
       navigate('/confirmation', { replace: true })
     } catch (err) {
