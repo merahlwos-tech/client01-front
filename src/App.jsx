@@ -53,22 +53,36 @@ function PageLoader() {
   )
 }
 
-// ── PageView Meta à chaque changement de route ────────────────────────────
-function PageViewTracker() {
-  const location = useLocation()
-  useEffect(() => { trackPageView() }, [location.pathname])
-  return null
-}
-
-const WA_NUMBER = '213554767444'
-
 /* Espaces internes : admin e-commerce, hub atelier, et les pages de service
-   autonomes. Le bouton WhatsApp flottant n'y apparaît jamais. */
+   autonomes. Le bouton WhatsApp flottant n'y apparaît jamais, et Meta n'y
+   reçoit rien. */
 const INTERNAL_PATHS = [
   '/admin', '/staff',
   '/confirmatrice', '/designer', '/insolation', '/production',
   '/emballage', '/livraison', '/chef', '/stock', '/superadmin',
 ]
+
+// ── PageView Meta à chaque changement de route ────────────────────────────
+function PageViewTracker() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    /* Le personnel passe la journée sur l'atelier : ses pages vues n'ont rien
+       à faire dans les audiences publicitaires. */
+    if (INTERNAL_PATHS.some(p => pathname.startsWith(p))) return
+
+    /* PAS de PageView sur /confirmation. Une règle créée dans Meta (outil de
+       configuration d'événements) transforme tout PageView à cette adresse en
+       Purchase : chaque commande comptait double, et un simple rechargement
+       de la page créait un achat. Le vrai Purchase est envoyé par la page
+       elle-même, une seule fois, avec son montant (voir firePendingPurchase). */
+    if (pathname.startsWith('/confirmation')) return
+
+    trackPageView()
+  }, [pathname])
+  return null
+}
+
+const WA_NUMBER = '213554767444'
 
 function WhatsAppButton() {
   const location = useLocation()

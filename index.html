@@ -42,6 +42,14 @@
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
+      /* Site en page unique : sans ces deux réglages, le pixel envoie de
+         lui-même un PageView à chaque changement de page (sans event_id) et
+         jette celui du code comme doublon. Le serveur envoyant le sien avec un
+         autre identifiant, chaque page était comptée deux fois.
+         - disablePushState      : plus de PageView automatique
+         - allowDuplicatePageViews : les PageView du code passent tous      */
+      fbq.disablePushState = true;
+      fbq.allowDuplicatePageViews = true;
       fbq('init', '%VITE_META_PIXEL_ID%');
     </script>
   </head>

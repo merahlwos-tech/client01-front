@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useLang } from '../../context/LanguageContext'
 import { useSEO } from '../../utils/UseSEO'
+import { firePendingPurchase } from '../../utils/metaPixel'
 
 const NAVY   = '#1e1b4b'
 const PURPLE = '#7c3aed'
@@ -12,6 +13,10 @@ function ConfirmationPage() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
+    /* L'achat est déclaré à Meta ICI, quand l'adresse est /confirmation, et
+       une seule fois : rien n'est envoyé si la page est rechargée ou ouverte
+       directement, sans commande. */
+    firePendingPurchase()
   }, [])
 
   return (

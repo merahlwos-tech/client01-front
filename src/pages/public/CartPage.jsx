@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import {
   trackInitiateCheckout, trackPurchase, trackAddPaymentInfo, getMetaCookies, generateEventId,
+  stagePurchase,
 } from '../../utils/metaPixel'
 import { useSEO } from '../../utils/UseSEO'
 
@@ -135,12 +136,21 @@ function CartPage() {
         })),
         total: totalWithDelivery,
         metaEventId,
+        /* Adresse déclarée à Meta pour l'achat côté serveur. Le navigateur
+           n'envoie au serveur que le domaine (Referer réduit entre deux
+           domaines) : sans ce champ, tous les achats semblaient venir de la
+           page d'accueil. */
+        metaSourceUrl: `${window.location.origin}/confirmation`,
         ...(fbp && { metaFbp: fbp }),
         ...(fbc && { metaFbc: fbc }),
       })
-      /* Le serveur recalcule le total depuis le catalogue : c'est ce montant
-         qui part au CAPI, le pixel doit déclarer exactement le même. */
-      trackPurchase(items, Number(saved?.total) || totalWithDelivery, metaEventId)
+      /* Le pixel déclare le même montant que le serveur, depuis la page de
+         confirmation (voir stagePurchase). Si le stockage du navigateur est
+         bloqué, on l'envoie tout de suite plutôt que de perdre l'achat. */
+      const purchaseValue = Number(saved?.total) || totalWithDelivery
+      if (!stagePurchase(items, purchaseValue, metaEventId)) {
+        trackPurchase(items, purchaseValue, metaEventId)
+      }
       clearCart()
       navigate('/confirmation', { replace: true })
     } catch (err) {

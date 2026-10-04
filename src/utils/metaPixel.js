@@ -261,12 +261,50 @@ export function trackPurchase(items, total, eventId = generateEventId()) {
   const numItems = items.reduce((s, i) => s + i.quantity, 0)
   fbq('track', 'Purchase', {
     content_ids:  items.map(i => i.productId),
+    content_type: 'product',
     contents:     items.map(i => ({ id: i.productId, quantity: i.quantity })),
     num_items:    numItems,
     value:        total,
     currency:     'DZD',
   }, { eventID: eventId })
   return eventId
+}
+
+/* ─────────────────────────────────────────────
+   Purchase différé jusqu'à la page de confirmation
+
+   Le Purchase doit partir quand l'adresse est /confirmation : c'est ce que
+   teste la conversion personnalisée définie dans Meta (« Purchase + URL
+   contient /confirmation »). Envoyé depuis /cart, il ne la déclenchait pas.
+
+   On le met donc de côté au moment de la commande, et la page de
+   confirmation l'envoie — une seule fois : il est retiré du stockage AVANT
+   l'envoi, donc recharger la page ne recrée jamais d'achat.
+───────────────────────────────────────────────*/
+const PENDING_PURCHASE = 'meta_purchase_pending'
+
+/** @returns {boolean} false si le stockage est indisponible (l'appelant envoie alors tout de suite) */
+export function stagePurchase(items, total, eventId) {
+  try {
+    sessionStorage.setItem(PENDING_PURCHASE, JSON.stringify({
+      eventId, total,
+      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+    }))
+    return true
+  } catch { return false }
+}
+
+export function firePendingPurchase() {
+  let pending = null
+  try {
+    const raw = sessionStorage.getItem(PENDING_PURCHASE)
+    if (!raw) return false
+    sessionStorage.removeItem(PENDING_PURCHASE)
+    pending = JSON.parse(raw)
+  } catch { return false }
+  if (!pending?.eventId || !Array.isArray(pending.items)) return false
+  trackPurchase(pending.items, pending.total, pending.eventId)
+  return true
 }
 
 /* ════════════════════════════════════════════
@@ -296,5 +334,9 @@ export function trackFormEngagement() {
   fbq('trackCustom', 'FormEngagement', {
     note: 'Started filling checkout form',
   }, { eventID: eventId })
+  /* Le serveur envoie un « Lead » : le pixel doit envoyer le MÊME nom avec le
+     même identifiant, sinon Meta ne peut pas rapprocher les deux. Avant, le
+     Lead n'existait que côté serveur, sans équivalent navigateur. */
+  fbq('track', 'Lead', { content_name: 'checkout_form' }, { eventID: eventId })
   sendCAPIEvent('Lead', eventId, { content_name: 'checkout_form' })
 }
