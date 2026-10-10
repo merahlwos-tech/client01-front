@@ -305,8 +305,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     return () => { alive = false; clearTimeout(t) }
   }, [isEdit, phoneDigits])
 
-  /* Reprend une commande passée. Les prix ne sont PAS repris : ils sont
-     recalculés au tarif actuel du site, comme les frais de livraison. */
+  /* Reprend une commande passée. Les articles du catalogue et les frais de
+     livraison repartent au tarif ACTUEL, pas à celui de l'époque. */
   const fillFrom = (src, withItems) => {
     const c = src.customerInfo || {}
     setCustomer(p => ({
@@ -320,7 +320,10 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     }))
     if (c.wilayaCode) { setWilayaId(String(c.wilayaCode)); loadCommunes(String(c.wilayaCode)) }
     if (withItems) {
-      setItems((src.items || []).map(i => itemFromOrder(i, false)))
+      /* Un article du catalogue reprend le tarif ACTUEL du site. Un article
+         libre (hors catalogue) n'a pas de tarif à recalculer : il garde le
+         prix de l'ancienne commande, sinon il repartirait à 0. */
+      setItems((src.items || []).map(i => itemFromOrder(i, !i.product)))
       setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls.slice(0, MAX_LOGOS) : [])
       setTotalOverride('')
       toast.success('Commande reprise — vérifiez-la puis créez-la')
