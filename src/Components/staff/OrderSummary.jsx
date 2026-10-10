@@ -202,7 +202,9 @@ function OrderSummary({
                 {(it.bagColor || it.printColor) && (
                   <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                     {it.bagColor   && <ColorPill label="Sac" value={it.bagColor} />}
-                    {it.printColor && <ColorPill label="Impression" value={it.printColor} />}
+                    {/* Plusieurs couleurs d'impression : une pastille chacune */}
+                    {String(it.printColor || '').split(',').map(c => c.trim()).filter(Boolean)
+                      .map((c, k) => <ColorPill key={k} label={k === 0 ? 'Impression' : '+'} value={c} />)}
                   </div>
                 )}
               </div>

@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Plus, Pencil, Inbox, RefreshCcw, AlertTriangle, Lock,
-  CheckSquare, Square, Trash2,
+  CheckSquare, Square, Trash2, Boxes,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from '../../Components/staff/OrderRow'
 import OrderDetailModal from '../../Components/staff/OrderDetailModal'
 import OrderForm from '../../Components/staff/OrderForm'
 import ServiceHistory from '../../Components/staff/ServiceHistory'
+import MaterialsDeclaration from '../../Components/staff/MaterialsDeclaration'
 import {
   retraitReversible, MESSAGE_SERVEUR_ANCIEN,
 } from '../../Components/staff/retraitReversible'
@@ -122,6 +124,11 @@ function OrderActions({ order, onChanged, onEdit }) {
               </button>
             </>
           )}
+
+          {/* Matières que la commande va consommer : déduites du stock dès
+              maintenant. En atelier, on ne fait plus que les consulter. */}
+          <MaterialsDeclaration order={order} onChanged={onChanged}
+            readOnly={locked} stockLink="/stock?from=confirmatrice" />
         </div>
       )}
     </>
@@ -299,13 +306,22 @@ function ConfirmatricePage() {
 
       <div className="flex items-end justify-between flex-wrap gap-3">
         <PageHeader eyebrow="Service confirmation" title="Commandes" />
-        {!readOnly && (
-          <button onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90"
-            style={{ background: PURPLE }}>
-            <Plus size={15} /> Nouvelle commande
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Le stock en consultation : elle y voit ce qui reste avant de
+              déduire les matières d'une commande. */}
+          <Link to="/stock?from=confirmatrice"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all hover:bg-white"
+            style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+            <Boxes size={15} /> Voir le stock
+          </Link>
+          {!readOnly && (
+            <button onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90"
+              style={{ background: PURPLE }}>
+              <Plus size={15} /> Nouvelle commande
+            </button>
+          )}
+        </div>
       </div>
 
       {readOnly && (

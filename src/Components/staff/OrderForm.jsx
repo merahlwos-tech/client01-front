@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   X, Plus, Trash2, Loader2, Save, ShoppingBag, ImagePlus, FileText,
-  Truck, Store, AlertTriangle,
+  Truck, Store, AlertTriangle, UserCheck, RotateCcw,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
@@ -56,8 +56,45 @@ const emptyItem = () => ({
   category: '', product: '', name: '', size: '', quantity: 100,
   doubleSided: false, selectedColors: [], numberOfColors: 1,
   priceOverride: '',          // vide = prix du site
-  bagColor: '', printColor: '',
+  bagColor: '',
+  printColors: [],            // une ou plusieurs couleurs d'impression
+  printDraft: '',             // couleur en cours de frappe, pas encore validée
 })
+
+// Sans limite fixée par le produit, on borne quand même la saisie
+const MAX_PRINT_COLORS = 8
+
+/* Les couleurs d'impression sont enregistrées dans un seul champ, séparées
+   par des virgules (« noir, doré, blanc ») : aucune donnée existante à
+   convertir, et l'affichage les redécoupe. */
+const splitColors = (v) => String(v || '').split(',').map(s => s.trim()).filter(Boolean)
+
+/* Article du formulaire à partir d'un article enregistré.
+   `keepPrice` : en modification on garde le prix de la commande ; en reprise
+   d'une ancienne commande on le laisse vide pour appliquer le tarif actuel. */
+const itemFromOrder = (i, keepPrice) => ({
+  product:  i.product?._id || i.product || '',
+  name:     i.name || '',
+  size:     i.size || '',
+  quantity: i.quantity ?? 100,
+  doubleSided: !!i.doubleSided,
+  selectedColors: i.selectedColors || [],
+  numberOfColors: i.numberOfColors ?? 1,
+  priceOverride: keepPrice ? (i.price ?? '') : '',
+  bagColor:   i.bagColor || '',
+  printColors: splitColors(i.printColor),
+  printDraft: '',
+})
+
+/* Ajoute des couleurs à une liste sans doublon, dans la limite autorisée */
+function mergeColors(current, raw, max) {
+  const next = [...current]
+  for (const c of splitColors(raw)) {
+    if (max != null && next.length >= max) break
+    if (!next.some(v => v.toLowerCase() === c.toLowerCase())) next.push(c)
+  }
+  return next
+}
 
 const field = 'w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors'
 const label = 'block text-xs font-bold uppercase tracking-widest mb-1.5 text-gray-400'
@@ -79,6 +116,68 @@ function ColorField({ id, label: text, value, onChange }) {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border pointer-events-none"
             style={{ background: swatch, borderColor: 'rgba(0,0,0,0.2)' }} />
         )}
+      </div>
+      <datalist id={`${id}-list`}>
+        {COLOR_OPTIONS.map(c => <option key={c} value={c} />)}
+      </datalist>
+    </div>
+  )
+}
+
+/* Plusieurs couleurs d'impression : chacune devient une étiquette. On valide
+   avec Entrée, une virgule, le bouton +, ou simplement en quittant le champ.
+   Le texte en cours de frappe vit dans le formulaire parent, pour qu'une
+   couleur tapée mais pas encore validée ne soit pas perdue à l'enregistrement. */
+function ColorsField({ id, label: text, values, draft, onDraft, onChange, max = null }) {
+  const full = max != null && values.length >= max
+  const add = (raw) => {
+    const next = mergeColors(values, raw, max)
+    if (next.length !== values.length) onChange(next)
+    onDraft('')
+  }
+  return (
+    <div>
+      <label className={label} htmlFor={id}>
+        {text}{values.length > 1 ? ` (${values.length})` : ''}
+      </label>
+
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-1.5">
+          {values.map(v => {
+            const swatch = swatchOf(v)
+            return (
+              <span key={v} className="inline-flex items-center gap-1.5 text-xs font-semibold pl-2 pr-1 py-1 rounded-full"
+                style={{ background: '#f5f3ff', color: NAVY }}>
+                {swatch && (
+                  <span className="w-3 h-3 rounded-full border flex-shrink-0"
+                    style={{ background: swatch, borderColor: 'rgba(0,0,0,0.2)' }} />
+                )}
+                {v}
+                <button type="button" title="Retirer cette couleur"
+                  onClick={() => onChange(values.filter(x => x !== v))}
+                  className="p-0.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                  <X size={11} />
+                </button>
+              </span>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="flex gap-1.5">
+        <input id={id} list={`${id}-list`} value={draft} disabled={full}
+          placeholder={full ? `${max} couleurs au maximum`
+            : values.length ? 'Ajouter une autre couleur…' : 'Ex. noir, doré…'}
+          className={`${field} disabled:bg-gray-50 disabled:text-gray-400`} style={{ color: NAVY }}
+          onChange={e => (e.target.value.includes(',') ? add(e.target.value) : onDraft(e.target.value))}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(draft) } }}
+          onBlur={() => { if (draft.trim()) add(draft) }} />
+        <button type="button" onClick={() => add(draft)} disabled={!draft.trim() || full}
+          title="Ajouter cette couleur"
+          className="px-3 rounded-xl text-white flex-shrink-0 transition-all hover:opacity-90 disabled:opacity-40"
+          style={{ background: PURPLE }}>
+          <Plus size={15} />
+        </button>
       </div>
       <datalist id={`${id}-list`}>
         {COLOR_OPTIONS.map(c => <option key={c} value={c} />)}
@@ -172,23 +271,63 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       feeOverride: c.deliveryFee ?? '',
     })
     if (c.wilayaCode) { setWilayaId(String(c.wilayaCode)); loadCommunes(String(c.wilayaCode)) }
-    setItems((order.items || []).map(i => ({
-      product:  i.product?._id || i.product || '',
-      name:     i.name || '',
-      size:     i.size || '',
-      quantity: i.quantity ?? 100,
-      doubleSided: !!i.doubleSided,
-      selectedColors: i.selectedColors || [],
-      numberOfColors: i.numberOfColors ?? 1,
-      priceOverride: i.price ?? '',
-      bagColor:   i.bagColor   || '',
-      printColor: i.printColor || '',
-    })))
+    setItems((order.items || []).map(i => itemFromOrder(i, true)))
     setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls : [])
     setStatus(order.status || 'en attente')
     setUrgency(order.pipeline?.urgency || 'normal')
     setTotalOverride('')
   }, [order, loadCommunes])
+
+  /* ── Client déjà connu : repartir d'une commande passée ──
+     Dès que le téléphone est saisi, on cherche ses commandes précédentes.
+     La confirmatrice peut alors reprendre ses coordonnées, ou une commande
+     entière qu'elle n'a plus qu'à ajuster. Uniquement à la création. */
+  const [known, setKnown] = useState([])          // commandes passées du client
+  const phoneDigits = customer.phone.replace(/\D/g, '')
+
+  useEffect(() => {
+    if (isEdit || phoneDigits.length < 8) { setKnown([]); return }
+    let alive = true
+    const t = setTimeout(() => {
+      staffApi.get('/workflow/search', { params: { q: phoneDigits } })
+        .then(r => {
+          if (!alive) return
+          // La recherche regarde aussi noms et communes : on ne garde que le téléphone
+          const hits = (r.data || []).filter(o => {
+            const ci = o.customerInfo || {}
+            return [ci.phone, ...(ci.extraPhones || [])]
+              .some(p => String(p || '').replace(/\D/g, '').includes(phoneDigits))
+          })
+          setKnown(hits.slice(0, 5))
+        })
+        .catch(() => { if (alive) setKnown([]) })
+    }, 450)
+    return () => { alive = false; clearTimeout(t) }
+  }, [isEdit, phoneDigits])
+
+  /* Reprend une commande passée. Les prix ne sont PAS repris : ils sont
+     recalculés au tarif actuel du site, comme les frais de livraison. */
+  const fillFrom = (src, withItems) => {
+    const c = src.customerInfo || {}
+    setCustomer(p => ({
+      ...p,
+      firstName: c.firstName || '', lastName: c.lastName || '',
+      extraPhones: Array.isArray(c.extraPhones) ? c.extraPhones : [],
+      wilaya: c.wilaya || '', wilayaCode: c.wilayaCode ?? null, commune: c.commune || '',
+      description: withItems ? (c.description || '') : p.description,
+      stopDesk: c.deliveryMethod === 'Stop Desk',
+      feeOverride: '',
+    }))
+    if (c.wilayaCode) { setWilayaId(String(c.wilayaCode)); loadCommunes(String(c.wilayaCode)) }
+    if (withItems) {
+      setItems((src.items || []).map(i => itemFromOrder(i, false)))
+      setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls.slice(0, MAX_LOGOS) : [])
+      setTotalOverride('')
+      toast.success('Commande reprise — vérifiez-la puis créez-la')
+    } else {
+      toast.success('Coordonnées reprises')
+    }
+  }
 
   /* ── Articles ── */
   const setItem = (idx, patch) =>
@@ -287,7 +426,6 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   /* ── Total ── */
   const itemsTotal = items.reduce((s, it) => s + lineOf(it).lineTotal, 0)
   const computed   = itemsTotal + (Number(deliveryFee) || 0)
-  const finalTotal = totalOverride !== '' ? Number(totalOverride) : computed
 
   const phoneWarning = customer.phone.trim() !== ''
     && !MOBILE_RX.test(customer.phone.replace(/\s/g, ''))
@@ -301,8 +439,28 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     if (!customer.wilaya || !customer.commune.trim())
       return toast.error('Wilaya et commune sont requises')
 
-    const cleanItems = items.filter(i => (i.name || i.product) && Number(i.quantity) > 0)
+    /* Une couleur tapée mais pas encore validée est prise en compte, et le
+       nombre de couleurs — donc le prix — la compte aussi : sinon elle
+       serait notée sur la commande sans être facturée. */
+    const cleanItems = items
+      .filter(i => (i.name || i.product) && Number(i.quantity) > 0)
+      .map(i => {
+        const p = productById(i.product)
+        const max = p?.colorDesignEnabled && p.colorDesignMaxColors
+          ? p.colorDesignMaxColors : MAX_PRINT_COLORS
+        const printColors = mergeColors(i.printColors || [], i.printDraft, max)
+        const numberOfColors = p?.colorDesignEnabled
+          ? Math.max(Number(i.numberOfColors) || 1, printColors.length)
+          : i.numberOfColors
+        const priceOverride = numberOfColors !== i.numberOfColors ? '' : i.priceOverride
+        return { ...i, printColors, printDraft: '', numberOfColors, priceOverride }
+      })
     if (cleanItems.length === 0) return toast.error('Ajoutez au moins un article')
+
+    const itemsSum = cleanItems.reduce((s, i) => s + lineOf(i).lineTotal, 0)
+    const total = totalOverride !== ''
+      ? Number(totalOverride)
+      : itemsSum + (Number(deliveryFee) || 0)
 
     const payload = {
       customerInfo: {
@@ -326,9 +484,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
         selectedColors: i.selectedColors,
         numberOfColors: i.numberOfColors,
         bagColor:   (i.bagColor   || '').trim(),
-        printColor: (i.printColor || '').trim(),
+        printColor: i.printColors.join(', '),
       })),
-      total: finalTotal,
+      total,
     }
 
     setSaving(true)
@@ -378,6 +536,53 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
           {/* ── Client ── */}
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: PURPLE }}>Client</p>
+
+            {/* Client déjà connu : ses commandes passées, à reprendre en un clic */}
+            {!isEdit && known.length > 0 && (
+              <div className="mb-3 p-3 rounded-xl border-2"
+                style={{ borderColor: 'rgba(16,185,129,0.35)', background: '#ecfdf5' }}>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-sm font-bold flex items-center gap-1.5 min-w-0" style={{ color: '#065f46' }}>
+                    <UserCheck size={15} className="flex-shrink-0" />
+                    <span className="truncate">
+                      Client déjà connu — {known[0].customerInfo?.firstName} {known[0].customerInfo?.lastName}
+                    </span>
+                  </p>
+                  <button type="button" onClick={() => fillFrom(known[0], false)}
+                    className="text-xs font-bold px-2.5 py-1.5 rounded-lg border-2 transition-all hover:bg-white"
+                    style={{ borderColor: 'rgba(16,185,129,0.45)', color: '#047857' }}>
+                    Reprendre ses coordonnées
+                  </button>
+                </div>
+
+                <p className="text-[11px] mt-2 mb-1.5" style={{ color: '#047857' }}>
+                  {known.length > 1 ? 'Ses dernières commandes' : 'Sa dernière commande'} — reprenez-en une
+                  pour ne pas tout ressaisir :
+                </p>
+                <div className="space-y-1.5">
+                  {known.map(o => (
+                    <div key={o._id} className="flex items-center gap-2 bg-white rounded-lg p-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold truncate" style={{ color: NAVY }}>
+                          {(o.items || []).map(i =>
+                            `${i.name}${i.size ? ` ${i.size}` : ''} ×${i.quantity}`).join(' — ') || 'Commande'}
+                        </p>
+                        <p className="text-[11px] text-gray-400">
+                          {new Date(o.createdAt).toLocaleDateString('fr-DZ', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {' · '}{money(o.total)} DA
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => fillFrom(o, true)}
+                        className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white flex-shrink-0 transition-all hover:opacity-90"
+                        style={{ background: '#10b981' }}>
+                        <RotateCcw size={12} /> Reprendre
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={label}>Prénom *</label>
@@ -398,6 +603,11 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                 {phoneWarning && (
                   <p className="flex items-center gap-1 text-[11px] mt-1" style={{ color: '#b45309' }}>
                     <AlertTriangle size={11} /> Format inhabituel — le site attend 0[5/6/7] + 8 chiffres.
+                  </p>
+                )}
+                {!isEdit && known.length === 0 && phoneDigits.length < 8 && (
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Commencez par le téléphone : si le client a déjà commandé, sa commande vous sera proposée.
                   </p>
                 )}
 
@@ -739,9 +949,18 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                       <ColorField id={`bag-color-${idx}`} label="Couleur du sac"
                         value={it.bagColor || ''}
                         onChange={v => setItem(idx, { bagColor: v })} />
-                      <ColorField id={`print-color-${idx}`} label="Couleur de l'impression"
-                        value={it.printColor || ''}
-                        onChange={v => setItem(idx, { printColor: v })} />
+                      {/* Deux ou trois couleurs : on les ajoute une à une. Si le
+                          produit facture les couleurs, leur nombre — donc le
+                          prix — suit tout seul la liste. */}
+                      <ColorsField id={`print-color-${idx}`} label="Couleurs de l'impression"
+                        values={it.printColors || []}
+                        draft={it.printDraft || ''}
+                        max={p?.colorDesignEnabled && p.colorDesignMaxColors
+                          ? p.colorDesignMaxColors : MAX_PRINT_COLORS}
+                        onDraft={v => setItem(idx, { printDraft: v })}
+                        onChange={list => (p?.colorDesignEnabled
+                          ? setPricedItem(idx, { printColors: list, printDraft: '', numberOfColors: Math.max(1, list.length) })
+                          : setItem(idx, { printColors: list, printDraft: '' }))} />
                     </div>
 
                     {/* Prix — calculé comme sur le site, forçable si négocié */}
