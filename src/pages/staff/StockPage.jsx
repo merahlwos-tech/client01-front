@@ -193,7 +193,7 @@ function Movements({ materialId = null, limit = 15, showName = false }) {
             <Icon size={15} className="flex-shrink-0 mt-0.5" style={{ color }} />
             <div className="min-w-0 flex-1">
               {showName && (
-                <p className="text-xs font-bold truncate" dir="auto" style={{ color: NAVY }}>{m.materialName}</p>
+                <p className="text-xs font-bold truncate text-left" dir="auto" style={{ color: NAVY }}>{m.materialName}</p>
               )}
               <p className="text-xs break-words" style={{ color: '#4b5563' }}>
                 {m.note || (m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Inventaire')}
@@ -205,8 +205,8 @@ function Movements({ materialId = null, limit = 15, showName = false }) {
                 )}
               </p>
               <p className="text-[10px] text-gray-400">
-                {new Date(m.createdAt).toLocaleString('fr-DZ', {
-                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                {new Date(m.createdAt).toLocaleString('fr-FR', {
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })}
                 {m.by ? ` · ${m.by}` : ''}
               </p>
             </div>
@@ -413,11 +413,11 @@ function MaterialCard({ material, canWrite, ambiguous, onUpdated, onEdit, onDele
         </button>
 
         <div className="min-w-0 flex-1 flex flex-col">
-          <p className="text-sm font-bold leading-snug break-words" dir="auto" style={{ color: NAVY }}>
+          <p className="text-sm font-bold leading-snug break-words text-left" dir="auto" style={{ color: NAVY }}>
             {material.name}
           </p>
           {material.variant && (
-            <p className="text-xs font-semibold mt-0.5" dir="auto" style={{ color: PURPLE }}>{material.variant}</p>
+            <p className="text-xs font-semibold mt-0.5 text-left" dir="auto" style={{ color: PURPLE }}>{material.variant}</p>
           )}
 
           <p className="mt-auto pt-1.5 leading-none">
@@ -645,15 +645,16 @@ function StockPage() {
       )}
 
       {/* L'essentiel en chiffres */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      {/* Sur téléphone : 3 compteurs puis 2 flux, sans case orpheline */}
+      <div className="grid grid-cols-6 sm:grid-cols-5 gap-2">
         {[
-          { label: 'Matières',       value: fmt(counts.all),     color: NAVY },
-          { label: 'En rupture',     value: fmt(counts.rupture), color: counts.rupture ? '#ef4444' : '#9ca3af' },
-          { label: 'Stock bas',      value: fmt(counts.bas),     color: counts.bas ? '#d97706' : '#9ca3af' },
-          { label: 'Entrées · 30 j', value: flow ? `+${fmt(flow.in)}` : '…', color: '#059669' },
-          { label: 'Sorties · 30 j', value: flow ? `−${fmt(flow.out)}` : '…', color: '#ef4444' },
+          { label: 'Matières',       value: fmt(counts.all),     color: NAVY, span: 'col-span-2' },
+          { label: 'En rupture',     value: fmt(counts.rupture), color: counts.rupture ? '#ef4444' : '#9ca3af', span: 'col-span-2' },
+          { label: 'Stock bas',      value: fmt(counts.bas),     color: counts.bas ? '#d97706' : '#9ca3af', span: 'col-span-2' },
+          { label: 'Entrées · 30 j', value: flow ? `+${fmt(flow.in)}` : '…', color: '#059669', span: 'col-span-3' },
+          { label: 'Sorties · 30 j', value: flow ? `−${fmt(flow.out)}` : '…', color: '#ef4444', span: 'col-span-3' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl px-3 py-2.5 border border-gray-100 text-center">
+          <div key={s.label} className={`${s.span} sm:col-span-1 bg-white rounded-xl px-2 py-2.5 border border-gray-100 text-center`}>
             <p className="text-lg font-black leading-none" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">{s.label}</p>
           </div>

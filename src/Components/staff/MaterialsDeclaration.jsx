@@ -7,7 +7,7 @@
 // l'écart) : on peut donc corriger, ou tout remettre en stock, sans jamais
 // compter deux fois.
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Boxes, Plus, Trash2, Loader2, AlertTriangle, Undo2, ExternalLink, ChevronDown, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -34,8 +34,12 @@ function MaterialList({ materials, value, onPick }) {
     return t ? materials.filter(m => `${m.name} ${m.variant || ''}`.toLowerCase().includes(t)) : materials
   }, [materials, q])
 
+  // La liste s'ouvre souvent en bas de la fiche : on l'amène à l'écran
+  const boxRef = useRef(null)
+  useEffect(() => { boxRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }, [])
+
   return (
-    <div className="mt-1.5 bg-white rounded-xl border-2 border-purple-200 overflow-hidden">
+    <div ref={boxRef} className="mt-1.5 bg-white rounded-xl border-2 border-purple-200 overflow-hidden">
       {materials.length > 6 && (
         <div className="relative border-b border-gray-100">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
