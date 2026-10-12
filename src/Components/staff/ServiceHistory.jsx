@@ -15,7 +15,7 @@ import OrderDetailModal from './OrderDetailModal'
 import { retraitReversible, MESSAGE_SERVEUR_ANCIEN } from './retraitReversible'
 import {
   NAVY, PURPLE, ORDER_STATUS, STATUS_KEYS, WEEKDAYS_ORDERED, WEEK_START,
-  toDateStr, getPurgeCountdown, CANCELLED_RETENTION_DAYS,
+  toDateStr, getPurgeCountdown, CANCELLED_RETENTION_DAYS, ORDERS_CHANGED,
 } from './staffConfig'
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -63,6 +63,7 @@ function ServiceHistory({
   service, tagScope = null, summaryOpts = {}, showQuantity = true,
   showPrice = true,          // designer, insolation et production ne voient pas les montants
   deletable = false,         // confirmatrice et designer peuvent supprimer
+  cancellable = false,       // la confirmatrice annule une commande même partie ailleurs
 }) {
   const today = new Date()
   const [year, setYear]   = useState(today.getFullYear())
@@ -100,7 +101,7 @@ function ServiceHistory({
   }, [year, month, day])
 
   /* Décomptes du mois pour colorer le calendrier */
-  useEffect(() => {
+  const loadCalendar = useCallback(() => {
     const from = new Date(year, month, 1, 0, 0, 0, 0).toISOString()
     const to   = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString()
     staffApi.get('/workflow/history/calendar', {
@@ -109,6 +110,8 @@ function ServiceHistory({
       .then(r => setJours(r.data?.jours || {}))
       .catch(() => setJours({}))
   }, [service, year, month])
+
+  useEffect(() => { loadCalendar() }, [loadCalendar])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -123,6 +126,14 @@ function ServiceHistory({
   }, [service, range])
 
   useEffect(() => { load() }, [load])
+
+  /* Une commande annulée depuis la recherche de l'en-tête change aussi
+     l'historique affiché ici. */
+  useEffect(() => {
+    const refresh = () => { load(); loadCalendar() }
+    window.addEventListener(ORDERS_CHANGED, refresh)
+    return () => window.removeEventListener(ORDERS_CHANGED, refresh)
+  }, [load, loadCalendar])
 
   /* Changer de mois ferme la journée ouverte : elle n'y est plus */
   const shiftMonth = (delta) => {
@@ -173,11 +184,7 @@ function ServiceHistory({
         : `${res.data?.restored ?? picked.length} commande(s) restaurée(s)`)
       setPicked([]); setPicking(false)
       load()
-      // Les décomptes du calendrier changent aussi
-      const from = new Date(year, month, 1).toISOString()
-      const to   = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString()
-      staffApi.get('/workflow/history/calendar', { params: { service, from, to, tz: tzOffset() } })
-        .then(r => setJours(r.data?.jours || {})).catch(() => {})
+      loadCalendar()        // les décomptes du calendrier changent aussi
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
     } finally { setDeleting(false) }
@@ -411,6 +418,10 @@ function ServiceHistory({
              c'est souvent après coup qu'il a quelque chose à signaler. */
           notesReadOnly={false}
           onTagsChanged={load}
+          /* Annulable tant qu'elle est encore chez un service : une commande
+             livrée (« terminée ») ne l'est plus. */
+          onCancelled={cancellable && selected.pipeline?.stage !== 'termine'
+            ? () => { load(); loadCalendar() } : undefined}
         />
       )}
     </div>

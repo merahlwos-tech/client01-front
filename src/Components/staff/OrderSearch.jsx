@@ -2,14 +2,21 @@
 // Recherche transverse : n'importe quel service retrouve une commande et voit
 // immédiatement CHEZ QUI elle se trouve. Le résultat s'ouvre en lecture seule
 // — chercher une commande ne donne pas le droit d'agir dessus.
+// Seule exception : la confirmatrice peut ANNULER une commande d'ici, même
+// partie dans un autre service (c'est elle qui a le client au téléphone).
 
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Search, Loader2, X } from 'lucide-react'
 import staffApi from '../../utils/staffApi'
 import OrderDetailModal from './OrderDetailModal'
-import { NAVY, PURPLE, whereIs, shortRef, thumb } from './staffConfig'
+import { useStaffAuth } from '../../context/StaffAuthContext'
+import { NAVY, PURPLE, whereIs, shortRef, thumb, canAct, ORDERS_CHANGED } from './staffConfig'
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
+
+// Pages du service confirmation (autonome, et dans le hub /staff)
+const PAGES_CONFIRMATRICE = ['/confirmatrice', '/staff/confirmation']
 
 function ResultRow({ order, onOpen }) {
   const c   = order.customerInfo || {}
@@ -52,6 +59,25 @@ function OrderSearch({ compact = false }) {
   const [open, setOpen]     = useState(false)
   const [selected, setSelected] = useState(null)
   const boxRef = useRef(null)
+
+  const { role }     = useStaffAuth()
+  const { pathname } = useLocation()
+  const canCancel = PAGES_CONFIRMATRICE.includes(pathname) && canAct(role, 'confirmation')
+
+  /* Après annulation : la fiche ouverte et la ligne de résultat reflètent le
+     nouvel état, et la page derrière est prévenue pour rafraîchir ses listes.
+     On ne reprend que l'état de la commande — la réponse du serveur ne porte
+     ni les produits ni les étiquettes détaillés. */
+  const handleCancelled = (upd) => {
+    if (!upd?._id) return
+    const merge = (o) => (o && o._id === upd._id ? {
+      ...o, status: upd.status,
+      pipeline: { ...o.pipeline, ...upd.pipeline, customTags: o.pipeline?.customTags },
+    } : o)
+    setSelected(merge)
+    setResults(r => (r ? r.map(merge) : r))
+    window.dispatchEvent(new Event(ORDERS_CHANGED))
+  }
 
   /* Fermer le volet en cliquant à côté */
   useEffect(() => {
@@ -123,6 +149,8 @@ function OrderSearch({ compact = false }) {
           summaryOpts={{ service: 'chef' }}
           notesReadOnly={false}
           onTagsChanged={upd => upd?._id && setSelected(upd)}
+          /* Une commande livrée (« terminée ») n'est plus chez aucun service */
+          onCancelled={canCancel && selected.pipeline?.stage !== 'termine' ? handleCancelled : undefined}
         />
       )}
     </div>

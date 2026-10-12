@@ -258,6 +258,11 @@ export function whereIs(order) {
    Doit rester alignée avec CANCELLED_RETENTION_DAYS côté serveur. */
 export const CANCELLED_RETENTION_DAYS = 30
 
+/* Signal « une commande vient de changer », émis par la recherche de
+   l'en-tête. Elle vit hors des pages : celles-ci l'écoutent pour rafraîchir
+   leurs listes. */
+export const ORDERS_CHANGED = 'staff:orders-changed'
+
 /* Compte à rebours avant la suppression d'une commande annulée.
    → { days, label, color, bg, imminent } ou null si elle n'est pas annulée. */
 export function getPurgeCountdown(order, retentionDays = CANCELLED_RETENTION_DAYS) {

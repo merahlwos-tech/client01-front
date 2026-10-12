@@ -18,7 +18,7 @@ import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, NAVY, PURPLE,
-  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS, getPurgeCountdown,
+  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS, getPurgeCountdown, ORDERS_CHANGED,
 } from '../../Components/staff/staffConfig'
 
 /* Étapes où la commande est déjà travaillée en atelier :
@@ -74,6 +74,7 @@ function OrderActions({ order, onChanged, onEdit }) {
               style={{ background: '#fffbeb', color: '#b45309' }}>
               <Lock size={13} />
               En atelier ({order.pipeline.stage}) — non modifiable
+              {order.pipeline.stage !== 'termine' && ', mais vous pouvez encore l\'annuler ci-dessous.'}
             </div>
           ) : (
             <>
@@ -185,6 +186,13 @@ function ConfirmatricePage() {
   }, [filter])
 
   useEffect(() => { load() }, [load])
+
+  /* Une commande annulée depuis la recherche de l'en-tête : les onglets et
+     leurs compteurs se mettent à jour. */
+  useEffect(() => {
+    window.addEventListener(ORDERS_CHANGED, load)
+    return () => window.removeEventListener(ORDERS_CHANGED, load)
+  }, [load])
 
   /* Remplace une commande dans la liste après modification.
      Sans argument (ex. suppression d'une étiquette) → rechargement complet. */
@@ -301,7 +309,8 @@ function ConfirmatricePage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <PageHeader eyebrow="Service confirmation" title="Historique" />
         {tabsBar}
-        <ServiceHistory service="confirmatrice" tagScope="confirmatrice" deletable={!readOnly} />
+        <ServiceHistory service="confirmatrice" tagScope="confirmatrice"
+          deletable={!readOnly} cancellable={!readOnly} />
       </div>
     )
   }
@@ -407,7 +416,12 @@ function ConfirmatricePage() {
           onClose={() => setSelectedId(null)}
           summaryOpts={{ service: 'confirmatrice' }}
           tagScope={readOnly ? null : 'confirmatrice'}
-          onTagsChanged={handleChanged}>
+          onTagsChanged={handleChanged}
+          /* En atelier, elle ne peut plus changer le statut : l'annulation
+             passe par le bouton dédié. Avant, le statut « Annulé » suffit. */
+          onCancelled={!readOnly && LOCKED_STAGES.includes(selected.pipeline?.stage)
+            && selected.pipeline?.stage !== 'termine'
+            ? () => { setSelectedId(null); load() } : undefined}>
           {!readOnly && (
             <OrderActions order={selected} onChanged={handleChanged}
               onEdit={(o) => { setSelectedId(null); openEdit(o) }} />
