@@ -7,14 +7,71 @@
 // l'écart) : on peut donc corriger, ou tout remettre en stock, sans jamais
 // compter deux fois.
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, Plus, Trash2, Loader2, AlertTriangle, Undo2, ExternalLink } from 'lucide-react'
+import { Boxes, Plus, Trash2, Loader2, AlertTriangle, Undo2, ExternalLink, ChevronDown, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import { NAVY, PURPLE } from './staffConfig'
+import { NAVY, PURPLE, thumb } from './staffConfig'
 
 const emptyRow = () => ({ material: '', quantity: '' })
+
+const Thumb = ({ material, size }) => (
+  <span className="rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+    style={{ width: size, height: size, background: '#f5f3ff' }}>
+    {material?.image
+      ? <img src={thumb(material.image, 96)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      : <Boxes size={size / 2} style={{ color: 'rgba(124,58,237,0.35)' }} />}
+  </span>
+)
+
+/* Liste des matières AVEC leur photo : plusieurs portent le même nom, une
+   simple liste déroulante ne permettait pas de savoir laquelle on prenait. */
+function MaterialList({ materials, value, onPick }) {
+  const [q, setQ] = useState('')
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase()
+    return t ? materials.filter(m => `${m.name} ${m.variant || ''}`.toLowerCase().includes(t)) : materials
+  }, [materials, q])
+
+  return (
+    <div className="mt-1.5 bg-white rounded-xl border-2 border-purple-200 overflow-hidden">
+      {materials.length > 6 && (
+        <div className="relative border-b border-gray-100">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input value={q} onChange={e => setQ(e.target.value)} dir="auto"
+            placeholder="Chercher une matière…"
+            className="w-full pl-8 pr-3 py-2 text-sm outline-none bg-white" style={{ color: NAVY }} />
+        </div>
+      )}
+      <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+        {list.length === 0 && <p className="text-xs text-gray-400 italic px-3 py-3">Aucune matière trouvée.</p>}
+        {list.map(m => {
+          const active = String(m._id) === String(value)
+          const empty  = m.quantity <= 0
+          return (
+            <button key={m._id} type="button" onClick={() => onPick(m._id)}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-purple-50"
+              style={{ background: active ? '#f5f3ff' : undefined, opacity: empty ? 0.55 : 1 }}>
+              <Thumb material={m} size={44} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold break-words" dir="auto" style={{ color: NAVY }}>{m.name}</span>
+                {m.variant && (
+                  <span className="block text-xs font-semibold" dir="auto" style={{ color: PURPLE }}>{m.variant}</span>
+                )}
+              </span>
+              <span className="text-xs font-black flex-shrink-0 text-right"
+                style={{ color: empty ? '#ef4444' : m.quantity <= (m.lowStockThreshold || 0) ? '#d97706' : '#059669' }}>
+                {empty ? 'Rupture' : m.quantity}
+                {!empty && <span className="block text-[10px] font-semibold text-gray-400">{m.unit}</span>}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 // Lignes du formulaire à partir de ce qui est déjà déduit pour la commande
 const rowsFrom = (order) => {
@@ -29,6 +86,7 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
   const [loading, setLoading]     = useState(true)
   const [rows, setRows]           = useState(() => rowsFrom(order))
   const [saving, setSaving]       = useState(false)
+  const [openRow, setOpenRow]     = useState(null)    // ligne dont la liste des matières est ouverte
 
   const declared = order.pipeline?.materialsUsed || []
 
@@ -42,11 +100,11 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
   useEffect(() => { loadStock() }, [loadStock])
 
   // La commande affichée change (ou vient d'être mise à jour) : on repart d'elle
-  useEffect(() => { setRows(rowsFrom(order)) }, [order._id, order.pipeline?.materialsUsed])
+  useEffect(() => { setRows(rowsFrom(order)); setOpenRow(null) }, [order._id, order.pipeline?.materialsUsed])
 
   const setRow    = (i, patch) => setRows(p => p.map((r, k) => k === i ? { ...r, ...patch } : r))
-  const addRow    = () => setRows(p => [...p, emptyRow()])
-  const removeRow = (i) => setRows(p => (p.length === 1 ? [emptyRow()] : p.filter((_, k) => k !== i)))
+  const addRow    = () => { setOpenRow(rows.length); setRows(p => [...p, emptyRow()]) }
+  const removeRow = (i) => { setOpenRow(null); setRows(p => (p.length === 1 ? [emptyRow()] : p.filter((_, k) => k !== i))) }
 
   const matById = (id) => materials.find(m => String(m._id) === String(id))
   // Ce que CETTE commande a déjà pris sur une matière : il lui est « rendu »
@@ -139,16 +197,24 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
               return (
                 <div key={i}>
                   <div className="flex gap-2 items-start">
-                    <select value={row.material} onChange={e => setRow(i, { material: e.target.value })}
-                      className="flex-1 min-w-0 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm outline-none focus:border-purple-400 transition-colors bg-white"
-                      style={{ color: NAVY }}>
-                      <option value="">Matière…</option>
-                      {materials.map(m => (
-                        <option key={m._id} value={m._id}>
-                          {m.name} — en stock : {m.quantity} {m.unit}
-                        </option>
-                      ))}
-                    </select>
+                    <button type="button" onClick={() => setOpenRow(openRow === i ? null : i)}
+                      className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 rounded-xl border-2 text-sm text-left bg-white transition-colors"
+                      style={{ borderColor: openRow === i ? '#c4b5fd' : '#e5e7eb', color: NAVY, minHeight: 42 }}>
+                      {mat ? (
+                        <>
+                          <Thumb material={mat} size={28} />
+                          <span className="min-w-0 flex-1 truncate" dir="auto">
+                            <span className="font-bold">{mat.name}</span>
+                            {mat.variant && <span className="font-semibold" style={{ color: PURPLE }}> — {mat.variant}</span>}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="flex-1 px-1 text-gray-400">
+                          {row.material ? 'Matière retirée du stock' : 'Choisir une matière…'}
+                        </span>
+                      )}
+                      <ChevronDown size={14} className="flex-shrink-0 text-gray-400" />
+                    </button>
                     <input type="number" min="0" value={row.quantity} placeholder="Qté"
                       onChange={e => setRow(i, { quantity: e.target.value })}
                       className="w-20 px-2 py-2 rounded-xl border-2 text-sm outline-none focus:border-purple-400 transition-colors bg-white"
@@ -158,6 +224,15 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
                       <Trash2 size={15} />
                     </button>
                   </div>
+                  {openRow === i && (
+                    <MaterialList materials={materials} value={row.material}
+                      onPick={(id) => { setRow(i, { material: id }); setOpenRow(null) }} />
+                  )}
+                  {mat && !(Number(row.quantity) > 0) && openRow !== i && (
+                    <p className="text-[11px] mt-1 ml-1 text-gray-400">
+                      En stock : {mat.quantity} {mat.unit}
+                    </p>
+                  )}
                   {mat && Number(row.quantity) > 0 && (
                     <p className="text-[11px] mt-1 ml-1" style={{ color: over ? '#ef4444' : '#6b7280' }}>
                       {over
