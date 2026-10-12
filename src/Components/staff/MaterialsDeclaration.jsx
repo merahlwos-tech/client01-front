@@ -92,7 +92,8 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
   const [saving, setSaving]       = useState(false)
   const [openRow, setOpenRow]     = useState(null)    // ligne dont la liste des matières est ouverte
 
-  const declared = order.pipeline?.materialsUsed || []
+  const declared  = order.pipeline?.materialsUsed || []
+  const cancelled = order.pipeline?.stage === 'annulee'
 
   const loadStock = useCallback(() => {
     return staffApi.get('/stock')
@@ -180,7 +181,22 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
         </div>
       )}
 
-      {readOnly ? (
+      {cancelled ? (
+        /* L'annulation remet les matières en stock d'elle-même. Seule une
+           commande annulée AVANT cette règle peut encore en retenir. */
+        declared.length === 0 ? (
+          <p className="text-xs text-gray-400 italic">
+            Commande annulée : elle ne retient aucune matière, tout est en stock.
+          </p>
+        ) : (
+          <button type="button" onClick={() => save([])} disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ background: PURPLE }}>
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Undo2 size={14} />}
+            Remettre ces matières en stock
+          </button>
+        )
+      ) : readOnly ? (
         declared.length === 0 && <p className="text-xs text-gray-400 italic">Aucune matière déduite.</p>
       ) : loading ? (
         <p className="flex items-center gap-2 text-xs text-gray-400">

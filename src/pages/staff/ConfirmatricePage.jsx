@@ -50,7 +50,12 @@ function OrderActions({ order, onChanged, onEdit }) {
     }
   }
 
-  const changeStatus  = (s) => patch('status',  { status: s },   `Statut → ${ORDER_STATUS[s].label}`)
+  // Une annulation remet en stock les matières déjà déduites pour la commande
+  const hasMaterials  = (order.pipeline?.materialsUsed || []).length > 0
+  const changeStatus  = (s) => patch('status',  { status: s },
+    s === 'annulé' && hasMaterials
+      ? 'Commande annulée — matières remises en stock'
+      : `Statut → ${ORDER_STATUS[s].label}`)
   const changeUrgency = (u) => patch('urgency', { urgency: u },  `Urgence → ${URGENCY[u].label}`)
 
   return (

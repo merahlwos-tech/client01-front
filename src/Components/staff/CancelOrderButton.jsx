@@ -12,16 +12,20 @@ function CancelOrderButton({ order, onCancelled }) {
   const [busy, setBusy] = useState(false)
 
   const already = order?.pipeline?.stage === 'annulee'
+  // Matières déjà déduites pour elle : l'annulation les remet en stock
+  const hasMaterials = (order?.pipeline?.materialsUsed || []).length > 0
 
   const cancel = async () => {
     if (!window.confirm(
       'Annuler cette commande ?\n\n'
       + `Elle sortira du circuit et sera définitivement supprimée dans ${CANCELLED_RETENTION_DAYS} jours.`
+      + (hasMaterials ? '\n\nSes matières seront remises en stock.' : '')
     )) return
     setBusy(true)
     try {
       const res = await staffApi.post(`/workflow/orders/${order._id}/cancel`)
-      toast.success('Commande annulée')
+      const returned = hasMaterials && (res.data?.pipeline?.materialsUsed || []).length === 0
+      toast.success(returned ? 'Commande annulée — matières remises en stock' : 'Commande annulée')
       onCancelled?.(res.data, order._id)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur')
