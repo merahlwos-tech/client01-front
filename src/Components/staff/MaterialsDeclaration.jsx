@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom'
 import { Boxes, Plus, Trash2, Loader2, AlertTriangle, Undo2, ExternalLink, ChevronDown, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import { NAVY, PURPLE, thumb } from './staffConfig'
+import { NAVY, PURPLE, thumb, isProduced } from './staffConfig'
 
 const emptyRow = () => ({ material: '', quantity: '' })
 
@@ -182,11 +182,16 @@ function MaterialsDeclaration({ order, onChanged, readOnly = false, stockLink = 
       )}
 
       {cancelled ? (
-        /* L'annulation remet les matières en stock d'elle-même. Seule une
-           commande annulée AVANT cette règle peut encore en retenir. */
+        /* L'annulation remet les matières en stock d'elle-même, sauf si la
+           commande était déjà fabriquée : elles ont alors servi. */
         declared.length === 0 ? (
           <p className="text-xs text-gray-400 italic">
             Commande annulée : elle ne retient aucune matière, tout est en stock.
+          </p>
+        ) : isProduced(order) ? (
+          <p className="text-xs px-3 py-2 rounded-xl" style={{ background: '#fffbeb', color: '#b45309' }}>
+            Commande annulée après sa fabrication : ces matières ont été utilisées,
+            elles ne reviennent pas en stock.
           </p>
         ) : (
           <button type="button" onClick={() => save([])} disabled={saving}

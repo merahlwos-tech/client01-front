@@ -6,20 +6,25 @@ import { useState } from 'react'
 import { Ban, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
-import { CANCELLED_RETENTION_DAYS } from './staffConfig'
+import { CANCELLED_RETENTION_DAYS, isProduced } from './staffConfig'
 
 function CancelOrderButton({ order, onCancelled }) {
   const [busy, setBusy] = useState(false)
 
   const already = order?.pipeline?.stage === 'annulee'
-  // Matières déjà déduites pour elle : l'annulation les remet en stock
+  // Matières déjà déduites pour elle : l'annulation les remet en stock,
+  // sauf si la commande est déjà fabriquée (elles ont servi)
   const hasMaterials = (order?.pipeline?.materialsUsed || []).length > 0
+  const produced     = isProduced(order)
 
   const cancel = async () => {
     if (!window.confirm(
       'Annuler cette commande ?\n\n'
       + `Elle sortira du circuit et sera définitivement supprimée dans ${CANCELLED_RETENTION_DAYS} jours.`
-      + (hasMaterials ? '\n\nSes matières seront remises en stock.' : '')
+      + (!hasMaterials ? ''
+        : produced
+          ? '\n\nElle est déjà fabriquée : ses matières ne reviendront pas en stock.'
+          : '\n\nSes matières seront remises en stock.')
     )) return
     setBusy(true)
     try {

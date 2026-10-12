@@ -263,6 +263,13 @@ export const CANCELLED_RETENTION_DAYS = 30
    leurs listes. */
 export const ORDERS_CHANGED = 'staff:orders-changed'
 
+/* Commande déjà fabriquée : ses matières sont réellement consommées (sacs
+   imprimés). L'annuler ne les remet donc pas en stock. Même règle que le
+   serveur. */
+export const isProduced = (order) =>
+  !!order?.pipeline?.producedAt
+  || ['emballage', 'livraison', 'termine'].includes(order?.pipeline?.stage)
+
 /* Compte à rebours avant la suppression d'une commande annulée.
    → { days, label, color, bg, imminent } ou null si elle n'est pas annulée. */
 export function getPurgeCountdown(order, retentionDays = CANCELLED_RETENTION_DAYS) {

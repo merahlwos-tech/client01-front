@@ -18,7 +18,7 @@ import { PageHeader } from '../../Components/staff/StageBoard'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
   canAct, NAVY, PURPLE,
-  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS, getPurgeCountdown, ORDERS_CHANGED,
+  ORDER_STATUS, STATUS_KEYS, URGENCY, URGENCY_KEYS, getPurgeCountdown, ORDERS_CHANGED, isProduced,
 } from '../../Components/staff/staffConfig'
 
 /* Étapes où la commande est déjà travaillée en atelier :
@@ -50,10 +50,11 @@ function OrderActions({ order, onChanged, onEdit }) {
     }
   }
 
-  // Une annulation remet en stock les matières déjà déduites pour la commande
+  // Une annulation remet en stock les matières déjà déduites pour la commande,
+  // tant qu'elle n'est pas fabriquée
   const hasMaterials  = (order.pipeline?.materialsUsed || []).length > 0
   const changeStatus  = (s) => patch('status',  { status: s },
-    s === 'annulé' && hasMaterials
+    s === 'annulé' && hasMaterials && !isProduced(order)
       ? 'Commande annulée — matières remises en stock'
       : `Statut → ${ORDER_STATUS[s].label}`)
   const changeUrgency = (u) => patch('urgency', { urgency: u },  `Urgence → ${URGENCY[u].label}`)
