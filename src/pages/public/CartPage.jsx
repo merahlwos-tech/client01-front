@@ -111,7 +111,9 @@ function CartPage() {
   }
 
   const handleConfirmedOrder = async () => {
-    const customerInfo = pendingOrder
+    /* `itemDetails` : logo et instructions de chaque article, quand le panier
+       en compte plusieurs. Ils partent avec l'article, pas avec le client. */
+    const { itemDetails, ...customerInfo } = pendingOrder
     setPendingOrder(null)
     setSubmitting(true)
     trackAddPaymentInfo(items, totalWithDelivery)
@@ -133,6 +135,10 @@ function CartPage() {
           numberOfColors: item.numberOfColors || null,
           quantity:       item.quantity,
           price:          item.price,
+          ...(itemDetails?.[item.key] && {
+            logoUrls: itemDetails[item.key].logoUrls,
+            notes:    itemDetails[item.key].notes,
+          }),
         })),
         total: totalWithDelivery,
         metaEventId,
@@ -312,6 +318,7 @@ function CartPage() {
                   loading={submitting}
                   onDeliveryChange={setDeliveryInfo}
                   isFreeDelivery={isFreeDelivery}
+                  items={items}
                 />
               </div>
             </div>

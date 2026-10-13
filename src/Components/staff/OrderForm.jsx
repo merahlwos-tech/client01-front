@@ -17,6 +17,7 @@ import staffApi from '../../utils/staffApi'
 import { uploadMultipleToCloudinary } from '../../utils/uploadCloudinary'
 import { priceBreakdown } from '../../utils/pricing'
 import { normalizePhone, isMobile } from '../../utils/phone'
+import { generalLogos, isAutoDescription } from '../../utils/orderNotes'
 import { colorName } from '../../data/productColors'
 import useEcotrack from './useEcotrack'
 import {
@@ -57,6 +58,8 @@ const emptyItem = () => ({
   bagColor: '',
   printColors: [],            // une ou plusieurs couleurs d'impression
   printDraft: '',             // couleur en cours de frappe, pas encore validée
+  logoUrls: [],               // logo propre à cet article
+  notes: '',                  // consignes propres à cet article
 })
 
 // Sans limite fixée par le produit, on borne quand même la saisie
@@ -82,6 +85,8 @@ const itemFromOrder = (i, keepPrice) => ({
   bagColor:   i.bagColor || '',
   printColors: splitColors(i.printColor),
   printDraft: '',
+  logoUrls: Array.isArray(i.logoUrls) ? i.logoUrls : [],
+  notes: i.notes || '',
 })
 
 /* Ajoute des couleurs à une liste sans doublon, dans la limite autorisée */
@@ -268,7 +273,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
       firstName: c.firstName || '', lastName: c.lastName || '', phone: c.phone || '',
       extraPhones: Array.isArray(c.extraPhones) ? c.extraPhones : [],
       wilaya: c.wilaya || '', wilayaCode: c.wilayaCode ?? null, commune: c.commune || '',
-      description: c.description || '',
+      // Le résumé automatique des consignes par article n'est pas une
+      // description générale : on ne le présente pas comme tel.
+      description: isAutoDescription(order) ? '' : (c.description || ''),
       stopDesk: c.deliveryMethod === 'Stop Desk',
       feeOverride: c.deliveryFee ?? '',
     })
@@ -282,7 +289,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
         numberOfColors: i.numberOfColors ?? 1, price: Number(i.price) || 0,
       },
     })))
-    setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls : [])
+    setLogoUrls(generalLogos(order))        // ceux des articles restent sur leur article
     setStatus(order.status || 'en attente')
     setUrgency(order.pipeline?.urgency || 'normal')
     setTotalOverride('')
@@ -325,7 +332,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
       firstName: c.firstName || '', lastName: c.lastName || '',
       extraPhones: Array.isArray(c.extraPhones) ? c.extraPhones : [],
       wilaya: c.wilaya || '', wilayaCode: c.wilayaCode ?? null, commune: c.commune || '',
-      description: withItems ? (c.description || '') : p.description,
+      description: withItems
+        ? (isAutoDescription(src) ? '' : (c.description || ''))
+        : p.description,
       stopDesk: c.deliveryMethod === 'Stop Desk',
       feeOverride: '',
     }))
@@ -335,7 +344,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
          libre (hors catalogue) n'a pas de tarif à recalculer : il garde le
          prix de l'ancienne commande, sinon il repartirait à 0. */
       setItems((src.items || []).map(i => itemFromOrder(i, !i.product)))
-      setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls.slice(0, MAX_LOGOS) : [])
+      setLogoUrls(generalLogos(src).slice(0, MAX_LOGOS))
       setTotalOverride('')
       toast.success('Commande reprise — vérifiez-la puis créez-la')
     } else {
@@ -346,6 +355,27 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
   /* ── Articles ── */
   const setItem = (idx, patch) =>
     setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it))
+
+  /* Logo propre à UN article — dès que la commande en compte plusieurs,
+     chacun a le sien. */
+  const [uploadingItem, setUploadingItem] = useState(null)
+  const addItemLogos = async (idx, e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (files.length === 0) return
+    if ((items[idx]?.logoUrls?.length || 0) + files.length > MAX_LOGOS) {
+      toast.error(`${MAX_LOGOS} fichiers au maximum par article`)
+      return
+    }
+    setUploadingItem(idx)
+    try {
+      const urls = await uploadMultipleToCloudinary(files)
+      setItems(prev => prev.map((it, i) =>
+        i === idx ? { ...it, logoUrls: [...(it.logoUrls || []), ...urls] } : it))
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de l\'envoi')
+    } finally { setUploadingItem(null) }
+  }
 
   // Toute option qui change le prix du site remet le calcul en automatique
   const setPricedItem = (idx, patch) => setItem(idx, { ...patch, priceOverride: '' })
@@ -532,6 +562,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
         numberOfColors: i.numberOfColors,
         bagColor:   (i.bagColor   || '').trim(),
         printColor: i.printColors.join(', '),
+        logoUrls:   i.logoUrls || [],
+        notes:      (i.notes || '').trim(),
       })),
       total,
     }
@@ -799,7 +831,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
 
               {/* Logo(s) du client — images ou PDF */}
               <div className="sm:col-span-2">
-                <label className={label}>Logo du client ({MAX_LOGOS} fichiers max)</label>
+                <label className={label}>
+                  {items.length > 1 ? 'Logo commun à toute la commande' : 'Logo du client'} ({MAX_LOGOS} fichiers max)
+                </label>
 
                 <div className="flex flex-wrap gap-2 items-center">
                   {logoUrls.map(url => (
@@ -1035,6 +1069,56 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
                           : setItem(idx, { printColors: list, printDraft: '' }))} />
                     </div>
 
+                    {/* Logo et consignes propres à CET article : dès que la
+                        commande en compte plusieurs, chacun a les siens */}
+                    {(items.length > 1 || it.logoUrls?.length > 0 || it.notes) && (
+                      <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
+                        <p className={label}>Logo et consignes de cet article</p>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {(it.logoUrls || []).map(url => (
+                            <div key={url} className="relative">
+                              {isPdf(url) ? (
+                                <a href={url} target="_blank" rel="noopener noreferrer"
+                                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-xl border-2 text-[10px] font-bold bg-white"
+                                  style={{ borderColor: 'rgba(124,58,237,0.25)', color: PURPLE }}>
+                                  <FileText size={18} /> PDF
+                                </a>
+                              ) : (
+                                <a href={url} target="_blank" rel="noopener noreferrer">
+                                  <img src={url} alt="logo" width={64} height={64}
+                                    className="w-16 h-16 rounded-xl object-cover border-2"
+                                    style={{ borderColor: 'rgba(124,58,237,0.25)' }} />
+                                </a>
+                              )}
+                              <button type="button" title="Retirer ce fichier"
+                                onClick={() => setItem(idx, { logoUrls: it.logoUrls.filter(u => u !== url) })}
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow"
+                                style={{ background: '#ef4444' }}>
+                                <X size={11} color="white" />
+                              </button>
+                            </div>
+                          ))}
+                          {(it.logoUrls || []).length < MAX_LOGOS && (
+                            <>
+                              <input type="file" accept="image/*,application/pdf" multiple className="hidden"
+                                id={`item-logo-input-${idx}`} onChange={e => addItemLogos(idx, e)} />
+                              <label htmlFor={`item-logo-input-${idx}`}
+                                className="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-xl border-2 border-dashed cursor-pointer text-[10px] font-bold transition-all hover:opacity-80 bg-white"
+                                style={{ borderColor: 'rgba(124,58,237,0.35)', color: PURPLE }}>
+                                {uploadingItem === idx
+                                  ? <Loader2 size={18} className="animate-spin" />
+                                  : <><ImagePlus size={18} /> Logo</>}
+                              </label>
+                            </>
+                          )}
+                        </div>
+                        <textarea rows={2} value={it.notes || ''} maxLength={1000}
+                          placeholder="Consignes pour cet article : texte, emplacement du logo, détails…"
+                          className={`${field} resize-none bg-white`} style={{ color: NAVY }}
+                          onChange={e => setItem(idx, { notes: e.target.value })} />
+                      </div>
+                    )}
+
                     {/* Prix — calculé comme sur le site, forçable si négocié */}
                     <div className="flex items-end gap-2 pt-1">
                       {hidePrices ? <span className="flex-1" /> : (<>
@@ -1130,7 +1214,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
 
           {/* ── Actions ── */}
           <div className="flex gap-3">
-            <button type="submit" disabled={saving}
+            <button type="submit" disabled={saving || uploading || uploadingItem !== null}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
               style={{ background: PURPLE }}>
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}

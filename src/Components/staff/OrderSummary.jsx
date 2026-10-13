@@ -10,6 +10,7 @@ import {
   NAVY, PURPLE, STAGES, URGENCY, ORDER_STATUS, DESIGNER_TAGS, ROLE_LABELS,
   getCountdown, formatDayLabel, shortRef, thumb, badgesFor, swatchOf,
 } from './staffConfig'
+import { generalLogos, isAutoDescription } from '../../utils/orderNotes'
 
 /* Couleur demandée pour un article (sac ou impression). La pastille n'apparaît
    que si le nom est reconnu ; une teinte libre reste lisible en texte. */
@@ -94,7 +95,8 @@ function OrderSummary({
   const urgencyCfg  = URGENCY[order.pipeline?.urgency]
   const statusCfg   = ORDER_STATUS[order.status]
   const designerCfg = DESIGNER_TAGS[order.pipeline?.designerTag]
-  const logos = c.logoUrls || []
+  // Logos communs à la commande ; ceux d'un article s'affichent sous l'article
+  const logos = generalLogos(order)
   const design = order.pipeline?.design
   const materials = order.pipeline?.materialsUsed || []
 
@@ -182,7 +184,9 @@ function OrderSummary({
           {c.deliveryMethod || 'Domicile'}
           {showPrice && c.deliveryFee != null ? ` (${c.deliveryFee} DA)` : ''}
         </Row>
-        {c.description && <Row icon={FileText}>{c.description}</Row>}
+        {/* Le résumé automatique des consignes par article n'est pas répété
+            ici : chaque consigne figure sous son article. */}
+        {c.description && !isAutoDescription(order) && <Row icon={FileText}>{c.description}</Row>}
       </div>
 
       {/* Articles */}
@@ -190,7 +194,8 @@ function OrderSummary({
         <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>Articles</p>
         <div className="space-y-2">
           {(order.items || []).map((it, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 p-2.5 rounded-xl border" style={{ borderColor: '#f0f0f4' }}>
+            <div key={i} className="p-2.5 rounded-xl border" style={{ borderColor: '#f0f0f4' }}>
+            <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: NAVY }}>{it.name}</p>
                 <p className="text-xs text-gray-400">
@@ -213,6 +218,24 @@ function OrderSummary({
                   style={{ background: 'rgba(124,58,237,0.1)', color: PURPLE }}>×{it.quantity}</span>
               )}
             </div>
+
+            {/* Logo et consignes propres à cet article */}
+            {(it.logoUrls?.length > 0 || it.notes) && (
+              <div className="mt-2 pt-2 space-y-2" style={{ borderTop: '1px solid #f0f0f4' }}>
+                {it.notes && (
+                  <p className="flex items-start gap-1.5 text-xs whitespace-pre-wrap break-words" style={{ color: '#374151' }}>
+                    <FileText size={13} className="flex-shrink-0 mt-0.5" style={{ color: '#9ca3af' }} />
+                    <span className="min-w-0">{it.notes}</span>
+                  </p>
+                )}
+                {it.logoUrls?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {it.logoUrls.map((url, k) => <FileThumb key={k} url={url} />)}
+                  </div>
+                )}
+              </div>
+            )}
+            </div>
           ))}
         </div>
       </div>
@@ -221,7 +244,7 @@ function OrderSummary({
       {logos.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: '#9ca3af' }}>
-            <ImageIcon size={13} /> Logo(s) client
+            <ImageIcon size={13} /> {(order.items || []).some(it => it.logoUrls?.length > 0) ? 'Logo(s) communs à la commande' : 'Logo(s) client'}
           </p>
           <div className="flex flex-wrap gap-2">
             {logos.map((url, i) => <FileThumb key={i} url={url} />)}

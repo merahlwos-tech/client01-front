@@ -43,6 +43,10 @@ export const T = {
     errorPhone: 'Téléphone requis', errorPhoneFormat: 'Format invalide (ex: 0551234567)',
     errorWilaya: 'Wilaya requise', errorCommune: 'Commune requise',
     errorLogo: 'Au moins une photo du logo requise', errorDesc: 'Description requise',
+    // Plusieurs articles : un logo et des instructions pour chacun
+    itemLabel: 'Article',
+    perItemHint: 'Vous commandez plusieurs articles : chacun a son propre logo et ses propres instructions.',
+    sameLogoFirst: 'Utiliser le même logo que le 1er article',
     // Confirmation
     confirmed: 'Commande confirmée', thanks: 'Merci !',
     orderRegistered: 'Votre commande a bien été enregistrée.',
@@ -122,6 +126,9 @@ export const T = {
     errorPhone: 'الهاتف مطلوب', errorPhoneFormat: 'صيغة غير صحيحة (مثال: 0551234567)',
     errorWilaya: 'الولاية مطلوبة', errorCommune: 'البلدية مطلوبة',
     errorLogo: 'صورة الشعار مطلوبة', errorDesc: 'الوصف مطلوب',
+    itemLabel: 'المنتج',
+    perItemHint: 'طلبك يحتوي على عدة منتجات: لكل منتج شعاره وتعليماته الخاصة.',
+    sameLogoFirst: 'استخدام نفس شعار المنتج الأول',
     // Confirmation
     confirmed: 'تم تأكيد الطلب', thanks: 'شكراً !',
     orderRegistered: 'تم تسجيل طلبك بنجاح.',

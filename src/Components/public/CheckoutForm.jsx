@@ -97,9 +97,21 @@ function Field({ label, icon: Icon, error, children }) {
   )
 }
 
+// Logo et instructions d'un article, tant que le client n'a rien saisi
+const EMPTY_ITEM = { files: [], urls: [], notes: '' }
+
 /* ── Main component ── */
-function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
+function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery, items = [] }) {
   const { t, isRTL, lang } = useLang()
+
+  /* Plusieurs articles dans le panier : chacun a son logo et ses
+     instructions. Avec un seul article, le formulaire reste celui d'avant. */
+  const multi = items.length > 1
+  const [perItem, setPerItem] = useState({})            // clé d'article → { files, urls, notes }
+  const [uploadingKey, setUploadingKey] = useState(null)
+  const itemOf = (key) => perItem[key] || EMPTY_ITEM
+  const patchItem = (key, patch) =>
+    setPerItem(p => ({ ...p, [key]: { ...(p[key] || EMPTY_ITEM), ...patch } }))
   const [form, setForm]   = useState({ firstName: '', lastName: '', phone: '', wilayaId: '', wilayaName: '', commune: '', stopDesk: false, description: '' })
   const [errors, setErrors] = useState({})
   const [logoFiles, setLogoFiles] = useState([])
@@ -143,8 +155,17 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
       e.phone = t('errorPhoneFormat')
     if (!form.wilayaId)           e.wilaya      = t('errorWilaya')
     if (!form.commune)            e.commune     = t('errorCommune')
-    if (logoUrls.length === 0)    e.logo        = t('errorLogo')
-    if (!form.description.trim()) e.description = t('errorDesc')
+    if (multi) {
+      // Même exigence qu'avant, mais article par article
+      items.forEach(it => {
+        const d = itemOf(it.key)
+        if (d.urls.length === 0) e[`logo:${it.key}`]  = t('errorLogo')
+        if (!d.notes.trim())     e[`notes:${it.key}`] = t('errorDesc')
+      })
+    } else {
+      if (logoUrls.length === 0)    e.logo        = t('errorLogo')
+      if (!form.description.trim()) e.description = t('errorDesc')
+    }
     return e
   }
 
@@ -205,6 +226,56 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
     }
   }
 
+  /* ── Logo d'UN article (panier de plusieurs articles) ── */
+  const handleItemLogo = async (key, files) => {
+    if (!files?.length) return
+    const remaining = 2 - itemOf(key).urls.length
+    if (remaining <= 0) return
+    const toUpload = Array.from(files).slice(0, remaining)
+    setUploadingKey(key)
+    try {
+      const uploaded = await Promise.all(toUpload.map(uploadToCloudinary))
+      setPerItem(p => {
+        const cur = p[key] || EMPTY_ITEM
+        return { ...p, [key]: { ...cur, files: [...cur.files, ...toUpload], urls: [...cur.urls, ...uploaded] } }
+      })
+      setErrors(p => ({ ...p, [`logo:${key}`]: '' }))
+    } catch (err) {
+      console.error('Cloudinary upload error:', err)
+      const msg = lang === 'ar' ? 'فشل رفع الصورة، حاول مجدداً' : "Échec de l'upload — " + (err?.message || 'réessayez')
+      setErrors(p => ({ ...p, [`logo:${key}`]: msg }))
+      toast.error(msg)
+    } finally { setUploadingKey(null) }
+  }
+
+  const removeItemLogo = async (key, idx) => {
+    const cur = itemOf(key)
+    const url = cur.urls[idx]
+    patchItem(key, {
+      files: cur.files.filter((_, i) => i !== idx),
+      urls:  cur.urls.filter((_, i) => i !== idx),
+    })
+    // Le même fichier peut servir à un autre article (« même logo ») : on ne
+    // demande son effacement que si plus aucun article ne l'utilise.
+    const usedElsewhere = Object.entries(perItem).some(([k, v]) => k !== key && v.urls.includes(url))
+    if (url && !usedElsewhere) {
+      try {
+        await fetch(`${API}/api/upload/logo`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        })
+      } catch (err) { console.error('Cloudinary logo delete error:', err.message) }
+    }
+  }
+
+  // Le logo est souvent le même sur tous les articles : un clic le reprend
+  const copyFirstLogo = (key) => {
+    const first = itemOf(items[0].key)
+    patchItem(key, { files: first.files, urls: first.urls })
+    setErrors(p => ({ ...p, [`logo:${key}`]: '' }))
+  }
+
   const handleSubmit = e => {
     e.preventDefault()
     const errs = validate()
@@ -212,7 +283,11 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
       setErrors(errs)
       // Scroll vers le premier champ en erreur
       const order = ['firstName', 'lastName', 'phone', 'wilaya', 'commune', 'logo', 'description']
-      const firstErr = order.find(k => errs[k])
+      let firstErr = order.find(k => errs[k])
+      if (!firstErr && multi) {
+        const bad = items.find(it => errs[`logo:${it.key}`] || errs[`notes:${it.key}`])
+        if (bad) firstErr = `item:${bad.key}`
+      }
       if (firstErr && fieldRefs.current[firstErr]) {
         fieldRefs.current[firstErr].scrollIntoView({ behavior: 'smooth', block: 'center' })
         const input = fieldRefs.current[firstErr].querySelector('input,select,textarea')
@@ -227,7 +302,17 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
       wilayaCode:      form.wilayaId ? Number(form.wilayaId) : null,
       deliveryMethod:  form.stopDesk ? 'Stop Desk' : 'Domicile',
       deliveryFee:     isFreeDelivery ? 0 : deliveryFee,
-      logoUrls,
+      /* Plusieurs articles : logo et instructions partent avec CHAQUE article
+         (itemDetails) ; rien de général. Le serveur réunit le tout pour les
+         écrans qui lisent la commande comme avant. */
+      logoUrls:        multi ? [] : logoUrls,
+      description:     multi ? '' : form.description,
+      ...(multi && {
+        itemDetails: Object.fromEntries(items.map(it => [it.key, {
+          logoUrls: itemOf(it.key).urls,
+          notes:    itemOf(it.key).notes.trim(),
+        }])),
+      }),
     })
   }
 
@@ -389,6 +474,89 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
           </div>
         )}
 
+        {/* Plusieurs articles : un bloc par article, chacun avec son logo et
+            ses instructions */}
+        {multi && (
+          <>
+            <p className="lg:col-span-2 text-xs font-semibold px-3 py-2.5 rounded-xl leading-relaxed"
+              style={{ background: 'rgba(124,58,237,0.06)', color: PURPLE }}>
+              {t('perItemHint')}
+            </p>
+
+            {items.map((item, n) => {
+              const d     = itemOf(item.key)
+              const first = itemOf(items[0].key)
+              const busy  = uploadingKey === item.key
+              const errLogo  = errors[`logo:${item.key}`]
+              const errNotes = errors[`notes:${item.key}`]
+              return (
+                <div key={item.key} ref={setFieldRef(`item:${item.key}`)}
+                  className="lg:col-span-2 rounded-2xl p-3 sm:p-4 space-y-3"
+                  style={{
+                    border: `1.5px solid ${errLogo || errNotes ? '#fca5a5' : 'rgba(124,58,237,0.2)'}`,
+                    background: '#faf9ff',
+                  }}>
+                  <p className="text-sm font-black leading-snug" style={{ color: NAVY }}>
+                    <span style={{ color: PURPLE }}>{t('itemLabel')} {n + 1}</span> — {item.name}
+                    <span className="font-medium text-gray-400 text-xs">
+                      {' '}· {item.size} · ×{Number(item.quantity).toLocaleString()}
+                    </span>
+                  </p>
+
+                  <Field label={t('logoPhotos')} icon={Image} error={errLogo}>
+                    {d.files.length > 0 && (
+                      <div className="flex gap-2 mb-3">
+                        {d.files.map((file, idx) => (
+                          <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border-2"
+                            style={{ borderColor: PURPLE }}>
+                            <img src={URL.createObjectURL(file)} alt="logo"
+                              className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => removeItemLogo(item.key, idx)}
+                              className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 rounded-full
+                                         flex items-center justify-center">
+                              <X size={10} className="text-white" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {d.urls.length < 2 && (
+                      <label className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-white
+                                        border-2 border-dashed cursor-pointer transition-all text-sm font-medium
+                                        ${uploadingKey ? 'opacity-60 pointer-events-none' : 'hover:border-purple-400 hover:bg-purple-50'}`}
+                        style={{ borderColor: errLogo ? '#fca5a5' : 'rgba(124,58,237,0.3)', color: PURPLE }}>
+                        <input type="file" accept="image/*" multiple className="hidden"
+                          onChange={e => { handleItemLogo(item.key, e.target.files); e.target.value = '' }} />
+                        {busy
+                          ? <><Loader2 size={16} className="animate-spin" /> {t('processing')}</>
+                          : <><Image size={16} /> {t('logoPhotos').split('(')[0].trim()}</>}
+                      </label>
+                    )}
+                    {n > 0 && d.urls.length === 0 && first.urls.length > 0 && !uploadingKey && (
+                      <button type="button" onClick={() => copyFirstLogo(item.key)}
+                        className="mt-2 w-full py-2.5 rounded-xl text-xs font-bold border-2 transition-all hover:bg-white"
+                        style={{ borderColor: 'rgba(124,58,237,0.3)', color: PURPLE }}>
+                        {t('sameLogoFirst')}
+                      </button>
+                    )}
+                  </Field>
+
+                  <Field label={t('description')} icon={FileText} error={errNotes}>
+                    <textarea value={d.notes} rows={2} placeholder={t('descPlaceholder')}
+                      onChange={e => {
+                        patchItem(item.key, { notes: e.target.value })
+                        setErrors(p => ({ ...p, [`notes:${item.key}`]: '' }))
+                      }}
+                      className={`${inputCls(errNotes)} resize-none`} />
+                  </Field>
+                </div>
+              )
+            })}
+          </>
+        )}
+
+        {/* Un seul article : logo et description pour toute la commande */}
+        {!multi && (<>
         {/* Logo — pleine largeur */}
         <div ref={setFieldRef('logo')} className="lg:col-span-2">
           <Field label={t('logoPhotos')} icon={Image} error={errors.logo}>
@@ -432,11 +600,12 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
               className={`${inputCls(errors.description)} resize-none`} />
           </Field>
         </div>
+        </>)}
 
       </div>
 
       {/* Bouton */}
-      <button type="submit" disabled={loading || uploading}
+      <button type="submit" disabled={loading || uploading || !!uploadingKey}
         className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl
                    text-white font-black text-base transition-all hover:opacity-90
                    disabled:opacity-60 shadow-lg mt-2"
