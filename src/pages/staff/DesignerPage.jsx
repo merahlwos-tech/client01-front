@@ -10,9 +10,11 @@ import StageBoard, { PageHeader } from '../../Components/staff/StageBoard'
 import ProductionPlanning from '../../Components/staff/ProductionPlanning'
 import ServiceHistory from '../../Components/staff/ServiceHistory'
 import DayCalendarPicker from '../../Components/staff/DayCalendarPicker'
+import OrderForm from '../../Components/staff/OrderForm'
+import EditOrderButton from '../../Components/staff/EditOrderButton'
 import { useStaffAuth } from '../../context/StaffAuthContext'
 import {
-  canAct, PURPLE, DESIGNER_TAGS, getCountdown, weekdayOf, formatDayLabel,
+  canAct, PURPLE, DESIGNER_TAGS, getCountdown, weekdayOf, formatDayLabel, ORDERS_CHANGED,
 } from '../../Components/staff/staffConfig'
 
 /* ── Compte à rebours de l'atelier ── */
@@ -48,7 +50,7 @@ function DeadlineBanner({ deadlineAt }) {
 ══════════════════════════════════════════════ */
 /* `mode` : 'todo' = travail en cours (on valide seulement)
             'traitees' = travail fini (on planifie et on envoie) */
-function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 'todo' }) {
+function DesignActions({ order, removeOne, updateOne, onCountsChanged, onEdit, mode = 'todo' }) {
   const [notes, setNotes] = useState(order.pipeline?.design?.notes || '')
   const [date, setDate]   = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy]   = useState(null)
@@ -110,6 +112,9 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 't
     <div className="space-y-3">
       <DeadlineBanner deadlineAt={order.pipeline?.deadlineAt} />
 
+      {/* Le designer corrige la commande lui-même, à n'importe quel moment */}
+      {onEdit && <EditOrderButton order={order} onEdit={onEdit} disabled={!!busy} />}
+
       {/* Liste « À traiter » : il termine son travail, rien de plus.
           La planification se fait ensuite depuis « Commandes traitées ». */}
       {mode === 'todo' ? (
@@ -170,7 +175,7 @@ function DesignActions({ order, removeOne, updateOne, onCountsChanged, mode = 't
 /* ══════════════════════════════════════════════
    Vue « Envoyé à la production »
 ══════════════════════════════════════════════ */
-function SentActions({ order, removeOne, updateOne, onCountsChanged }) {
+function SentActions({ order, removeOne, updateOne, onCountsChanged, onEdit }) {
   const [date, setDate] = useState(order.pipeline?.productionDate || null)
   const [busy, setBusy] = useState(null)
 
@@ -212,6 +217,8 @@ function SentActions({ order, removeOne, updateOne, onCountsChanged }) {
         Fabrication prévue : {planned ? formatDayLabel(planned) : '—'}
       </div>
 
+      {onEdit && <EditOrderButton order={order} onEdit={onEdit} disabled={!!busy} />}
+
       <div className="p-3 rounded-xl space-y-2" style={{ background: '#faf9ff' }}>
         <DayCalendarPicker value={date} onChange={setDate}
           label="Date de fabrication" />
@@ -241,12 +248,32 @@ function DesignerPage() {
   const { role } = useStaffAuth()
   const [view, setView]     = useState('todo')   // todo | sent | slow
   const [counts, setCounts] = useState(null)
+  const readOnly = !canAct(role, 'design')
 
   const refreshCounts = useCallback(() => {
     staffApi.get('/workflow/orders/counters')
       .then(r => setCounts(r.data))
       .catch(() => {})
   }, [])
+
+  /* Modification d'une commande par le designer — possible depuis toutes ses
+     listes, le planning et l'historique, donc à n'importe quelle étape. */
+  const [editing, setEditing]     = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const onEdit = readOnly ? undefined : setEditing
+
+  const editForm = editing && (
+    <OrderForm
+      order={editing}
+      asDesigner
+      onClose={() => setEditing(null)}
+      onSaved={() => {
+        setReloadKey(k => k + 1)                          // listes de travail
+        refreshCounts()
+        window.dispatchEvent(new Event(ORDERS_CHANGED))   // planning et historique
+      }}
+    />
+  )
 
   useEffect(() => { refreshCounts() }, [refreshCounts])
 
@@ -325,7 +352,8 @@ function DesignerPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <PageHeader eyebrow="Service design" title="Planning de fabrication" />
         {tabs}
-        <ProductionPlanning />
+        <ProductionPlanning onEdit={onEdit} />
+        {editForm}
       </div>
     )
   }
@@ -337,14 +365,16 @@ function DesignerPage() {
         {tabs}
         {/* Le designer ne voit pas les montants */}
         <ServiceHistory service="designer" tagScope="designer" showPrice={false} deletable
-          summaryOpts={{ showDesign: true, showPrice: false }} />
+          summaryOpts={{ showDesign: true, showPrice: false }} onEdit={onEdit} />
+        {editForm}
       </div>
     )
   }
 
   return (
+    <>
     <StageBoard
-      key={view}
+      key={`${view}-${reloadKey}`}
       stage={cfg.stage}
       eyebrow="Service design"
       title={cfg.title}
@@ -352,10 +382,10 @@ function DesignerPage() {
       summaryOpts={{ showPrice: false }}
       showPrice={false}
       deletable
-      readOnly={!canAct(role, 'design')}
+      readOnly={readOnly}
       actions={cfg.actions}
       /* La liste des clients lents garde les actions de travail */
-      actionProps={{ onCountsChanged: refreshCounts,
+      actionProps={{ onCountsChanged: refreshCounts, onEdit,
                      mode: view === 'traitees' ? 'traitees' : 'todo' }}
       extraParams={cfg.params}
       headerExtra={tabs}
@@ -363,6 +393,8 @@ function DesignerPage() {
       tagScope="designer"
       service="designer"
     />
+    {editForm}
+    </>
   )
 }
 

@@ -13,9 +13,10 @@ import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
 import DayCalendarPicker from './DayCalendarPicker'
+import EditOrderButton from './EditOrderButton'
 import {
   NAVY, PURPLE, WEEKDAYS, WEEKDAYS_ORDERED, WEEK_START,
-  toDateStr, todayStr, formatDayLabel, weekdayOf,
+  toDateStr, todayStr, formatDayLabel, weekdayOf, ORDERS_CHANGED,
 } from './staffConfig'
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -111,7 +112,7 @@ const VUES = [
   { key: 'mois',    label: 'Mois',    icon: CalendarRange },
 ]
 
-function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
+function ProductionPlanning({ summaryOpts = {}, readOnly = false, onEdit = null }) {
   const [vue, setVue]           = useState('semaine')
   const [ref, setRef]           = useState(() => new Date())
   const [planning, setPlanning] = useState([])       // [{date,total,urgent,pieces}]
@@ -162,6 +163,13 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
     setSelectedDate(date)
     loadDay(date)
   }
+
+  /* Une commande modifiée (quantité, articles…) change le planning affiché */
+  useEffect(() => {
+    const refresh = () => { loadPlanning(); if (selectedDate) loadDay(selectedDate) }
+    window.addEventListener(ORDERS_CHANGED, refresh)
+    return () => window.removeEventListener(ORDERS_CHANGED, refresh)
+  }, [loadPlanning, loadDay, selectedDate])
 
   /* Une flèche avance d'une semaine ou d'un mois, selon la vue */
   const shift = (delta) => {
@@ -419,6 +427,9 @@ function ProductionPlanning({ summaryOpts = {}, readOnly = false }) {
           summaryOpts={{ showDesign: true, ...summaryOpts }}
           notesReadOnly={false}
           onTagsChanged={() => loadDay(selectedDate)}>
+          {!readOnly && onEdit && (
+            <div className="mb-3"><EditOrderButton order={selected} onEdit={onEdit} /></div>
+          )}
           {!readOnly && (
             <PlanningActions order={selected} onDone={() => {
               setSelectedId(null)

@@ -206,8 +206,12 @@ function Toggle({ on, onChange, title, hint }) {
 
 // `asChef` : marque l'intention du chef de production, seule façon de modifier
 // une commande déjà en fabrication (voir canForce côté serveur).
-function OrderForm({ order, onClose, onSaved, asChef = false }) {
+// `asDesigner` : le designer modifie la commande à n'importe quelle étape, mais
+// ne voit AUCUN montant. Les prix ne sont alors ni affichés ni saisis : ils ne
+// bougent que de l'écart de tarif provoqué par sa modification.
+function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false }) {
   const isEdit = !!order
+  const hidePrices = asDesigner
 
   const [customer, setCustomer] = useState(emptyCustomer)
   const [wilayaId, setWilayaId] = useState('')
@@ -271,7 +275,15 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       feeOverride: c.deliveryFee ?? '',
     })
     if (c.wilayaCode) { setWilayaId(String(c.wilayaCode)); loadCommunes(String(c.wilayaCode)) }
-    setItems((order.items || []).map(i => itemFromOrder(i, true)))
+    setItems((order.items || []).map(i => ({
+      ...itemFromOrder(i, true),
+      // Point de départ du calcul quand les montants sont masqués
+      origin: {
+        product: String(i.product?._id || i.product || ''), size: i.size || '',
+        quantity: i.quantity, doubleSided: !!i.doubleSided,
+        numberOfColors: i.numberOfColors ?? 1, price: Number(i.price) || 0,
+      },
+    })))
     setLogoUrls(Array.isArray(c.logoUrls) ? c.logoUrls : [])
     setStatus(order.status || 'en attente')
     setUrgency(order.pipeline?.urgency || 'normal')
@@ -362,6 +374,19 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     return { ...b, product: p, forced, unit, lineTotal: unit * (Number(it.quantity) || 0) }
   }
 
+  /* Montants masqués (designer) : on part du prix ENREGISTRÉ et on n'y ajoute
+     que l'écart de tarif dû à la modification. Un prix négocié reste donc
+     négocié, et rien ne bouge si l'on ne touche qu'à une couleur ou à l'adresse.
+     Article ajouté, ou produit remplacé : tarif du site. */
+  const siteUnit = (x) =>
+    priceBreakdown(productById(x.product), x.size, x.quantity, x.doubleSided, x.numberOfColors).unitPrice
+  const hiddenUnit = (it) => {
+    const o = it.origin
+    if (!o || String(o.product) !== String(it.product || '')) return siteUnit(it)
+    return Math.max(0, o.price + (siteUnit(it) - siteUnit(o)))
+  }
+  const unitOf = (it) => (hidePrices ? hiddenUnit(it) : lineOf(it).unit)
+
   /* Changer de type remet à zéro le produit : tailles, options et prix en dépendent */
   const onCategoryChange = (idx, cat) =>
     setPricedItem(idx, {
@@ -413,9 +438,23 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
   const autoFee = currentFees
     ? Number(customer.stopDesk ? currentFees.tarif_stopdesk : currentFees.tarif)
     : null
-  const deliveryFee = customer.feeOverride !== '' && customer.feeOverride != null
-    ? Number(customer.feeOverride)
-    : autoFee
+  /* Montants masqués : les frais enregistrés ne changent que si la wilaya ou
+     le mode de livraison change, et seulement de l'écart de tarif — des frais
+     offerts ou négociés le restent. */
+  const hiddenFee = () => {
+    const c = order?.customerInfo || {}
+    const same = String(customer.wilayaCode ?? '') === String(c.wilayaCode ?? '')
+      && customer.stopDesk === (c.deliveryMethod === 'Stop Desk')
+    if (same || autoFee == null) return c.deliveryFee ?? null
+    const f = c.wilayaCode ? feesForWilaya(String(c.wilayaCode)) : null
+    const before = f ? Number(c.deliveryMethod === 'Stop Desk' ? f.tarif_stopdesk : f.tarif) : null
+    return before == null || c.deliveryFee == null
+      ? autoFee : Math.max(0, Number(c.deliveryFee) + (autoFee - before))
+  }
+  const deliveryFee = hidePrices ? hiddenFee()
+    : customer.feeOverride !== '' && customer.feeOverride != null
+      ? Number(customer.feeOverride)
+      : autoFee
 
   const hasStopDesk     = communes.some(c => c.has_stop_desk === 1)
   const visibleCommunes = customer.stopDesk
@@ -460,10 +499,16 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
       })
     if (cleanItems.length === 0) return toast.error('Ajoutez au moins un article')
 
-    const itemsSum = cleanItems.reduce((s, i) => s + lineOf(i).lineTotal, 0)
-    const total = totalOverride !== ''
-      ? Number(totalOverride)
-      : itemsSum + (Number(deliveryFee) || 0)
+    const itemsSum = cleanItems.reduce((s, i) => s + unitOf(i) * (Number(i.quantity) || 0), 0)
+    const computedNow = itemsSum + (Number(deliveryFee) || 0)
+    /* Montants masqués : le total enregistré (peut-être négocié) ne bouge que
+       de l'écart provoqué par la modification. */
+    const computedBefore = (order?.items || [])
+      .reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0)
+      + (Number(order?.customerInfo?.deliveryFee) || 0)
+    const total = hidePrices
+      ? Math.max(0, (Number(order.total) || 0) + computedNow - computedBefore)
+      : totalOverride !== '' ? Number(totalOverride) : computedNow
 
     const payload = {
       customerInfo: {
@@ -482,7 +527,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
         name:     i.name,
         size:     i.size,
         quantity: Number(i.quantity),
-        price:    lineOf(i).unit,
+        price:    unitOf(i),
         doubleSided:    i.doubleSided,
         selectedColors: i.selectedColors,
         numberOfColors: i.numberOfColors,
@@ -495,7 +540,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
     setSaving(true)
     try {
       if (isEdit) {
-        await staffApi.put(`/workflow/orders/${order._id}`, { ...payload, asChef })
+        await staffApi.put(`/workflow/orders/${order._id}`, { ...payload, asChef, asDesigner })
         toast.success('Commande modifiée')
       } else {
         await staffApi.post('/workflow/confirmation', { ...payload, status, urgency })
@@ -535,6 +580,13 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
         </div>
 
         <form onSubmit={submit} className="p-6 space-y-6">
+
+          {hidePrices && (
+            <p className="text-xs px-3 py-2 rounded-xl" style={{ background: '#f5f3ff', color: '#5b21b6' }}>
+              Les prix ne sont pas affichés. Si vous changez la quantité, la taille
+              ou une option, le prix de la commande s'ajuste tout seul.
+            </p>
+          )}
 
           {/* ── Client ── */}
           <div>
@@ -702,7 +754,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                         ? { borderColor: PURPLE, background: PURPLE, color: 'white' }
                         : { borderColor: '#e5e7eb', background: 'white', color: '#9ca3af' }}>
                       <Truck size={17} /> À domicile
-                      {currentFees && (
+                      {currentFees && !hidePrices && (
                         <span className="text-xs font-black">{money(currentFees.tarif)} DA</span>
                       )}
                     </button>
@@ -713,12 +765,13 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                         ? { borderColor: PURPLE, background: PURPLE, color: 'white' }
                         : { borderColor: '#e5e7eb', background: 'white', color: '#9ca3af' }}>
                       <Store size={17} /> Stop Desk
-                      {currentFees && (
+                      {currentFees && !hidePrices && (
                         <span className="text-xs font-black">{money(currentFees.tarif_stopdesk)} DA</span>
                       )}
                     </button>
                   </div>
 
+                  {!hidePrices && (
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-xs text-gray-400 flex-1">
                       Frais de livraison
@@ -732,6 +785,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                       style={{ color: NAVY }}
                       onChange={e => setCustomer(p => ({ ...p, feeOverride: e.target.value }))} />
                   </div>
+                  )}
                 </div>
               )}
 
@@ -812,7 +866,10 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                           {CATEGORY_KEYS.map(k => (
                             <option key={k} value={k}>{CATEGORIES[k]}</option>
                           ))}
-                          <option value="libre">Article libre (hors catalogue)</option>
+                          {/* Sans les montants, un article libre resterait sans prix */}
+                          {(!hidePrices || cat === 'libre') && (
+                            <option value="libre">Article libre (hors catalogue)</option>
+                          )}
                         </select>
                       </div>
                       <div>
@@ -842,7 +899,9 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                             onChange={e => setPricedItem(idx, { size: e.target.value })}>
                             <option value="">Choisir…</option>
                             {p.sizes.map(s => (
-                              <option key={s.size} value={s.size}>{s.size} — {money(s.price)} DA</option>
+                              <option key={s.size} value={s.size}>
+                                {s.size}{hidePrices ? '' : ` — ${money(s.price)} DA`}
+                              </option>
                             ))}
                           </select>
                         ) : (
@@ -862,7 +921,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                               return (
                                 <option key={q} value={q}>
                                   {q.toLocaleString('fr-DZ')}
-                                  {b.unitPrice > 0 ? ` — ${money(b.unitPrice)} DA/u` : ''}
+                                  {b.unitPrice > 0 && !hidePrices ? ` — ${money(b.unitPrice)} DA/u` : ''}
                                 </option>
                               )
                             })}
@@ -929,10 +988,18 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                             className="w-9 h-9 rounded-xl font-black text-lg flex items-center justify-center transition-all hover:opacity-80"
                             style={{ background: PURPLE, color: 'white' }}>+</button>
                         </div>
-                        <p className="text-[11px] mt-1.5" style={{ color: PURPLE }}>
-                          +{money(p.colorDesignPricePerColor)} DA par couleur supplémentaire
-                          {p.colorDesignMaxColors ? ` — ${p.colorDesignMaxColors} au maximum` : ''}
-                        </p>
+                        {hidePrices ? (
+                          p.colorDesignMaxColors > 0 && (
+                            <p className="text-[11px] mt-1.5" style={{ color: PURPLE }}>
+                              {p.colorDesignMaxColors} couleurs au maximum
+                            </p>
+                          )
+                        ) : (
+                          <p className="text-[11px] mt-1.5" style={{ color: PURPLE }}>
+                            +{money(p.colorDesignPricePerColor)} DA par couleur supplémentaire
+                            {p.colorDesignMaxColors ? ` — ${p.colorDesignMaxColors} au maximum` : ''}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -941,9 +1008,10 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                       <Toggle on={it.doubleSided}
                         onChange={v => setPricedItem(idx, { doubleSided: v })}
                         title="Impression recto-verso"
-                        hint={p.doubleSidedPrice > 0
-                          ? `+${money(p.doubleSidedPrice)} DA / unité`
-                          : 'Inclus'} />
+                        hint={hidePrices ? null
+                          : p.doubleSidedPrice > 0
+                            ? `+${money(p.doubleSidedPrice)} DA / unité`
+                            : 'Inclus'} />
                     )}
 
                     {/* Couleurs relevées par la confirmatrice — le designer
@@ -968,6 +1036,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
 
                     {/* Prix — calculé comme sur le site, forçable si négocié */}
                     <div className="flex items-end gap-2 pt-1">
+                      {hidePrices ? <span className="flex-1" /> : (<>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-gray-400">
                           Prix du site :{' '}
@@ -990,17 +1059,21 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
                           style={{ color: NAVY }}
                           onChange={e => setItem(idx, { priceOverride: e.target.value })} />
                       </div>
+                      </>)}
                       <button type="button" onClick={() => removeItem(idx)} disabled={items.length === 1}
+                        title="Retirer cet article"
                         className="p-2 mb-0.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-30">
                         <Trash2 size={15} />
                       </button>
                     </div>
 
-                    <p className="text-xs text-gray-400 text-right">
-                      Sous-total : <span className="font-bold" style={{ color: NAVY }}>
-                        {money(L.lineTotal)} DA
-                      </span>
-                    </p>
+                    {!hidePrices && (
+                      <p className="text-xs text-gray-400 text-right">
+                        Sous-total : <span className="font-bold" style={{ color: NAVY }}>
+                          {money(L.lineTotal)} DA
+                        </span>
+                      </p>
+                    )}
                   </div>
                 )
               })}
@@ -1032,6 +1105,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
           )}
 
           {/* ── Total ── */}
+          {!hidePrices && (
           <div className="p-4 rounded-xl" style={{ background: '#faf9ff' }}>
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1051,6 +1125,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false }) {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Actions ── */}
           <div className="flex gap-3">

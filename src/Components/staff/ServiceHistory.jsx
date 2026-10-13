@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import OrderRow from './OrderRow'
 import OrderDetailModal from './OrderDetailModal'
+import EditOrderButton from './EditOrderButton'
 import { retraitReversible, MESSAGE_SERVEUR_ANCIEN } from './retraitReversible'
 import {
   NAVY, PURPLE, ORDER_STATUS, STATUS_KEYS, WEEKDAYS_ORDERED, WEEK_START,
@@ -64,6 +65,7 @@ function ServiceHistory({
   showPrice = true,          // designer, insolation et production ne voient pas les montants
   deletable = false,         // confirmatrice et designer peuvent supprimer
   cancellable = false,       // la confirmatrice annule une commande même partie ailleurs
+  onEdit = null,             // le designer modifie une commande à n'importe quelle étape
 }) {
   const today = new Date()
   const [year, setYear]   = useState(today.getFullYear())
@@ -421,8 +423,9 @@ function ServiceHistory({
           /* Annulable tant qu'elle est encore chez un service : une commande
              livrée (« terminée ») ne l'est plus. */
           onCancelled={cancellable && selected.pipeline?.stage !== 'termine'
-            ? () => { load(); loadCalendar() } : undefined}
-        />
+            ? () => { load(); loadCalendar() } : undefined}>
+          {onEdit && <EditOrderButton order={selected} onEdit={onEdit} />}
+        </OrderDetailModal>
       )}
     </div>
   )
