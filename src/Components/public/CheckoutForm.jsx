@@ -3,6 +3,7 @@ import { ChevronDown, User, Phone, MapPin, Map, Loader2, Package, Image, X, File
 import { useLang } from '../../context/LanguageContext'
 import { uploadToCloudinary } from '../../utils/uploadCloudinary'
 import { trackFormEngagement } from '../../utils/metaPixel'
+import { normalizePhone, isMobile } from '../../utils/phone'
 import { wilayas as LOCAL_WILAYAS } from '../../data/wilayas'
 import toast from 'react-hot-toast'
 
@@ -136,7 +137,9 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
     if (!form.firstName.trim())   e.firstName   = t('errorFirstName')
     if (!form.lastName.trim())    e.lastName    = t('errorLastName')
     if (!form.phone.trim())       e.phone       = t('errorPhone')
-    else if (!/^(0)(5|6|7)\d{8}$/.test(form.phone.replace(/\s/g, '')))
+    // Espaces, points, tirets ou +213 ne rendent pas un numéro invalide :
+    // on le juge une fois mis au format.
+    else if (!isMobile(form.phone))
       e.phone = t('errorPhoneFormat')
     if (!form.wilayaId)           e.wilaya      = t('errorWilaya')
     if (!form.commune)            e.commune     = t('errorCommune')
@@ -219,6 +222,7 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
     }
     onSubmit({
       ...form,
+      phone:           normalizePhone(form.phone),   // toujours 0XXXXXXXXX
       wilaya:          form.wilayaName,
       wilayaCode:      form.wilayaId ? Number(form.wilayaId) : null,
       deliveryMethod:  form.stopDesk ? 'Stop Desk' : 'Domicile',
@@ -270,6 +274,7 @@ function CheckoutForm({ onSubmit, loading, onDeliveryChange, isFreeDelivery }) {
           <Field label={t('phone')} icon={Phone} error={errors.phone}>
             <input type="tel" name="phone" value={form.phone}
               onChange={handleChange} placeholder="0551234567"
+              onBlur={() => setForm(p => ({ ...p, phone: normalizePhone(p.phone) }))}
               autoComplete="tel" inputMode="numeric"
               className={inputCls(errors.phone)} />
           </Field>

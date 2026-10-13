@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import staffApi from '../../utils/staffApi'
 import { uploadMultipleToCloudinary } from '../../utils/uploadCloudinary'
 import { priceBreakdown } from '../../utils/pricing'
+import { normalizePhone, isMobile } from '../../utils/phone'
 import { colorName } from '../../data/productColors'
 import useEcotrack from './useEcotrack'
 import {
@@ -40,9 +41,6 @@ const MAX_EXTRA_PHONES = 5
 
 // Mêmes paliers de quantité que sur le site (QuantitySelector)
 const QTY_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000]
-
-// Format des mobiles algériens — le site le vérifie, on se contente d'alerter
-const MOBILE_RX = /^0(5|6|7)\d{8}$/
 
 const isPdf = (url) => /\.pdf($|\?)/i.test(url || '')
 
@@ -295,7 +293,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
      La confirmatrice peut alors reprendre ses coordonnées, ou une commande
      entière qu'elle n'a plus qu'à ajuster. Uniquement à la création. */
   const [known, setKnown] = useState([])          // commandes passées du client
-  const phoneDigits = customer.phone.replace(/\D/g, '')
+  // Mis au format avant de chercher : « +213 551… » retrouve « 0551… »
+  const phoneDigits = normalizePhone(customer.phone).replace(/\D/g, '')
 
   useEffect(() => {
     if (isEdit || phoneDigits.length < 8) { setKnown([]); return }
@@ -469,8 +468,7 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
   const itemsTotal = items.reduce((s, it) => s + lineOf(it).lineTotal, 0)
   const computed   = itemsTotal + (Number(deliveryFee) || 0)
 
-  const phoneWarning = customer.phone.trim() !== ''
-    && !MOBILE_RX.test(customer.phone.replace(/\s/g, ''))
+  const phoneWarning = customer.phone.trim() !== '' && !isMobile(customer.phone)
 
   /* ── Enregistrement ── */
   const submit = async (e) => {
@@ -513,9 +511,10 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
     const payload = {
       customerInfo: {
         firstName: customer.firstName, lastName: customer.lastName,
-        phone: customer.phone,
+        // Tous les numéros partent au même format : 0XXXXXXXXX
+        phone: normalizePhone(customer.phone),
         // Les champs laissés vides ne sont pas envoyés
-        extraPhones: customer.extraPhones.map(p => p.trim()).filter(Boolean),
+        extraPhones: customer.extraPhones.map(normalizePhone).filter(Boolean),
         wilaya: customer.wilaya, wilayaCode: customer.wilayaCode,
         commune: customer.commune, description: customer.description,
         deliveryMethod: customer.stopDesk ? 'Stop Desk' : 'Domicile',
@@ -654,10 +653,11 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
               <div>
                 <label className={label}>Téléphone *</label>
                 <input value={customer.phone} type="tel" placeholder="0551234567" className={field} style={{ color: NAVY }}
-                  onChange={e => setCustomer(p => ({ ...p, phone: e.target.value }))} />
+                  onChange={e => setCustomer(p => ({ ...p, phone: e.target.value }))}
+                  onBlur={() => setCustomer(p => ({ ...p, phone: normalizePhone(p.phone) }))} />
                 {phoneWarning && (
                   <p className="flex items-center gap-1 text-[11px] mt-1" style={{ color: '#b45309' }}>
-                    <AlertTriangle size={11} /> Format inhabituel — le site attend 0[5/6/7] + 8 chiffres.
+                    <AlertTriangle size={11} /> Numéro inhabituel — un mobile fait 10 chiffres : 05, 06 ou 07 + 8 chiffres.
                   </p>
                 )}
                 {!isEdit && known.length === 0 && phoneDigits.length < 8 && (
@@ -672,7 +672,8 @@ function OrderForm({ order, onClose, onSaved, asChef = false, asDesigner = false
                       <div key={i} className="flex gap-1.5">
                         <input value={ph} type="tel" placeholder={`Autre numéro ${i + 1}`}
                           className={field} style={{ color: NAVY }}
-                          onChange={e => setExtraPhone(i, e.target.value)} />
+                          onChange={e => setExtraPhone(i, e.target.value)}
+                          onBlur={() => setExtraPhone(i, normalizePhone(ph))} />
                         <button type="button" onClick={() => removeExtraPhone(i)}
                           title="Retirer ce numéro"
                           className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
